@@ -1,47 +1,71 @@
-# stochpylib
+<h1 align="center">stochpylib</h1>
 
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Tests](https://img.shields.io/badge/tests-182%20passing-brightgreen)
+<p align="center">
+  <strong>Probability · Distributions · Monte Carlo — one coherent Python library.</strong><br>
+  A growing, from-scratch toolkit of stochastic computing: native implementations behind one
+  common interface, engineered to eventually replace stitching together
+  <code>scipy.stats</code>, <code>statsmodels</code>, <code>pymc</code>, <code>arch</code>,
+  <code>lifelines</code> and <code>copulas</code>.
+</p>
 
-A Python library for probability, distributions, time series, Gaussian processes, stochastic
-processes, financial stochastics, and a long tail of statistical/numerical tooling — aiming to
-cover in one package what's usually stitched together from `scipy.stats`, `statsmodels`, `pymc`,
-`arch`, `lifelines`, and `copulas`.
+---
 
-The full target design — every planned module, submodule, and public function — lives in the
-[design spec vault](Stochpylib-Obsidian-Vault/README.md). This README covers what's actually
-built and how to work on it.
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT"></a>
+  <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&label=tests&color=brightgreen" alt="Test suite"></a>
+  <img src="https://img.shields.io/badge/tests-182%20passing-brightgreen" alt="182 tests passing">
+  <a href="https://pypi.org/project/stochpylib/"><img src="https://img.shields.io/pypi/v/stochpylib?color=blue" alt="PyPI version"></a>
+  <img src="https://img.shields.io/badge/public%20names-106%20%2F%20794-orange" alt="106 of 794 spec names implemented">
+</p>
 
-## Status
+<p align="center">
+  <img src="https://img.shields.io/badge/NumPy-4dabcf?logo=numpy&logoColor=white" alt="NumPy">
+  <img src="https://img.shields.io/badge/SciPy-8CAAE6?logo=scipy&logoColor=white" alt="SciPy">
+  <img src="https://img.shields.io/badge/pytest-069D5B?logo=pytest&logoColor=white" alt="pytest">
+  <img src="https://img.shields.io/badge/setuptools-F9C817?logo=pypi&logoColor=white" alt="setuptools">
+  <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?logo=githubactions&logoColor=white" alt="GitHub Actions">
+  <img src="https://img.shields.io/badge/spl_CLI-black" alt="spl CLI">
+</p>
 
-Early development — three modules implemented so far:
+---
 
-- **`stochpylib.probability`** — sample spaces, events, Bayes' theorem, combinatorics,
-  independence checks.
-- **`stochpylib.distributions`** — 47 distributions (discrete, continuous, multivariate,
-  heavy-tailed) behind one common interface: `.pdf()/.cdf()/.ppf()/.rvs()/.fit()`, moments,
-  `.entropy()/.mgf()/.cf()/.ks_test()`.
-- **`stochpylib.montecarlo`** — quasi-random sequences (Sobol/Halton/Faure/Niederreiter),
-  crude/QMC/importance/rejection/stratified estimators, variance-reduction techniques
-  (antithetic, control variates, LHS, conditioned MC, rejection control), and applications
-  (integration, option pricing, VaR/ES, reliability, sensitivity).
+stochpylib is not a wrapper around existing statistical libraries — every distribution and
+algorithm is implemented from scratch, with `scipy.special/optimize/integrate` used only as raw
+numerical building blocks and `scipy.stats` serving as the independent test oracle. At its core
+is a single load-bearing contract: every distribution exposes the same method set
+(`.pdf()/.cdf()/.ppf()/.rvs()/.mean()/.var()/.skewness()/.kurtosis()/.entropy()/.mgf()/.cf()/.fit()/.ks_test()`),
+every stochastic method takes a `random_state=` seed, and every Monte Carlo estimator returns a
+shared result object carrying its point estimate together with an honest standard error and
+confidence interval. Around that contract, three modules are live today: a **probability engine**
+(sample spaces, Bayes' theorem, exact-integer combinatorics, independence testing), **47
+distributions** across discrete/continuous/multivariate/heavy-tailed families — including stable
+laws with Chambers–Mallows–Leckie sampling and numerically inverted characteristic functions —
+and a **Monte Carlo suite** spanning quasi-random sequences (Sobol, Halton, Faure,
+Niederreiter), variance-reduction techniques (antithetic, control variates, Latin hypercube,
+conditioned MC, rejection control), and applications from option pricing validated against
+Black–Scholes to reliability analysis driven by the library's own distribution objects. The
+thesis this project exists to test: a complete stochastic-computing stack can live in one
+coherent, well-tested package — the roadmap takes it onward through time series, Gaussian
+processes, copulas, Lévy processes, MCMC and beyond (23 modules, ~794 public names planned).
 
-A terminal entry point ships with the package: `spl --help` gives an overview of everything
-the library offers (with quick-start code), `spl --version` prints the installed version, and
-`spl --test` runs a built-in self-check (106 checks) against any installation — no pytest or
-source checkout needed.
+## Table of Contents
 
-See [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md) for
-exact progress against the full spec (currently 106 / 794 public names).
+- [Quickstart](#quickstart)
+- [Current Status](#current-status)
+- [Download](#download)
+- [Getting Started](#getting-started)
+- [Requirements](#requirements)
+- [CLI Reference](#cli-reference)
+- [Project Layout](#project-layout)
+- [Development Documentation](#development-documentation)
+- [Test Suite](#test-suite)
+- [Release Process](#release-process)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Install
-
-```bash
-pip install stochpylib
-```
-
-## Quick example
+## Quickstart
 
 ```python
 from stochpylib.probability import bayes_theorem, total_probability
@@ -52,67 +76,187 @@ p_disease_given_positive = bayes_theorem(0.01, 0.99, p_positive)
 print(round(p_disease_given_positive, 4))  # 0.1667
 ```
 
-## Development
+```python
+from stochpylib.distributions import Normal, Weibull
+from stochpylib.montecarlo import SobolSequence, AntitheticVariates
+
+d = Normal(0.0, 1.0)
+d.pdf(0.0); d.cdf(1.96); d.ppf(0.975); d.rvs(100, random_state=0)
+
+fitted = Weibull.fit(lifetimes)          # maximum likelihood from data
+stat, p_value = fitted.ks_test(data)     # goodness of fit
+
+pts = SobolSequence(dim=5).generate(10_000)                    # low-discrepancy points
+price = AntitheticVariates(n_simulations=100_000).price_european_call(
+    S=100, K=100, T=1, r=0.05, sigma=0.2)                      # option pricing
+```
+
+## Current Status
+
+Early development — three modules implemented so far:
+
+| Module | Public names | What's inside |
+|---|---|---|
+| `stochpylib.probability` | 21 | sample spaces, events, conditional probability, Bayes' theorem, combinatorics (factorial … derangements, Stirling, Bell, Catalan), independence checks |
+| `stochpylib.distributions` | 60 | 47 distributions (discrete, continuous, multivariate, heavy-tailed) behind the common interface |
+| `stochpylib.montecarlo` | 25 | quasi-random sequences, crude/QMC/importance/rejection/stratified estimators, variance reduction, applications |
+
+Exact progress against the full design spec lives in
+[`development/Implementation-Checklist.md`](development/Implementation-Checklist.md)
+(currently **106 / 794 public names**).
+
+## Download
+
+If you just want to *use* stochpylib rather than develop on it, no source checkout is needed:
 
 ```bash
-pip install -e ".[dev]"
+pip install stochpylib
+spl --help        # overview of everything the library offers
+```
+
+> The PyPI release lands with the first tagged version (`v0.1.0`); until then the badge above
+> will show "not found". For local development from this repository, `pip install -e .`
+> registers the same `spl` command straight from source instead:
+
+```bash
+git clone https://github.com/leon1706-lol/Stochpylib.git
+cd Stochpylib
+pip install -e .
+```
+
+## Getting Started
+
+For local development (this repo cloned, a virtual environment active):
+
+```bash
+pip install -e ".[dev]"     # runtime deps + pytest
+pytest tests/ -v            # full test suite must be green before you start changing things
+spl --version               # verify your editable install
+spl --test                  # embedded self-check (106 checks), no pytest needed
+```
+
+Then implement or improve one module at a time and run the wrap-up procedure described in
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Requirements
+
+- **Python ≥ 3.10**
+- **NumPy** and **SciPy** (the only runtime dependencies)
+- **pytest** for the development extras (`pip install -e ".[dev]"`)
+- No compilers, no GPU, no other system packages — pure Python/NumPy/SciPy by design
+
+## CLI Reference
+
+Every install (PyPI wheel or `pip install -e .`) registers one console command, `spl`:
+
+### `spl --help`
+
+Prints a full inventory of the installed library: which modules are available, all public
+functions per module, every distribution class (generated dynamically from the package, so it
+never goes stale), the common distribution interface, and a runnable quick-start snippet.
+Running bare `spl` shows the same thing.
+
+### `spl --version`
+
+```bash
+$ spl --version
+0.1.0
+```
+
+Prints the installed version — reads pip package metadata, falling back to the in-code version
+when not installed through pip.
+
+### `spl --test`
+
+Runs the embedded self-check suite shipped inside the wheel (**106 checks**): package sanity,
+one closed-form spot check per distribution family, Monte Carlo convergence sanity. This works
+after any `pip install` — no pytest, no source checkout — making it the quickest way to verify
+an installation. Exits non-zero on any failure.
+
+## Project Layout
+
+- [`stochpylib/`](stochpylib/) — the installable package, one subpackage per module
+  ([`probability/`](stochpylib/probability/README.md),
+  [`distributions/`](stochpylib/distributions/README.md),
+  [`montecarlo/`](stochpylib/montecarlo/README.md)), plus `cli.py` and `selftest.py`
+- [`tests/`](tests/README.md) — one `tests/<module>/tests.py` per module, outside the package
+- [`development/`](development/) — build history & process docs (see below)
+- `.github/workflows/` — CI matrix (Python 3.10–3.13), tag-triggered PyPI publishing
+  (Trusted Publisher/OIDC, no stored tokens), automatic GitHub Releases
+- The full design-spec vault (`Stochpylib-Obsidian-Vault/`) is maintained privately and is not
+  part of this repository
+
+## Development Documentation
+
+Everything a contributor or maintainer needs lives in committed docs:
+
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — dev setup, ground rules, **semver & deprecation policy**, PR checklist
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — Contributor Covenant 2.1
+- [`SECURITY.md`](SECURITY.md) — private vulnerability reporting (72 h acknowledgment)
+- [`development/Development.md`](development/Development.md) — layout decisions & workflow notes
+- [`development/CHANGELOG.md`](development/CHANGELOG.md) — append-only log, one entry per build phase
+- [`development/Probleme.md`](development/Probleme.md) — bug audit log with severity scores (11 entries so far)
+- [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md) — every planned public name as a checkbox
+
+## Test Suite
+
+```bash
 pytest tests/ -v
 ```
 
-Tests live in `tests/<module>/tests.py` — one file per module, outside the installed package.
-182 passed / 2 skipped (intentional convention skips) as of the `montecarlo` module.
+**182 passed / 2 skipped** as of the `montecarlo` module. Tests are deterministic (fixed seeds
+everywhere), live outside the installed package, and use `scipy.stats` as the reference oracle.
+Statistical assertions are set at ≥ 3 standard errors so results are stable while staying
+meaningful. Additionally, `spl --test` re-verifies any installation in seconds.
 
-### Tools used
+## Release Process
 
-- **[setuptools](https://setuptools.pypa.io/)** — build backend (`pyproject.toml`).
-- **[pytest](https://pytest.org/)** — test runner, including doctests.
-- **[build](https://pypa-build.readthedocs.io/)** — sdist/wheel builds.
-- **GitHub Actions** — CI (`.github/workflows/ci.yml`, test matrix across Python 3.10–3.13) and
-  PyPI publishing (`.github/workflows/publish.yml`, triggered on `vX.Y.Z` tags via PyPI's Trusted
-  Publisher/OIDC flow — no stored API tokens).
-- **NumPy / SciPy** — declared runtime dependencies for the library as a whole, per the spec's
-  baseline (not all implemented modules need them yet — `probability` currently doesn't).
+Releases are fully automated from tags:
 
-## Project layout
+1. Update the version in `pyproject.toml` **and** `stochpylib/__init__.py` (semver — see the
+   policy in [`CONTRIBUTING.md`](CONTRIBUTING.md))
+2. Tag and push:
+   ```bash
+   git tag v0.1.0 && git push origin v0.1.0
+   ```
+3. CI runs the full test matrix, builds sdist + wheel, smoke-verifies the wheel
+   (`spl --version`, `spl --test`) and publishes to PyPI via Trusted Publisher (OIDC — no API
+   tokens stored anywhere); a second workflow creates the matching GitHub Release with
+   auto-generated changelog notes
 
-- [`stochpylib/`](stochpylib/) — the actual package, one subpackage per module
-  (e.g. `stochpylib/probability/`).
-- [`tests/`](tests/) — tests, mirroring the package structure one folder per module.
-- [`Stochpylib-Obsidian-Vault/`](Stochpylib-Obsidian-Vault/README.md) — the design spec: target
-  module map, API conventions, ratings, quickstart examples for the *full* planned library.
-- [`development/`](development/) — build history and process docs, separate from the design spec:
-  - [`Development.md`](development/Development.md) — package layout decisions and workflow notes.
-  - [`CHANGELOG.md`](development/CHANGELOG.md) — append-only log of build phases.
-  - [`Probleme.md`](development/Probleme.md) — bugs found during implementation, with a
-    severity score (1–10) and Fixed/Open status for each.
-  - [`Implementation-Checklist.md`](development/Implementation-Checklist.md) — every
-    module/submodule/public name in the spec, checked off as it's actually implemented and
-    tested.
+Prerequisite for step 3: configure the Trusted Publisher once under pypi.org → your project →
+Publishing.
+
+## Roadmap
+
+Twenty modules remain on the spec (in rough implementation order):
+time series, Gaussian processes, copulas, survival analysis, queueing theory, information
+theory, Lévy processes, financial stochastics, advanced MCMC, Bayesian inference, statistics,
+nonparametric methods, robust statistics, numerical methods, random matrix theory, spatial
+statistics, optimization, experimental design, visualization, and utilities. Each lands with the same bar: native implementations, the shared
+interface conventions, full tests against independent oracles, and honest documentation of
+deviations.
 
 ## Contributing
 
-This is early-stage and the spec is large (23 modules, ~794 public names), so the most useful
-contributions right now are implementing one module at a time against its target API spec.
-Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) — it covers dev setup, the ground rules (no
-`scipy.stats` wrapping, common distribution interface), the
-[versioning & deprecation policy](CONTRIBUTING.md#versioning--deprecation-policy), and the PR
-checklist. Bug reports and feature ideas go through the issue templates; security issues
-privately per [`SECURITY.md`](SECURITY.md). This project follows
+Issues and PRs welcome! Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) — it covers the ground
+rules (no `scipy.stats` wrapping in library code, the common interface contract, where tests
+live) and the versioning/deprecation policy. Bug reports go through the issue templates;
+security issues privately per [`SECURITY.md`](SECURITY.md). This project follows
 [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
-
-Each tagged release `vX.Y.Z` is published to PyPI by CI and gets a matching GitHub Release
-with per-tag changelog notes.
-
-Before opening a PR:
-
-1. Read the target module's spec — open an issue first if you need the API contract.
-2. Add tests in `tests/<module>/tests.py` and make sure `pytest tests/ -v` is green.
-3. Update `development/Implementation-Checklist.md` to check off what you implemented, and add an
-   entry to `development/CHANGELOG.md` (and `development/Probleme.md` if you found a bug).
-4. Follow the full wrap-up checklist in
-   [`Essential-Tasks.md`](Stochpylib-Obsidian-Vault/Essential-Tasks.md) — it covers spec
-   alignment, vault regeneration, and the handoff log.
 
 ## License
 
-[MIT](LICENSE) © Francis Engert
+[MIT](LICENSE) © Leon Schwarzkopf
+
+---
+
+<p align="center">
+  Built by <strong>Leon Schwarzkopf</strong>, <a href="mailto:leonschwarzkopf08@gmail.com">leonschwarzkopf08@gmail.com</a>
+</p>
+
+---
+
+<div align="center">
+  <sub>stochpylib</sub>
+</div>
