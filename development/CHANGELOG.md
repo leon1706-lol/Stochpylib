@@ -73,3 +73,11 @@ found during this pass: publish.yml still ran pytest against the old in-package 
 (pytest stochpylib/) instead of tests/ - tag builds would have failed CI; it now runs the real
 suite and additionally smoke-verifies the built wheel via spl --version / spl --test before
 publishing.
+
+## Phase 7 - spl --help library overview
+
+spl --help (and bare spl) now prints a full inventory of the installed library instead of
+bare flag help: implemented modules with their public functions, all 47 distribution classes
+(dynamic from the package's __all__, so it never goes stale), the common distribution
+interface, a quick-start snippet for both modules, and pointers to the roadmap/docs. Covered
+by test_cli_help_shows_library_overview; output kept ASCII-safe for legacy Windows consoles.

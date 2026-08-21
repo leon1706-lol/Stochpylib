@@ -436,6 +436,26 @@ def test_cli_version_flag(capsys):
     assert out == stochpylib.__version__
 
 
+def test_cli_help_shows_library_overview(capsys):
+    with pytest.raises(SystemExit) as excinfo:
+        cli_mod.main(["--help"])
+    assert excinfo.value.code == 0
+    out = capsys.readouterr().out
+    # module overview with dynamic inventory
+    for token in (
+        "probability",
+        "distributions",
+        "47 distribution classes",
+        "Normal",
+        "StableDistribution",
+        ".ks_test()",
+        "Quick start",
+        "--version",
+        "--test",
+    ):
+        assert token in out, f"help output missing {token!r}"
+
+
 def test_cli_selftest_flag_green(capsys):
     rc = cli_mod.main(["--test"])
     out = capsys.readouterr().out

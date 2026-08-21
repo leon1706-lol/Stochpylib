@@ -23,7 +23,8 @@ Early development — two modules implemented so far:
   heavy-tailed) behind one common interface: `.pdf()/.cdf()/.ppf()/.rvs()/.fit()`, moments,
   `.entropy()/.mgf()/.cf()/.ks_test()`.
 
-A terminal entry point ships with the package: `spl --version` prints the installed version,
+A terminal entry point ships with the package: `spl --help` gives an overview of everything
+the library offers (with quick-start code), `spl --version` prints the installed version, and
 `spl --test` runs a built-in self-check (101 checks) against any installation — no pytest or
 source checkout needed.
 
