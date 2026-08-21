@@ -11,21 +11,21 @@
 ---
 
 <p align="center">
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-blue" alt="Python 3.10+"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT"></a>
-  <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&label=tests&color=brightgreen" alt="Test suite"></a>
-  <img src="https://img.shields.io/badge/tests-182%20passing-brightgreen" alt="182 tests passing">
-  <a href="https://pypi.org/project/stochpylib/"><img src="https://img.shields.io/pypi/v/stochpylib?color=blue" alt="PyPI version"></a>
-  <img src="https://img.shields.io/badge/public%20names-106%20%2F%20794-orange" alt="106 of 794 spec names implemented">
+  <img src="https://img.shields.io/badge/python-3.10%2B-FF8C00?style=flat-square&labelColor=1A1A1A&logo=python&logoColor=white" alt="Python 3.10+">
+  <img src="https://img.shields.io/badge/%F0%9F%93%84%20license-MIT-8B5CF6?style=flat-square&labelColor=1A1A1A" alt="License: MIT">
+  <img src="https://img.shields.io/badge/tests-182%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="182 tests passing">
+  <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&style=flat-square&labelColor=1A1A1A&label=CI&logo=githubactions&logoColor=white" alt="CI status"></a>
+  <a href="https://pypi.org/project/stochpylib/"><img src="https://img.shields.io/pypi/v/stochpylib?style=flat-square&labelColor=1A1A1A&color=FF8C00&logo=pypi&logoColor=white" alt="PyPI version"></a>
+  <img src="https://img.shields.io/badge/public%20names-106%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="106 of 794 spec names implemented">
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/NumPy-4dabcf?logo=numpy&logoColor=white" alt="NumPy">
-  <img src="https://img.shields.io/badge/SciPy-8CAAE6?logo=scipy&logoColor=white" alt="SciPy">
-  <img src="https://img.shields.io/badge/pytest-069D5B?logo=pytest&logoColor=white" alt="pytest">
-  <img src="https://img.shields.io/badge/setuptools-F9C817?logo=pypi&logoColor=white" alt="setuptools">
-  <img src="https://img.shields.io/badge/GitHub_Actions-2088FF?logo=githubactions&logoColor=white" alt="GitHub Actions">
-  <img src="https://img.shields.io/badge/spl_CLI-black" alt="spl CLI">
+  <img src="https://img.shields.io/badge/NumPy-4B5563?style=flat-square&labelColor=1A1A1A&logo=numpy&logoColor=white" alt="NumPy">
+  <img src="https://img.shields.io/badge/SciPy-4B5563?style=flat-square&labelColor=1A1A1A&logo=scipy&logoColor=white" alt="SciPy">
+  <img src="https://img.shields.io/badge/pytest-4B5563?style=flat-square&labelColor=1A1A1A&logo=pytest&logoColor=white" alt="pytest">
+  <img src="https://img.shields.io/badge/setuptools-4B5563?style=flat-square&labelColor=1A1A1A" alt="setuptools">
+  <img src="https://img.shields.io/badge/GitHub%20Actions-4B5563?style=flat-square&labelColor=1A1A1A&logo=githubactions&logoColor=white" alt="GitHub Actions">
+  <img src="https://img.shields.io/badge/spl%20CLI-black?style=flat-square&labelColor=1A1A1A&logo=gnu-bash&logoColor=white" alt="spl command-line interface">
 </p>
 
 ---
