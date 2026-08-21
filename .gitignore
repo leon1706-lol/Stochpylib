@@ -14,9 +14,5 @@ venv/
 # Local agent/tooling session state (machine-specific)
 .claude/
 
-# Obsidian local editor state (machine-specific, not useful in git history)
-Stochpylib-Obsidian-Vault/.obsidian/workspace.json
-Stochpylib-Obsidian-Vault/.obsidian/workspace-mobile.json
-
-# Third-party Obsidian plugin bundles (~11 MB of vendored JS, reinstall per client)
-Stochpylib-Obsidian-Vault/.obsidian/plugins/
+# Obsidian vault — private/local only, never committed
+Stochpylib-Obsidian-Vault/
