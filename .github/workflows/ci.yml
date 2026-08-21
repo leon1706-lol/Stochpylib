@@ -16,4 +16,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
-      - run: pytest stochpylib/ -v
+      - run: pytest tests/ -v
+      - name: Verify installed package
+        run: |
+          spl --version
+          spl --test
