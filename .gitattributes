@@ -1,0 +1,21 @@
+# Normalize line endings: LF in the repo, native on checkout
+* text=auto
+
+# Source code always LF
+*.py text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+LICENSE text eol=lf
+.gitignore text eol=lf
+
+# Windows scripts
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary assets — never diff/normalize
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.whl binary

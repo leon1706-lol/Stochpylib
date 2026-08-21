@@ -1,0 +1,1017 @@
+# Implementation Checklist
+
+Mechanical checklist mirroring [Module-Map.md](../Stochpylib-Obsidian-Vault/Module-Map.md) /
+`Stochpylib-Obsidian-Vault/Modules/*.md`, but in a single file so progress can be tracked at a
+glance. Lives in `development/` rather than the vault since it's a development-tracking artifact,
+not part of the design spec. Check off a submodule's box only once every item in it is implemented
+and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
+file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
+
+**Progress: 21 / 794 public names implemented.**
+
+## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
+
+- [x] **stochpylib.probability** module overall
+  - [x] `probability.basics`
+    - [x] `sample_space()`
+    - [x] `event()`
+    - [x] `P()`
+    - [x] `complement()`
+    - [x] `union()`
+    - [x] `intersection()`
+    - [x] `conditional_P()`
+    - [x] `bayes_theorem()`
+    - [x] `total_probability()`
+  - [x] `probability.combinatorics`
+    - [x] `factorial()`
+    - [x] `permutation()`
+    - [x] `combination()`
+    - [x] `multinomial()`
+    - [x] `stirling()`
+    - [x] `bell_number()`
+    - [x] `catalan_number()`
+    - [x] `derangement()`
+  - [x] `probability.independence`
+    - [x] `is_independent()`
+    - [x] `mutual_exclusion()`
+    - [x] `pairwise_independence()`
+    - [x] `conditional_independence()`
+
+## [distributions](../Stochpylib-Obsidian-Vault/Modules/distributions.md) — 80+ probability distributions (0/60)
+
+- [ ] **stochpylib.distributions** module overall
+  - [ ] `distributions.discrete`
+    - [ ] `Bernoulli`
+    - [ ] `Binomial`
+    - [ ] `Poisson`
+    - [ ] `Geometric`
+    - [ ] `NegBinomial`
+    - [ ] `Hypergeometric`
+    - [ ] `DiscreteUniform`
+    - [ ] `Multinomial`
+    - [ ] `ZipfDistribution`
+    - [ ] `BetaBinomial`
+    - [ ] `ConwayMaxwellPoisson`
+  - [ ] `distributions.continuous`
+    - [ ] `Normal`
+    - [ ] `Exponential`
+    - [ ] `Uniform`
+    - [ ] `Beta`
+    - [ ] `Gamma`
+    - [ ] `Chi2`
+    - [ ] `Student_t`
+    - [ ] `F`
+    - [ ] `Cauchy`
+    - [ ] `Laplace`
+    - [ ] `Weibull`
+    - [ ] `Pareto`
+    - [ ] `LogNormal`
+    - [ ] `Gumbel`
+    - [ ] `Frechet`
+    - [ ] `GEV`
+    - [ ] `GPareto`
+    - [ ] `InvGamma`
+    - [ ] `InvGaussian`
+    - [ ] `Rayleigh`
+    - [ ] `Maxwell`
+    - [ ] `Nakagami`
+    - [ ] `Rice`
+    - [ ] `VonMises`
+    - [ ] `Kumaraswamy`
+  - [ ] `distributions.multivariate`
+    - [ ] `MultivariateNormal`
+    - [ ] `Dirichlet`
+    - [ ] `Wishart`
+    - [ ] `InverseWishart`
+    - [ ] `MultivariateT`
+    - [ ] `MultivariatePareto`
+  - [ ] `distributions.heavy_tail`
+    - [ ] `AlphaStable`
+    - [ ] `LevyDistribution`
+    - [ ] `StableDistribution`
+    - [ ] `SubGaussian`
+    - [ ] `SubExponential`
+  - [ ] `distributions.methods`
+    - [ ] `.pdf()/.pmf()`
+    - [ ] `.cdf()`
+    - [ ] `.ppf()`
+    - [ ] `.rvs()`
+    - [ ] `.mean()`
+    - [ ] `.var()`
+    - [ ] `.skewness()`
+    - [ ] `.kurtosis()`
+    - [ ] `.entropy()`
+    - [ ] `.mgf()`
+    - [ ] `.cf()`
+    - [ ] `.fit()`
+    - [ ] `.ks_test()`
+
+## [timeseries](../Stochpylib-Obsidian-Vault/Modules/timeseries.md) — Complete time series toolkit (0/61)
+
+- [ ] **stochpylib.timeseries** module overall
+  - [ ] `timeseries.linear_models`
+    - [ ] `AR(p)`
+    - [ ] `MA(q)`
+    - [ ] `ARMA(p,q)`
+    - [ ] `ARIMA(p,d,q)`
+    - [ ] `SARIMA(p,d,q)(P,D,Q,s)`
+    - [ ] `ARFIMA(p,d,q)`
+    - [ ] `VARMA`
+    - [ ] `VAR(p)`
+    - [ ] `VECM`
+  - [ ] `timeseries.volatility_models`
+    - [ ] `ARCH(q)`
+    - [ ] `GARCH(p,q)`
+    - [ ] `EGARCH`
+    - [ ] `TGARCH`
+    - [ ] `FIGARCH`
+    - [ ] `APARCH`
+    - [ ] `IGARCH`
+    - [ ] `GJRGARCH`
+    - [ ] `MGARCH`
+    - [ ] `DCC_GARCH`
+  - [ ] `timeseries.state_space`
+    - [ ] `StateSpaceModel`
+    - [ ] `KalmanFilter`
+    - [ ] `KalmanSmoother`
+    - [ ] `ExtendedKalmanFilter`
+    - [ ] `UnscentedKalmanFilter`
+    - [ ] `ParticleFilter`
+    - [ ] `RaoBlackwellFilter`
+  - [ ] `timeseries.latent_models`
+    - [ ] `HiddenMarkovModel`
+    - [ ] `SwitchingRegression`
+    - [ ] `RegimeSwitching`
+    - [ ] `MixtureAutoregressive`
+  - [ ] `timeseries.changepoint`
+    - [ ] `ChangePointDetection`
+    - [ ] `BayesianChangePoint`
+    - [ ] `PELT`
+    - [ ] `BinarySegmentation`
+    - [ ] `BottomUp`
+  - [ ] `timeseries.decomposition`
+    - [ ] `SeasonalDecomposition`
+    - [ ] `STLDecomposition`
+    - [ ] `X11Decomposition`
+    - [ ] `TrendFilter`
+    - [ ] `HPFilter`
+  - [ ] `timeseries.spectral`
+    - [ ] `SpectralAnalysis`
+    - [ ] `Periodogram`
+    - [ ] `PowerSpectrum`
+    - [ ] `WaveletTransform`
+    - [ ] `CWTTransform`
+    - [ ] `DWTTransform`
+    - [ ] `STFT`
+    - [ ] `Hilbert`
+  - [ ] `timeseries.tests`
+    - [ ] `adf_test()`
+    - [ ] `kpss_test()`
+    - [ ] `pp_test()`
+    - [ ] `ljung_box()`
+    - [ ] `durbin_watson()`
+    - [ ] `arch_test()`
+    - [ ] `granger_causality()`
+    - [ ] `johansen_test()`
+  - [ ] `timeseries.forecasting`
+    - [ ] `forecast()`
+    - [ ] `predict()`
+    - [ ] `confidence_bands()`
+    - [ ] `backtesting()`
+    - [ ] `cross_validation_ts()`
+
+## [gaussian_processes](../Stochpylib-Obsidian-Vault/Modules/gaussian_processes.md) — Gaussian process models & kernels (0/36)
+
+- [ ] **stochpylib.gaussian_processes** module overall
+  - [ ] `gaussian_processes.models`
+    - [ ] `GaussianProcess`
+    - [ ] `GPRegression`
+    - [ ] `GPClassification`
+    - [ ] `GPTimeSeriesModel`
+    - [ ] `SparseGaussianProcess`
+    - [ ] `InducingPointGP`
+    - [ ] `DeepGP`
+  - [ ] `gaussian_processes.kernels`
+    - [ ] `RBFKernel`
+    - [ ] `MaternKernel`
+    - [ ] `PeriodicKernel`
+    - [ ] `LinearKernel`
+    - [ ] `PolynomialKernel`
+    - [ ] `RationalQuadraticKernel`
+    - [ ] `WhiteNoiseKernel`
+    - [ ] `SpectralMixtureKernel`
+    - [ ] `NeuralNetworkKernel`
+    - [ ] `ArcCosineKernel`
+  - [ ] `gaussian_processes.kernel_ops`
+    - [ ] `KernelComposition`
+    - [ ] `KernelSum`
+    - [ ] `KernelProduct`
+    - [ ] `KernelPower`
+    - [ ] `StationaryKernel`
+    - [ ] `NonStationaryKernel`
+    - [ ] `kernel_matrix()`
+    - [ ] `kernel_grad()`
+  - [ ] `gaussian_processes.inference`
+    - [ ] `ExactInference`
+    - [ ] `LaplacePropagation`
+    - [ ] `ExpectationPropagation`
+    - [ ] `VariationalInference`
+    - [ ] `FITC`
+    - [ ] `VFE`
+    - [ ] `SparseVFE`
+  - [ ] `gaussian_processes.hyperparams`
+    - [ ] `MarginalLikelihood`
+    - [ ] `ARD`
+    - [ ] `optimize_hyperparams()`
+    - [ ] `cross_validate_gp()`
+
+## [copulas](../Stochpylib-Obsidian-Vault/Modules/copulas.md) — Dependence modeling with copulas (0/26)
+
+- [ ] **stochpylib.copulas** module overall
+  - [ ] `copulas.elliptical`
+    - [ ] `GaussianCopula`
+    - [ ] `StudentTCopula`
+  - [ ] `copulas.archimedean`
+    - [ ] `ClaytonCopula`
+    - [ ] `FrankCopula`
+    - [ ] `GumbelCopula`
+    - [ ] `JoeCopula`
+    - [ ] `AliMikhailHaqCopula`
+    - [ ] `PlackettCopula`
+    - [ ] `BB1Copula`
+    - [ ] `BB7Copula`
+  - [ ] `copulas.empirical`
+    - [ ] `EmpiricalCopula`
+    - [ ] `CheckerboardCopula`
+    - [ ] `BetaCopula`
+  - [ ] `copulas.vine`
+    - [ ] `VineCopula`
+    - [ ] `CVine`
+    - [ ] `DVine`
+    - [ ] `RVine`
+    - [ ] `PairCopulaConstruction`
+    - [ ] `VineStructureSelect()`
+  - [ ] `copulas.methods`
+    - [ ] `CopulaFit()`
+    - [ ] `CopulaSample()`
+    - [ ] `kendall_tau()`
+    - [ ] `spearman_rho()`
+    - [ ] `tail_dependence()`
+    - [ ] `copula_density()`
+    - [ ] `conditional_copula()`
+
+## [survival](../Stochpylib-Obsidian-Vault/Modules/survival.md) — Survival & reliability analysis (0/28)
+
+- [ ] **stochpylib.survival** module overall
+  - [ ] `survival.nonparametric`
+    - [ ] `KaplanMeier`
+    - [ ] `NelsonAalen`
+    - [ ] `LifeTable`
+    - [ ] `EmpiricalSurvival`
+    - [ ] `BreslowEstimator`
+  - [ ] `survival.functions`
+    - [ ] `SurvivalFunction`
+    - [ ] `HazardFunction`
+    - [ ] `CumulativeHazard`
+    - [ ] `ResidualLifetime`
+    - [ ] `MeanResidualLife`
+  - [ ] `survival.parametric`
+    - [ ] `WeibullSurvival`
+    - [ ] `ExponentialSurvival`
+    - [ ] `LogNormalSurvival`
+    - [ ] `LogLogisticSurvival`
+    - [ ] `GompertzSurvival`
+  - [ ] `survival.regression`
+    - [ ] `CoxProportionalHazards`
+    - [ ] `AcceleratedFailureTime`
+    - [ ] `AalenAdditiveModel`
+    - [ ] `FineGrayModel`
+    - [ ] `StratifiedCox`
+  - [ ] `survival.tests`
+    - [ ] `LogRankTest`
+    - [ ] `WilcoxonSurvival`
+    - [ ] `TaroneWareTest`
+    - [ ] `PetoTest`
+    - [ ] `FlemingHarrington`
+  - [ ] `survival.competing_risks`
+    - [ ] `CumulativeIncidenceFunction`
+    - [ ] `CompetingRisksModel`
+    - [ ] `CauseSpecificHazard`
+
+## [queueing](../Stochpylib-Obsidian-Vault/Modules/queueing.md) — Queueing theory & networks (0/29)
+
+- [ ] **stochpylib.queueing** module overall
+  - [ ] `queueing.single_queues`
+    - [ ] `MM1Queue`
+    - [ ] `MMCQueue`
+    - [ ] `MMInfinityQueue`
+    - [ ] `MD1Queue`
+    - [ ] `MG1Queue`
+    - [ ] `GI1Queue`
+    - [ ] `GIGQueue`
+    - [ ] `MG1PriorityQueue`
+  - [ ] `queueing.networks`
+    - [ ] `JacksonNetwork`
+    - [ ] `GordonNewell`
+    - [ ] `BCMP`
+    - [ ] `OpenNetwork`
+    - [ ] `ClosedNetwork`
+    - [ ] `ProductFormNetwork`
+  - [ ] `queueing.analysis`
+    - [ ] `LittleLaw()`
+    - [ ] `traffic_intensity()`
+    - [ ] `mean_waiting_time()`
+    - [ ] `mean_queue_length()`
+    - [ ] `server_utilization()`
+    - [ ] `WaitingTimeDistribution`
+    - [ ] `SojournTime`
+  - [ ] `queueing.birth_death`
+    - [ ] `BirthDeathQueue`
+    - [ ] `ErlangBFormula()`
+    - [ ] `ErlangCFormula()`
+    - [ ] `EngsetFormula()`
+  - [ ] `queueing.simulation`
+    - [ ] `QueueSimulation`
+    - [ ] `EventDrivenSim`
+    - [ ] `DiscreteEventSim`
+    - [ ] `SimStats`
+
+## [information_theory](../Stochpylib-Obsidian-Vault/Modules/information_theory.md) — Information-theoretic measures (0/31)
+
+- [ ] **stochpylib.information_theory** module overall
+  - [ ] `information_theory.entropy`
+    - [ ] `Entropy`
+    - [ ] `JointEntropy`
+    - [ ] `ConditionalEntropy`
+    - [ ] `CrossEntropy`
+    - [ ] `TsallisEntropy`
+    - [ ] `RenyiEntropy`
+    - [ ] `DifferentialEntropy`
+    - [ ] `MaxEntropy`
+  - [ ] `information_theory.divergences`
+    - [ ] `KLDivergence`
+    - [ ] `RelativeEntropy`
+    - [ ] `JensenShannonDivergence`
+    - [ ] `WassersteinDistance`
+    - [ ] `HellingerDistance`
+    - [ ] `TotalVariation`
+    - [ ] `ChiSquaredDivergence`
+    - [ ] `AlphaDivergence`
+  - [ ] `information_theory.mutual_info`
+    - [ ] `MutualInformation`
+    - [ ] `NormalizedMutualInformation`
+    - [ ] `VariationOfInformation`
+    - [ ] `ConditionalMutualInfo`
+    - [ ] `InteractionInformation`
+    - [ ] `MultiInformation`
+  - [ ] `information_theory.channels`
+    - [ ] `ChannelCapacity`
+    - [ ] `InformationGain`
+    - [ ] `TransferEntropy`
+    - [ ] `DirectedInformation`
+    - [ ] `SymbolicTransferEntropy`
+  - [ ] `information_theory.coding`
+    - [ ] `ShannonLimit()`
+    - [ ] `HuffmanCode()`
+    - [ ] `TypicalSet()`
+    - [ ] `AEP()`
+
+## [random_matrix](../Stochpylib-Obsidian-Vault/Modules/random_matrix.md) — Random matrix theory (0/23)
+
+- [ ] **stochpylib.random_matrix** module overall
+  - [ ] `random_matrix.ensembles`
+    - [ ] `GOE`
+    - [ ] `GUE`
+    - [ ] `GSE`
+    - [ ] `WishartMatrix`
+    - [ ] `InverseWishart`
+    - [ ] `WignerMatrix`
+    - [ ] `CUE`
+    - [ ] `MuresanMatrix`
+  - [ ] `random_matrix.empirical_spectra`
+    - [ ] `MarchenkoPastur`
+    - [ ] `WignerSemicircle`
+    - [ ] `TracyWidomDistribution`
+    - [ ] `BetaEnsemble`
+    - [ ] `JacobiEnsemble`
+  - [ ] `random_matrix.random_rotations`
+    - [ ] `RandomOrthogonalMatrix`
+    - [ ] `RandomUnitaryMatrix`
+    - [ ] `HaarMeasure`
+    - [ ] `RandomSymplectic`
+  - [ ] `random_matrix.statistics`
+    - [ ] `EigenvalueSpacing`
+    - [ ] `LevelRepulsion`
+    - [ ] `EigenvalueDistribution`
+    - [ ] `LargestEigenvalue`
+    - [ ] `BulkSpectrum`
+    - [ ] `SpectralEdge`
+
+## [levy_processes](../Stochpylib-Obsidian-Vault/Modules/levy_processes.md) — Levy & advanced stochastic processes (0/33)
+
+- [ ] **stochpylib.levy_processes** module overall
+  - [ ] `levy_processes.levy`
+    - [ ] `LevyProcess`
+    - [ ] `StableProcess`
+    - [ ] `AlphaStableDistribution`
+    - [ ] `SpectrallPositive`
+    - [ ] `SubordinatedProcess`
+    - [ ] `LevyKhintchine`
+  - [ ] `levy_processes.jump_diffusion`
+    - [ ] `JumpDiffusion`
+    - [ ] `MertonJumpDiffusion`
+    - [ ] `KouJumpDiffusion`
+    - [ ] `BatesModel`
+    - [ ] `VarianceGammaProcess`
+    - [ ] `CGMYProcess`
+    - [ ] `NormalInverseGaussianProcess`
+  - [ ] `levy_processes.subordinators`
+    - [ ] `Subordinator`
+    - [ ] `GammaSubordinator`
+    - [ ] `InverseGaussianSubordinator`
+    - [ ] `StableSubordinator`
+    - [ ] `TemperingSubordinator`
+  - [ ] `levy_processes.advanced`
+    - [ ] `SemiMarkovProcess`
+    - [ ] `RenewalProcess`
+    - [ ] `BranchingProcess`
+    - [ ] `HawkesProcess`
+    - [ ] `MultivariateHawkes`
+    - [ ] `CoxProcess`
+    - [ ] `GaussianRandomField`
+    - [ ] `RandomMeasure`
+  - [ ] `levy_processes.sde`
+    - [ ] `SDE()`
+    - [ ] `Euler_Maruyama()`
+    - [ ] `Milstein()`
+    - [ ] `Runge_Kutta_SDE()`
+    - [ ] `StochasticTaylor()`
+    - [ ] `WeakApproximation()`
+    - [ ] `StrongApproximation()`
+
+## [spatial_statistics](../Stochpylib-Obsidian-Vault/Modules/spatial_statistics.md) — Geostatistics & spatial modeling (0/32)
+
+- [ ] **stochpylib.spatial_statistics** module overall
+  - [ ] `spatial_statistics.random_fields`
+    - [ ] `GaussianRandomField`
+    - [ ] `MaternField`
+    - [ ] `OrnsteinUhlenbeckField`
+    - [ ] `BrownianSheet`
+    - [ ] `FractionalBrownianSheet`
+  - [ ] `spatial_statistics.kriging`
+    - [ ] `Kriging`
+    - [ ] `OrdinaryKriging`
+    - [ ] `UniversalKriging`
+    - [ ] `SimpleKriging`
+    - [ ] `CoKriging`
+    - [ ] `IndicatorKriging`
+    - [ ] `DisjunctiveKriging`
+  - [ ] `spatial_statistics.variogram`
+    - [ ] `Variogram`
+    - [ ] `Semivariogram`
+    - [ ] `SpatialCovariance`
+    - [ ] `ExperimentalVariogram`
+    - [ ] `VariogramFitting`
+    - [ ] `Nugget`
+    - [ ] `Sill`
+    - [ ] `Range`
+  - [ ] `spatial_statistics.point_processes`
+    - [ ] `SpatialPointProcess`
+    - [ ] `PoissonPointProcess`
+    - [ ] `ThomasProcess`
+    - [ ] `MaternCluster`
+    - [ ] `LogGaussianCox`
+    - [ ] `InhomogeneousPoisson`
+    - [ ] `RipleyK()`
+    - [ ] `PairCorrelation()`
+  - [ ] `spatial_statistics.tests`
+    - [ ] `MoransI()`
+    - [ ] `GearyC()`
+    - [ ] `SpatialAutocorrelation()`
+    - [ ] `NNDistanceTest()`
+
+## [robust_statistics](../Stochpylib-Obsidian-Vault/Modules/robust_statistics.md) — Outlier-resistant estimators (0/28)
+
+- [ ] **stochpylib.robust_statistics** module overall
+  - [ ] `robust_statistics.location`
+    - [ ] `TrimmedMean`
+    - [ ] `WinsorizedMean`
+    - [ ] `Median`
+    - [ ] `HodgesLehmann`
+    - [ ] `L_Estimator`
+    - [ ] `M_Estimator`
+    - [ ] `R_Estimator`
+  - [ ] `robust_statistics.scale`
+    - [ ] `MedianAbsoluteDeviation`
+    - [ ] `Qn_Estimator`
+    - [ ] `Sn_Estimator`
+    - [ ] `RobustStd`
+    - [ ] `IQR_Scale`
+  - [ ] `robust_statistics.regression`
+    - [ ] `TheilSenRegression`
+    - [ ] `RANSACRegression`
+    - [ ] `LTS_Regression`
+    - [ ] `MMRegression`
+    - [ ] `HuberRegression`
+    - [ ] `SiegalRegression`
+  - [ ] `robust_statistics.covariance`
+    - [ ] `RobustCovariance`
+    - [ ] `MCD`
+    - [ ] `MVE`
+    - [ ] `OGK`
+    - [ ] `RobustCorrelation`
+    - [ ] `CovShrinkage`
+  - [ ] `robust_statistics.bootstrap`
+    - [ ] `RobustBootstrap`
+    - [ ] `WildBootstrap`
+    - [ ] `BlockBootstrap`
+    - [ ] `StationaryBootstrap`
+
+## [nonparametric](../Stochpylib-Obsidian-Vault/Modules/nonparametric.md) — Distribution-free methods (0/31)
+
+- [ ] **stochpylib.nonparametric** module overall
+  - [ ] `nonparametric.density`
+    - [ ] `KernelDensityEstimate`
+    - [ ] `NearestNeighborDensity`
+    - [ ] `AdaptiveKDE`
+    - [ ] `OrthogonalSeriesDensity`
+    - [ ] `LogsplineEstimator`
+  - [ ] `nonparametric.empirical`
+    - [ ] `EmpiricalDistribution`
+    - [ ] `EmpiricalLikelihood`
+    - [ ] `EmpiricalCDF`
+    - [ ] `EmpiricalCharFn`
+    - [ ] `GlivenkoCantelli`
+  - [ ] `nonparametric.tests`
+    - [ ] `PermutationTest`
+    - [ ] `BootstrapTest`
+    - [ ] `MoodTest`
+    - [ ] `KruskalWallis`
+    - [ ] `FriedmanTest`
+    - [ ] `SignTest`
+    - [ ] `RunsTest`
+    - [ ] `WaldWolfowitz`
+    - [ ] `AndersenDarling`
+    - [ ] `CramerVonMises`
+  - [ ] `nonparametric.correlation`
+    - [ ] `SpearmanCorrelation`
+    - [ ] `KendallTau`
+    - [ ] `RankCorrelation`
+    - [ ] `DistanceCorrelation`
+    - [ ] `BrownianCorrelation`
+    - [ ] `HoeffdingD`
+  - [ ] `nonparametric.regression`
+    - [ ] `LocalPolynomialReg`
+    - [ ] `IsotonicRegression`
+    - [ ] `SplineRegression`
+    - [ ] `GPR_Nonparametric`
+    - [ ] `QuantileRegression`
+
+## [financial_stochastics](../Stochpylib-Obsidian-Vault/Modules/financial_stochastics.md) — Quantitative finance models (0/50)
+
+- [ ] **stochpylib.financial_stochastics** module overall
+  - [ ] `financial_stochastics.option_pricing`
+    - [ ] `BlackScholes`
+    - [ ] `BlackScholes_American`
+    - [ ] `BinomialTree`
+    - [ ] `TrinomialTree`
+    - [ ] `MonteCarloOptionPricing`
+    - [ ] `LongstaffSchwartz`
+    - [ ] `FourierOptionPricing`
+  - [ ] `financial_stochastics.stochastic_vol`
+    - [ ] `HestonModel`
+    - [ ] `SABRModel`
+    - [ ] `RoughHeston`
+    - [ ] `RoughBergomi`
+    - [ ] `LVSV`
+    - [ ] `LocalVol`
+    - [ ] `Dupire`
+    - [ ] `VarianceSwap`
+  - [ ] `financial_stochastics.rate_models`
+    - [ ] `HullWhiteModel`
+    - [ ] `CIRProcess`
+    - [ ] `VasicekModel`
+    - [ ] `HoLeeModel`
+    - [ ] `LMM`
+    - [ ] `HJM`
+    - [ ] `G2ppModel`
+    - [ ] `BlackKarasinski`
+  - [ ] `financial_stochastics.risk`
+    - [ ] `ValueAtRisk`
+    - [ ] `ExpectedShortfall`
+    - [ ] `ConditionalVaR`
+    - [ ] `HistoricalVaR`
+    - [ ] `ParametricVaR`
+    - [ ] `StressTest`
+    - [ ] `ScenarioAnalysis`
+  - [ ] `financial_stochastics.credit`
+    - [ ] `CreditRiskModel`
+    - [ ] `DefaultIntensity`
+    - [ ] `CreditMigration`
+    - [ ] `CDSPricing`
+    - [ ] `MertonCreditModel`
+    - [ ] `CopulaCreditModel`
+  - [ ] `financial_stochastics.greeks`
+    - [ ] `Delta`
+    - [ ] `Gamma`
+    - [ ] `Vega`
+    - [ ] `Theta`
+    - [ ] `Rho`
+    - [ ] `Vanna`
+    - [ ] `Volga`
+    - [ ] `Greeks_MC`
+    - [ ] `Greeks_FD`
+  - [ ] `financial_stochastics.portfolio`
+    - [ ] `PortfolioOptimization`
+    - [ ] `MeanVariance`
+    - [ ] `BlackLitterman`
+    - [ ] `RiskParity`
+    - [ ] `CovarianceEstimation`
+
+## [advanced_mcmc](../Stochpylib-Obsidian-Vault/Modules/advanced_mcmc.md) — State-of-the-art sampling algorithms (0/35)
+
+- [ ] **stochpylib.advanced_mcmc** module overall
+  - [ ] `advanced_mcmc.standard`
+    - [ ] `MetropolisHastings`
+    - [ ] `GibbsSampler`
+    - [ ] `IndependenceSampler`
+    - [ ] `AdaptiveMetropolis`
+    - [ ] `RobustAdaptiveMetropolis`
+  - [ ] `advanced_mcmc.gradient_based`
+    - [ ] `HamiltonianMonteCarlo`
+    - [ ] `NoUTurnSampler`
+    - [ ] `MALA`
+    - [ ] `MMALA`
+    - [ ] `RiemannianHMC`
+    - [ ] `NeutraHMC`
+  - [ ] `advanced_mcmc.slice_sampling`
+    - [ ] `SliceSampling`
+    - [ ] `EllipticalSliceSampling`
+    - [ ] `Doubling`
+    - [ ] `Stepping`
+    - [ ] `Polar_Slice`
+  - [ ] `advanced_mcmc.advanced`
+    - [ ] `ParallelTempering`
+    - [ ] `ReplicaExchange`
+    - [ ] `SequentialMonteCarlo`
+    - [ ] `ParticleMCMC`
+    - [ ] `ReversibleJumpMCMC`
+    - [ ] `TransdimensionalMCMC`
+  - [ ] `advanced_mcmc.diagnostics`
+    - [ ] `Rhat()`
+    - [ ] `ESS()`
+    - [ ] `GelmanRubin()`
+    - [ ] `geweke_test()`
+    - [ ] `raftery_lewis()`
+    - [ ] `autocorr_time()`
+    - [ ] `PSRF()`
+    - [ ] `TraceAnalysis`
+  - [ ] `advanced_mcmc.variational`
+    - [ ] `MeanFieldVI`
+    - [ ] `ADVI`
+    - [ ] `BlackBoxVI`
+    - [ ] `NormalizingFlows`
+    - [ ] `SteinVI`
+
+## [montecarlo](../Stochpylib-Obsidian-Vault/Modules/montecarlo.md) — Simulation & variance reduction (0/25)
+
+- [ ] **stochpylib.montecarlo** module overall
+  - [ ] `montecarlo.simulation`
+    - [ ] `simulate()`
+    - [ ] `importance_sampling()`
+    - [ ] `rejection_sampling()`
+    - [ ] `stratified_sampling()`
+    - [ ] `quasi_montecarlo()`
+    - [ ] `crude_mc()`
+  - [ ] `montecarlo.variance_reduction`
+    - [ ] `AntitheticVariates`
+    - [ ] `ControlVariates`
+    - [ ] `StratifiedSampling`
+    - [ ] `LatinHypercubeSampling`
+    - [ ] `OrthogonalSampling`
+    - [ ] `ConditionedMC`
+    - [ ] `RejectionControl`
+  - [ ] `montecarlo.quasi_random`
+    - [ ] `SobolSequence`
+    - [ ] `HaltonSequence`
+    - [ ] `FaureSequence`
+    - [ ] `NiederreiterSequence`
+    - [ ] `DigitalNet`
+    - [ ] `LowDiscrepancy`
+  - [ ] `montecarlo.applications`
+    - [ ] `MonteCarloIntegration`
+    - [ ] `pi_estimation()`
+    - [ ] `option_pricing_mc()`
+    - [ ] `risk_analysis()`
+    - [ ] `reliability_mc()`
+    - [ ] `sensitivity_analysis()`
+
+## [bayesian](../Stochpylib-Obsidian-Vault/Modules/bayesian.md) — Bayesian inference framework (0/25)
+
+- [ ] **stochpylib.bayesian** module overall
+  - [ ] `bayesian.core`
+    - [ ] `prior()`
+    - [ ] `likelihood()`
+    - [ ] `posterior()`
+    - [ ] `bayes_update()`
+    - [ ] `conjugate_prior()`
+    - [ ] `posterior_predictive()`
+    - [ ] `evidence()`
+  - [ ] `bayesian.models`
+    - [ ] `BayesianLinear`
+    - [ ] `BayesianLogistic`
+    - [ ] `NaiveBayes`
+    - [ ] `HierarchicalModel`
+    - [ ] `MixtureModel`
+    - [ ] `BayesianNetwork`
+    - [ ] `DirichletProcess`
+  - [ ] `bayesian.selection`
+    - [ ] `bayes_factor()`
+    - [ ] `BIC()`
+    - [ ] `AIC()`
+    - [ ] `DIC()`
+    - [ ] `WAIC()`
+    - [ ] `LOO_CV()`
+    - [ ] `TICfit()`
+  - [ ] `bayesian.computation`
+    - [ ] `LaplacePosterior()`
+    - [ ] `EP_Posterior()`
+    - [ ] `MFVariational()`
+    - [ ] `ImportanceSamplingPosterior()`
+
+## [optimization](../Stochpylib-Obsidian-Vault/Modules/optimization.md) — Stochastic & numerical optimization (0/32)
+
+- [ ] **stochpylib.optimization** module overall
+  - [ ] `optimization.gradient`
+    - [ ] `GradientDescent`
+    - [ ] `StochasticGD`
+    - [ ] `AdamOptimizer`
+    - [ ] `AdaGrad`
+    - [ ] `RMSProp`
+    - [ ] `Adadelta`
+    - [ ] `NADAM`
+    - [ ] `AMSGrad`
+  - [ ] `optimization.second_order`
+    - [ ] `NewtonMethod`
+    - [ ] `BFGS`
+    - [ ] `LBFGS`
+    - [ ] `ConjugateGradient`
+    - [ ] `TrustRegion`
+    - [ ] `LevenbergMarquardt`
+  - [ ] `optimization.metaheuristic`
+    - [ ] `SimulatedAnnealing`
+    - [ ] `GeneticAlgorithm`
+    - [ ] `ParticleSwarmOptimization`
+    - [ ] `DifferentialEvolution`
+    - [ ] `AntColony`
+    - [ ] `BayesianOptimization`
+    - [ ] `CMA_ES`
+  - [ ] `optimization.stochastic_optim`
+    - [ ] `SAA`
+    - [ ] `StochasticApprox`
+    - [ ] `RobbinsMonro`
+    - [ ] `KieferWolfowitz`
+    - [ ] `SPSA`
+    - [ ] `CEM`
+  - [ ] `optimization.constrained`
+    - [ ] `LagrangianRelaxation`
+    - [ ] `PenaltyMethod`
+    - [ ] `AugmentedLagrangian`
+    - [ ] `ActiveSet`
+    - [ ] `InteriorPoint`
+
+## [numerical_methods](../Stochpylib-Obsidian-Vault/Modules/numerical_methods.md) — Numerical analysis backbone (0/38)
+
+- [ ] **stochpylib.numerical_methods** module overall
+  - [ ] `numerical_methods.integration`
+    - [ ] `NumericalIntegration`
+    - [ ] `AdaptiveQuadrature`
+    - [ ] `GaussLegendre`
+    - [ ] `GaussHermite`
+    - [ ] `GaussChebyshev`
+    - [ ] `MonteCarloIntegration`
+    - [ ] `CubatureRule`
+  - [ ] `numerical_methods.ode_sde`
+    - [ ] `EulerMethod`
+    - [ ] `RungeKutta4`
+    - [ ] `DormandPrince`
+    - [ ] `Adams_Bashforth`
+    - [ ] `BDF`
+    - [ ] `Euler_Maruyama_SDE`
+    - [ ] `Milstein_SDE`
+  - [ ] `numerical_methods.linear_algebra`
+    - [ ] `MatrixExponential`
+    - [ ] `MatrixLogarithm`
+    - [ ] `CholeskyDecomp`
+    - [ ] `EigenDecomp`
+    - [ ] `SVD`
+    - [ ] `QRDecomp`
+    - [ ] `Schur`
+  - [ ] `numerical_methods.root_solve`
+    - [ ] `RootFinding`
+    - [ ] `Bisection`
+    - [ ] `NewtonRaphson`
+    - [ ] `Brent`
+    - [ ] `Secant`
+    - [ ] `FixedPoint`
+  - [ ] `numerical_methods.interpolation`
+    - [ ] `Interpolation`
+    - [ ] `SplineInterpolation`
+    - [ ] `CubicHermite`
+    - [ ] `BarycentricLagrange`
+    - [ ] `Chebyshev`
+    - [ ] `NURBS`
+  - [ ] `numerical_methods.pde`
+    - [ ] `FiniteDifference`
+    - [ ] `FiniteElement`
+    - [ ] `FEniCS_Interface`
+    - [ ] `BoundaryElement`
+    - [ ] `SpectralMethod`
+
+## [experimental_design](../Stochpylib-Obsidian-Vault/Modules/experimental_design.md) — Design of experiments (0/29)
+
+- [ ] **stochpylib.experimental_design** module overall
+  - [ ] `experimental_design.classical`
+    - [ ] `FullFactorial`
+    - [ ] `FractionalFactorial`
+    - [ ] `Plackett_Burman`
+    - [ ] `CCD`
+    - [ ] `BoxBehnken`
+    - [ ] `LatinSquare`
+    - [ ] `GraecoLatin`
+  - [ ] `experimental_design.optimal`
+    - [ ] `D_OptimalDesign`
+    - [ ] `A_OptimalDesign`
+    - [ ] `G_OptimalDesign`
+    - [ ] `I_OptimalDesign`
+    - [ ] `T_OptimalDesign`
+    - [ ] `BayesianDesign`
+  - [ ] `experimental_design.space_filling`
+    - [ ] `LatinHypercubeDesign`
+    - [ ] `OrthogonalArrayDesign`
+    - [ ] `UniformDesign`
+    - [ ] `MaximinLHD`
+    - [ ] `MinimaxDesign`
+  - [ ] `experimental_design.response_surface`
+    - [ ] `ResponseSurface`
+    - [ ] `MetaModel`
+    - [ ] `PolynomialChaos`
+    - [ ] `KrigingSurrogate`
+    - [ ] `RSM_ANOVA`
+  - [ ] `experimental_design.analysis`
+    - [ ] `ANOVA_DOE`
+    - [ ] `MainEffects`
+    - [ ] `InteractionPlot`
+    - [ ] `NormalPlot`
+    - [ ] `SensitivityIndex`
+    - [ ] `SobolIndex`
+
+## [statistics](../Stochpylib-Obsidian-Vault/Modules/statistics.md) — Classical statistical toolkit (0/48)
+
+- [ ] **stochpylib.statistics** module overall
+  - [ ] `statistics.descriptive`
+    - [ ] `mean()`
+    - [ ] `median()`
+    - [ ] `mode()`
+    - [ ] `variance()`
+    - [ ] `std()`
+    - [ ] `quantile()`
+    - [ ] `iqr()`
+    - [ ] `skewness()`
+    - [ ] `kurtosis()`
+    - [ ] `covariance()`
+    - [ ] `correlation()`
+    - [ ] `describe()`
+  - [ ] `statistics.estimation`
+    - [ ] `MLE()`
+    - [ ] `MOM()`
+    - [ ] `bayesian_estimator()`
+    - [ ] `confidence_interval()`
+    - [ ] `bootstrap_ci()`
+    - [ ] `jackknife()`
+    - [ ] `delta_method()`
+    - [ ] `profile_likelihood()`
+  - [ ] `statistics.hypothesis`
+    - [ ] `z_test()`
+    - [ ] `t_test()`
+    - [ ] `chi2_test()`
+    - [ ] `f_test()`
+    - [ ] `ANOVA()`
+    - [ ] `MANOVA()`
+    - [ ] `mann_whitney()`
+    - [ ] `wilcoxon()`
+    - [ ] `ks_test()`
+    - [ ] `shapiro_wilk()`
+    - [ ] `levene()`
+    - [ ] `bartlett()`
+    - [ ] `tukey_hsd()`
+    - [ ] `bonferroni()`
+  - [ ] `statistics.regression`
+    - [ ] `linear_regression()`
+    - [ ] `logistic_regression()`
+    - [ ] `poisson_regression()`
+    - [ ] `ridge()`
+    - [ ] `lasso()`
+    - [ ] `elastic_net()`
+    - [ ] `quantile_regression()`
+    - [ ] `glm()`
+  - [ ] `statistics.multivariate`
+    - [ ] `PCA()`
+    - [ ] `factor_analysis()`
+    - [ ] `canonical_correlation()`
+    - [ ] `discriminant_analysis()`
+    - [ ] `cluster_analysis()`
+    - [ ] `MDS()`
+
+## [viz](../Stochpylib-Obsidian-Vault/Modules/viz.md) — Statistical visualization (0/35)
+
+- [ ] **stochpylib.viz** module overall
+  - [ ] `viz.distributions`
+    - [ ] `plot_pdf()`
+    - [ ] `plot_pmf()`
+    - [ ] `plot_cdf()`
+    - [ ] `plot_survival()`
+    - [ ] `plot_hazard()`
+    - [ ] `plot_qqplot()`
+    - [ ] `plot_ppplot()`
+    - [ ] `plot_histogram()`
+    - [ ] `plot_kde()`
+  - [ ] `viz.processes`
+    - [ ] `plot_process()`
+    - [ ] `plot_acf()`
+    - [ ] `plot_pacf()`
+    - [ ] `plot_periodogram()`
+    - [ ] `plot_spectrogram()`
+    - [ ] `plot_wavelet()`
+    - [ ] `plot_trajectory()`
+  - [ ] `viz.diagnostics`
+    - [ ] `trace_plot()`
+    - [ ] `posterior_plot()`
+    - [ ] `pair_plot()`
+    - [ ] `residual_plot()`
+    - [ ] `leverage_plot()`
+    - [ ] `influence_plot()`
+    - [ ] `funnel_plot()`
+  - [ ] `viz.multivariate`
+    - [ ] `plot_heatmap()`
+    - [ ] `plot_correlation()`
+    - [ ] `plot_copula()`
+    - [ ] `plot_scatter_matrix()`
+    - [ ] `plot_biplot()`
+    - [ ] `plot_dendrogram()`
+  - [ ] `viz.special`
+    - [ ] `plot_markov_chain()`
+    - [ ] `plot_brownian()`
+    - [ ] `plot_gp()`
+    - [ ] `plot_survival_km()`
+    - [ ] `plot_variogram()`
+    - [ ] `plot_eigenvalues()`
+
+## [utils](../Stochpylib-Obsidian-Vault/Modules/utils.md) — Infrastructure & utilities (0/38)
+
+- [ ] **stochpylib.utils** module overall
+  - [ ] `utils.random`
+    - [ ] `set_seed()`
+    - [ ] `random_state()`
+    - [ ] `Generator`
+    - [ ] `SeedSequence`
+    - [ ] `spawn_generator()`
+  - [ ] `utils.performance`
+    - [ ] `Benchmark`
+    - [ ] `Profiler`
+    - [ ] `ParallelSimulation`
+    - [ ] `GPUBackend`
+    - [ ] `JIT_compile()`
+    - [ ] `VectorizedOps`
+    - [ ] `MemoryPool`
+  - [ ] `utils.reproducibility`
+    - [ ] `Reproducibility`
+    - [ ] `RandomStream`
+    - [ ] `VersionLock`
+    - [ ] `EnvironmentCapture`
+    - [ ] `ExperimentLogger`
+  - [ ] `utils.data`
+    - [ ] `fit()`
+    - [ ] `goodness_of_fit()`
+    - [ ] `moment_matching()`
+    - [ ] `ecdf()`
+    - [ ] `DataValidation`
+    - [ ] `outlier_detection()`
+    - [ ] `missing_imputation()`
+  - [ ] `utils.io`
+    - [ ] `to_dict()`
+    - [ ] `from_dict()`
+    - [ ] `to_json()`
+    - [ ] `from_json()`
+    - [ ] `to_pickle()`
+    - [ ] `Serialization`
+    - [ ] `Configuration`
+    - [ ] `Logging`
+    - [ ] `summary()`
+  - [ ] `utils.compat`
+    - [ ] `numpy_interface()`
+    - [ ] `scipy_interface()`
+    - [ ] `pandas_interface()`
+    - [ ] `torch_interface()`
+    - [ ] `jax_interface()`
+

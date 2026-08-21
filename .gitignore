@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+*.so
+
+# Local agent/tooling session state (machine-specific)
+.claude/
+
+# Obsidian local editor state (machine-specific, not useful in git history)
+Stochpylib-Obsidian-Vault/.obsidian/workspace.json
+Stochpylib-Obsidian-Vault/.obsidian/workspace-mobile.json
+
+# Third-party Obsidian plugin bundles (~11 MB of vendored JS, reinstall per client)
+Stochpylib-Obsidian-Vault/.obsidian/plugins/
