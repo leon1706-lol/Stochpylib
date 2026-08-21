@@ -161,6 +161,29 @@ def run(verbose=False):
     st.check("Levy: support", lv.support()[0] == 0.0)
     _univariate_checks(st, "Levy", lv, moments=False)
 
+    # montecarlo quick checks
+    from stochpylib.montecarlo import (
+        AntitheticVariates,
+        HaltonSequence,
+        SobolSequence,
+        crude_mc,
+        pi_estimation,
+    )
+    from stochpylib.montecarlo.variance_reduction import _black_scholes_price
+
+    h = HaltonSequence(2).generate(2)
+    st.check("MC: halton first point", abs(h[0, 0] - 0.5) < 1e-12 and abs(h[0, 1] - 1 / 3) < 1e-12)
+    vdc3 = np.array([0.5, 0.25, 0.75])
+    s1 = SobolSequence(1).generate(3)[:, 0]
+    st.check("MC: sobol d1 == van der Corput", np.all(s1 == vdc3))
+    rmc = crude_mc(lambda p: p[:, 0] ** 2, n=50_000, random_state=7)
+    st.check("MC: integral x^2 ~ 1/3", abs(rmc.estimate - 1 / 3) < 4 * rmc.std_error)
+    bs = _black_scholes_price(100, 100, 1.0, 0.05, 0.2)
+    pr = AntitheticVariates(n_simulations=40_000, random_state=8).price_european_call()
+    st.check("MC: antithetic call ~ Black-Scholes", abs(pr.estimate - bs) < 4 * pr.std_error)
+    rpi = pi_estimation(n=100_000, random_state=9)
+    st.check("MC: pi in confidence band", abs(rpi.estimate - np.pi) < 4 * rpi.std_error)
+
     if verbose:
         status = "OK" if not st.failures else f"FAILED ({len(st.failures)})"
         print(f"selftest: {st.count} checks, {status}")

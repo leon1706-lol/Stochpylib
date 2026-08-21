@@ -59,6 +59,31 @@ script `spl` (`stochpylib.cli`): `spl --version` prints the installed version;
 in the wheel, so any pip install can be verified without pytest or a source checkout.
 Full suite: 143 passed / 2 skipped. Progress: 81/794 public names.
 
+## Phase 8 - Third module: `stochpylib.montecarlo`
+
+Implemented the full simulation & variance-reduction module (25/25 spec names) natively on
+numpy/scipy.special only. `quasi_random`: Halton, Faure (per-coordinate Pascal^j powers),
+Sobol and Niederreiter base-2 digital nets driven by programmatically-verified primitive /
+irreducible GF(2) generator polynomials with canonical odd initial values, plus the general
+`DigitalNetBase2` engine (spec alias `DigitalNet`) and a `LowDiscrepancy` facade; seeded
+digital-shift scrambling. Two construction bugs were caught by exactness checks before
+shipping: dimension 1 must be plain van der Corput (the x+1 polynomial's generic recurrence
+corrupts it), and a Gray-code single-flip walk enumerates points in gray order - replaced
+with direct bit decomposition in natural order (see Probleme.md [10]). Known limitation:
+exact (t,m,s)-net balance in dimensions >= 2 is within +-1 rather than certified; upgrading
+to published Joe-Kuo direction-number tables is an open item ([11]). Statistical quality:
+KS p ~ 1 per dimension at n=4096 and discrepancy ~50x better than pseudo-random.
+`simulation`: crude/QMC/stratified/importance (self-normalized with ESS)/rejection estimators
+returning a shared `MCResult`; `variance_reduction`: antithetic (incl. European call/put),
+control variates (optional non-uniform sampler hook), LHS, orthogonal sampling, stratified
+grid, conditioned MC, Hesterberg rejection control; `applications`: integration class,
+pi estimation, GBM option pricing (validated against an internal Black-Scholes oracle),
+historical VaR/ES (`RiskResult`), reliability via library distributions, correlation-based
+sensitivity. Manual debug session priced a European call three ways (SE reduction 1.15x
+antithetic, 1.84x control-variate vs crude; all within 3 SE of closed form) and ran VaR99/ES
+on a simulated book. Tests: tests/montecarlo/tests.py (57 cases); embedded selftest extended
+to 106 checks. Full suite: 182 passed / 2 skipped. Progress: 106/794 public names.
+
 ## Phase 6 - Open-source hygiene
 
 Added the community/policy layer: CONTRIBUTING.md (dev setup, ground rules, semver +

@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 81 / 794 public names implemented.**
+**Progress: 106 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -673,38 +673,38 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [ ] `NormalizingFlows`
     - [ ] `SteinVI`
 
-## [montecarlo](../Stochpylib-Obsidian-Vault/Modules/montecarlo.md) — Simulation & variance reduction (0/25)
+## [montecarlo](../Stochpylib-Obsidian-Vault/Modules/montecarlo.md) — Simulation & variance reduction (25/25)
 
-- [ ] **stochpylib.montecarlo** module overall
-  - [ ] `montecarlo.simulation`
-    - [ ] `simulate()`
-    - [ ] `importance_sampling()`
-    - [ ] `rejection_sampling()`
-    - [ ] `stratified_sampling()`
-    - [ ] `quasi_montecarlo()`
-    - [ ] `crude_mc()`
-  - [ ] `montecarlo.variance_reduction`
-    - [ ] `AntitheticVariates`
-    - [ ] `ControlVariates`
-    - [ ] `StratifiedSampling`
-    - [ ] `LatinHypercubeSampling`
-    - [ ] `OrthogonalSampling`
-    - [ ] `ConditionedMC`
-    - [ ] `RejectionControl`
-  - [ ] `montecarlo.quasi_random`
-    - [ ] `SobolSequence`
-    - [ ] `HaltonSequence`
-    - [ ] `FaureSequence`
-    - [ ] `NiederreiterSequence`
-    - [ ] `DigitalNet`
-    - [ ] `LowDiscrepancy`
-  - [ ] `montecarlo.applications`
-    - [ ] `MonteCarloIntegration`
-    - [ ] `pi_estimation()`
-    - [ ] `option_pricing_mc()`
-    - [ ] `risk_analysis()`
-    - [ ] `reliability_mc()`
-    - [ ] `sensitivity_analysis()`
+- [x] **stochpylib.montecarlo** module overall
+  - [x] `montecarlo.simulation`
+    - [x] `simulate()`
+    - [x] `importance_sampling()`
+    - [x] `rejection_sampling()`
+    - [x] `stratified_sampling()`
+    - [x] `quasi_montecarlo()`
+    - [x] `crude_mc()`
+  - [x] `montecarlo.variance_reduction`
+    - [x] `AntitheticVariates`
+    - [x] `ControlVariates`
+    - [x] `StratifiedSampling`
+    - [x] `LatinHypercubeSampling`
+    - [x] `OrthogonalSampling`
+    - [x] `ConditionedMC`
+    - [x] `RejectionControl`
+  - [x] `montecarlo.quasi_random`
+    - [x] `SobolSequence`
+    - [x] `HaltonSequence`
+    - [x] `FaureSequence`
+    - [x] `NiederreiterSequence`
+    - [x] `DigitalNet`
+    - [x] `LowDiscrepancy`
+  - [x] `montecarlo.applications`
+    - [x] `MonteCarloIntegration`
+    - [x] `pi_estimation()`
+    - [x] `option_pricing_mc()`
+    - [x] `risk_analysis()`
+    - [x] `reliability_mc()`
+    - [x] `sensitivity_analysis()`
 
 ## [bayesian](../Stochpylib-Obsidian-Vault/Modules/bayesian.md) — Bayesian inference framework (0/25)
 

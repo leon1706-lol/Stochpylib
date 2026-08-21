@@ -141,3 +141,38 @@ changelog (that's [CHANGELOG.md](CHANGELOG.md)). Severity is 1 (trivial) – 10 
   docstring).
 - **Severity:** 4/10
 - **Status:** Partially fixed (open item: fast sampler for alpha=1, beta!=0)
+
+### [10] Base-2 digital-net engine: two construction bugs caught by exactness checks
+
+- **File:** \stochpylib/montecarlo/quasi_random.py\ (caught during development, never shipped)
+- **Problem:** (a) Dimension 1 was routed through the generic direction-number recurrence for
+  its degree-1 polynomial (x+1); the recurrence doubles even integers there and corrupts the
+  stream - dimension 1 must be plain van der Corput with m_j = 1 at every level. (b) Point
+  generation used an Antonov-Saleev-style single-XOR Gray walk on the natural index counter;
+  such a walk enumerates the points in *Gray-code order*, not natural order, so dim-1 output
+  did not equal van der Corput in sequence position (x_i must be the XOR of direction numbers
+  over the set bits of i itself; a natural-order increment flips many bits at once).
+- **Impact:** Wrong point ordering for the flagship sequence class; would have silently
+  degraded every downstream QMC estimator's convergence guarantees.
+- **Fix:** Row 0 short-circuits to pure van der Corput; generation replaced with direct bit
+  decomposition over natural indices (vectorized). Dim-1 now equals van der Corput bitwise and
+  the first three 2-D points match canonical Sobol tables.
+- **Severity:** 7/10
+- **Status:** Fixed
+
+### [11] Base-2 nets are not certified exact (t,m,s)-nets under simple initial values
+
+- **File:** \stochpylib/montecarlo/quasi_random.py\
+- **Problem:** Direction numbers use primitive/irreducible GF(2) polynomials with simple
+  canonical odd initial values instead of published optimized tables (Joe-Kuo / Bratley-Fox).
+  Measured consequence: half-interval balance in dimensions >= 2 can be off by +-1 sample at
+  n = 2^m (dimension 1 is exact). Statistical quality is unaffected in practice (KS p ~ 1,
+  discrepancy ~50x better than pseudo-random), but strict net certification is not claimed.
+- **Impact:** Cosmetic-to-minor for estimation accuracy; matters only if someone needs the
+  formal net property or bitwise-standard tables.
+- **Fix:** Documented precisely in the module docstring and module spec; tests assert the
+  honest contract (exact dim 1, +-1 elsewhere, uniformity + discrepancy thresholds).
+- **Open item:** Adopt published direction-number tables to certify exactness and match
+  standard sequences bitwise.
+- **Severity:** 2/10
+- **Status:** Open (documented limitation)
