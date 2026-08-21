@@ -2,12 +2,13 @@
 
 One subpackage per library module. Status:
 
-- `probability/` — complete, tested (21 public names, 25 tests).
-- `distributions/` — **work in progress**: distribution classes are written but not yet
-  exported via `__init__.py`, not tested, and not checked off in the implementation checklist.
-  Do not rely on it yet.
+- `probability/` — complete, tested (21 public names).
+- `distributions/` — complete, tested (60 public names: 47 distributions + 13 shared methods).
 
-Public API is re-exported from `stochpylib/__init__.py`; currently only `probability`.
+Public API is re-exported from `stochpylib/__init__.py`; currently `probability` and
+`distributions`. The package also ships a CLI (`spl`, see `cli.py`) and an embedded self-check
+suite (`selftest.py`, run via `spl --test`).
+
 Target API for every planned module lives in the private Obsidian vault
 (`../Stochpylib-Obsidian-Vault/Modules/<name>.md`).
 

@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Tests](https://img.shields.io/badge/tests-25%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-143%20passing-brightgreen)
 
 A Python library for probability, distributions, time series, Gaussian processes, stochastic
 processes, financial stochastics, and a long tail of statistical/numerical tooling — aiming to
@@ -15,13 +15,20 @@ built and how to work on it.
 
 ## Status
 
-Early development — one module implemented so far:
+Early development — two modules implemented so far:
 
 - **`stochpylib.probability`** — sample spaces, events, Bayes' theorem, combinatorics,
   independence checks.
+- **`stochpylib.distributions`** — 47 distributions (discrete, continuous, multivariate,
+  heavy-tailed) behind one common interface: `.pdf()/.cdf()/.ppf()/.rvs()/.fit()`, moments,
+  `.entropy()/.mgf()/.cf()/.ks_test()`.
+
+A terminal entry point ships with the package: `spl --version` prints the installed version,
+`spl --test` runs a built-in self-check (101 checks) against any installation — no pytest or
+source checkout needed.
 
 See [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md) for
-exact progress against the full spec (currently 21 / 794 public names).
+exact progress against the full spec (currently 81 / 794 public names).
 
 ## Install
 
@@ -48,7 +55,7 @@ pytest tests/ -v
 ```
 
 Tests live in `tests/<module>/tests.py` — one file per module, outside the installed package.
-25/25 passing as of the `probability` module.
+143 passed / 2 skipped (intentional convention skips) as of the `distributions` module.
 
 ### Tools used
 

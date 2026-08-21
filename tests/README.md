@@ -12,6 +12,8 @@ pytest tests/ -v
 
 Doctests are included via a dedicated `test_doctests_pass` case in each suite.
 Tests live outside the installed package on purpose (they used to ship inside the wheel —
-see development/Probleme.md [3]).
+see development/Probleme.md [3]). Each `tests/<module>/` folder contains an `__init__.py`
+so same-named `tests.py` files import as distinct modules.
 
-Current coverage: `probability` (25 passing). `distributions` has code but no tests yet.
+Current coverage: `probability` + `distributions` (143 passed / 2 skipped). The package also
+ships an embedded smoke suite runnable from any pip install: `spl --test`.

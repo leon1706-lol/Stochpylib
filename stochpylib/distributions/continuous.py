@@ -776,7 +776,7 @@ class GPareto(Distribution):
         if self.shape == 0:
             return np.where(z >= 0, np.exp(-z) / self.scale, 0.0)
         t = 1 + self.shape * z
-        return np.where(t > 0, t ** (-1 / self.shape - 1) / self.scale, 0.0)
+        return np.where((z >= 0) & (t > 0), t ** (-1 / self.shape - 1) / self.scale, 0.0)
 
     def cdf(self, x):
         x = np.asarray(x, dtype=float)
@@ -1050,8 +1050,17 @@ class Rice(Distribution):
     def pdf(self, x):
         x = np.asarray(x, dtype=float)
         nu, s = self.nu, self.sigma
-        with np.errstate(divide="ignore", invalid="ignore"):
-            out = (x / s**2) * np.exp(-(x**2 + nu**2) / (2 * s**2)) * special.i0e(x * nu / s**2) * np.exp(x * nu / s**2)
+        with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+            # evaluated in log space: log I0(y) = y + log(i0e(y)) avoids the overflow to NaN
+            # of the naive form (I0 explodes like e^y while the Gaussian factor decays).
+            y = x * nu / s**2
+            logpdf = (
+                np.log(x / s**2)
+                - (x**2 + nu**2) / (2 * s**2)
+                + y
+                + np.log(special.i0e(y))
+            )
+            out = np.exp(logpdf)
         return np.where(x >= 0, out, 0.0)
 
     def cdf(self, x):
@@ -1112,6 +1121,8 @@ class VonMises(Distribution):
         return self.mu
 
     def var(self):
+        """Circular variance ``1 - I1(kappa)/I0(kappa)`` (the standard dispersion measure for
+        circular data) — deliberately *not* the ordinary linear variance over [-pi, pi]."""
         return 1 - special.i1(self.kappa) / special.i0(self.kappa)
 
     def entropy(self):

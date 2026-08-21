@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 21 / 794 public names implemented.**
+**Progress: 81 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -37,74 +37,74 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `pairwise_independence()`
     - [x] `conditional_independence()`
 
-## [distributions](../Stochpylib-Obsidian-Vault/Modules/distributions.md) — 80+ probability distributions (0/60)
+## [distributions](../Stochpylib-Obsidian-Vault/Modules/distributions.md) — 80+ probability distributions (60/60)
 
-- [ ] **stochpylib.distributions** module overall
-  - [ ] `distributions.discrete`
-    - [ ] `Bernoulli`
-    - [ ] `Binomial`
-    - [ ] `Poisson`
-    - [ ] `Geometric`
-    - [ ] `NegBinomial`
-    - [ ] `Hypergeometric`
-    - [ ] `DiscreteUniform`
-    - [ ] `Multinomial`
-    - [ ] `ZipfDistribution`
-    - [ ] `BetaBinomial`
-    - [ ] `ConwayMaxwellPoisson`
-  - [ ] `distributions.continuous`
-    - [ ] `Normal`
-    - [ ] `Exponential`
-    - [ ] `Uniform`
-    - [ ] `Beta`
-    - [ ] `Gamma`
-    - [ ] `Chi2`
-    - [ ] `Student_t`
-    - [ ] `F`
-    - [ ] `Cauchy`
-    - [ ] `Laplace`
-    - [ ] `Weibull`
-    - [ ] `Pareto`
-    - [ ] `LogNormal`
-    - [ ] `Gumbel`
-    - [ ] `Frechet`
-    - [ ] `GEV`
-    - [ ] `GPareto`
-    - [ ] `InvGamma`
-    - [ ] `InvGaussian`
-    - [ ] `Rayleigh`
-    - [ ] `Maxwell`
-    - [ ] `Nakagami`
-    - [ ] `Rice`
-    - [ ] `VonMises`
-    - [ ] `Kumaraswamy`
-  - [ ] `distributions.multivariate`
-    - [ ] `MultivariateNormal`
-    - [ ] `Dirichlet`
-    - [ ] `Wishart`
-    - [ ] `InverseWishart`
-    - [ ] `MultivariateT`
-    - [ ] `MultivariatePareto`
-  - [ ] `distributions.heavy_tail`
-    - [ ] `AlphaStable`
-    - [ ] `LevyDistribution`
-    - [ ] `StableDistribution`
-    - [ ] `SubGaussian`
-    - [ ] `SubExponential`
-  - [ ] `distributions.methods`
-    - [ ] `.pdf()/.pmf()`
-    - [ ] `.cdf()`
-    - [ ] `.ppf()`
-    - [ ] `.rvs()`
-    - [ ] `.mean()`
-    - [ ] `.var()`
-    - [ ] `.skewness()`
-    - [ ] `.kurtosis()`
-    - [ ] `.entropy()`
-    - [ ] `.mgf()`
-    - [ ] `.cf()`
-    - [ ] `.fit()`
-    - [ ] `.ks_test()`
+- [x] **stochpylib.distributions** module overall
+  - [x] `distributions.discrete`
+    - [x] `Bernoulli`
+    - [x] `Binomial`
+    - [x] `Poisson`
+    - [x] `Geometric`
+    - [x] `NegBinomial`
+    - [x] `Hypergeometric`
+    - [x] `DiscreteUniform`
+    - [x] `Multinomial`
+    - [x] `ZipfDistribution`
+    - [x] `BetaBinomial`
+    - [x] `ConwayMaxwellPoisson`
+  - [x] `distributions.continuous`
+    - [x] `Normal`
+    - [x] `Exponential`
+    - [x] `Uniform`
+    - [x] `Beta`
+    - [x] `Gamma`
+    - [x] `Chi2`
+    - [x] `Student_t`
+    - [x] `F`
+    - [x] `Cauchy`
+    - [x] `Laplace`
+    - [x] `Weibull`
+    - [x] `Pareto`
+    - [x] `LogNormal`
+    - [x] `Gumbel`
+    - [x] `Frechet`
+    - [x] `GEV`
+    - [x] `GPareto`
+    - [x] `InvGamma`
+    - [x] `InvGaussian`
+    - [x] `Rayleigh`
+    - [x] `Maxwell`
+    - [x] `Nakagami`
+    - [x] `Rice`
+    - [x] `VonMises`
+    - [x] `Kumaraswamy`
+  - [x] `distributions.multivariate`
+    - [x] `MultivariateNormal`
+    - [x] `Dirichlet`
+    - [x] `Wishart`
+    - [x] `InverseWishart`
+    - [x] `MultivariateT`
+    - [x] `MultivariatePareto`
+  - [x] `distributions.heavy_tail`
+    - [x] `AlphaStable`
+    - [x] `LevyDistribution`
+    - [x] `StableDistribution`
+    - [x] `SubGaussian`
+    - [x] `SubExponential`
+  - [x] `distributions.methods`
+    - [x] `.pdf()/.pmf()`
+    - [x] `.cdf()`
+    - [x] `.ppf()`
+    - [x] `.rvs()`
+    - [x] `.mean()`
+    - [x] `.var()`
+    - [x] `.skewness()`
+    - [x] `.kurtosis()`
+    - [x] `.entropy()`
+    - [x] `.mgf()`
+    - [x] `.cf()`
+    - [x] `.fit()`
+    - [x] `.ks_test()`
 
 ## [timeseries](../Stochpylib-Obsidian-Vault/Modules/timeseries.md) — Complete time series toolkit (0/61)
 

@@ -3,8 +3,16 @@
 General 4-parameter stable distributions have a closed-form characteristic function but no
 closed-form density in general (only 3 special cases do: Normal, Cauchy, Levy). ``pdf``/``cdf``
 for the general case are computed via numerical inversion of the characteristic function
-(Fourier inversion / the Gil-Pelaez theorem) using ``scipy.integrate.quad`` — the standard
-"from scratch" approach when no closed density exists.
+(Gil-Pelaez theorem) using ``scipy.integrate.quad`` — the standard "from scratch" approach when
+no closed density exists. The two exactly-solvable special cases are delegated to their closed
+forms for speed and accuracy: ``alpha=2`` is always Gaussian (any ``beta``), and
+``alpha=1, beta=0`` is Cauchy.
+
+Sampling (``rvs``) uses the Chambers–Mallows–Leckie (CML) algorithm, which is exact and fast.
+The CML constants were validated empirically against this class's own closed-form characteristic
+function (max deviation at Monte-Carlo noise level across symmetric and skewed cases). For the
+one remaining corner — ``alpha=1`` with ``beta != 0`` — no validated closed-form sampler was
+found, so ``rvs`` falls back to slow-but-correct numerical inverse-CDF sampling there.
 
 ``SubGaussian``/``SubExponential`` are tail-behavior *classes*, not single canonical
 distributions — implemented here as specific, documented parametric families representing each
@@ -16,6 +24,8 @@ import numpy as np
 from scipy import integrate, special
 
 from stochpylib.distributions._base import Distribution
+from stochpylib.distributions.continuous import Cauchy as _Cauchy
+from stochpylib.distributions.continuous import Normal as _Normal
 from stochpylib.distributions.continuous import Weibull as _Weibull
 
 
@@ -28,8 +38,15 @@ class StableDistribution(Distribution):
         if not (-1 <= beta <= 1):
             raise ValueError("beta must be in [-1, 1]")
         self.alpha, self.beta, self.loc, self.scale = float(alpha), float(beta), float(loc), float(scale)
+        # Exact special cases: alpha=2 is always Gaussian; alpha=1,beta=0 is Cauchy.
+        self._gauss = _Normal(self.loc, self.scale * np.sqrt(2)) if self.alpha == 2 else None
+        self._cauchy = _Cauchy(self.loc, self.scale) if (self.alpha == 1 and self.beta == 0) else None
 
     def cf(self, t):
+        if self._gauss is not None:
+            return self._gauss.cf(t)
+        if self._cauchy is not None:
+            return self._cauchy.cf(t)
         a, b, mu, c = self.alpha, self.beta, self.loc, self.scale
         if t == 0:
             return complex(1.0)
@@ -41,6 +58,10 @@ class StableDistribution(Distribution):
         return complex(np.exp(log_phi))
 
     def pdf(self, x):
+        if self._gauss is not None:
+            return self._gauss.pdf(x)
+        if self._cauchy is not None:
+            return self._cauchy.pdf(x)
         x = np.asarray(x, dtype=float)
         scalar = x.ndim == 0
         x = np.atleast_1d(x)
@@ -53,6 +74,10 @@ class StableDistribution(Distribution):
         return max(val / np.pi, 0.0)
 
     def cdf(self, x):
+        if self._gauss is not None:
+            return self._gauss.cdf(x)
+        if self._cauchy is not None:
+            return self._cauchy.cdf(x)
         x = np.asarray(x, dtype=float)
         scalar = x.ndim == 0
         x = np.atleast_1d(x)
@@ -68,11 +93,53 @@ class StableDistribution(Distribution):
         val, _ = integrate.quad(integrand, 0, np.inf, limit=400)
         return float(np.clip(0.5 - val / np.pi, 0.0, 1.0))
 
+    def ppf(self, q):
+        if self._gauss is not None:
+            return self._gauss.ppf(q)
+        if self._cauchy is not None:
+            return self._cauchy.ppf(q)
+        return super().ppf(q)
+
     def mean(self):
+        if self._gauss is not None:
+            return self._gauss.mean()
+        if self._cauchy is not None:
+            return self._cauchy.mean()
         return self.loc if self.alpha > 1 else np.nan
 
     def var(self):
+        if self._gauss is not None:
+            return self._gauss.var()
+        if self._cauchy is not None:
+            return self._cauchy.var()
         return np.inf if self.alpha < 2 else self.scale**2 * 2
+
+    def rvs(self, size=1, random_state=None):
+        """Exact sampling via Chambers–Mallows–Leckie.
+
+        Falls back to slow numerical inverse-CDF sampling only when ``alpha == 1`` and
+        ``beta != 0`` (no validated closed-form sampler for that corner).
+        """
+        if self._gauss is not None:
+            return self._gauss.rvs(size, random_state=random_state)
+        if self._cauchy is not None:
+            return self._cauchy.rvs(size, random_state=random_state)
+        rng = np.random.default_rng(random_state)
+        n = size if isinstance(size, int) else int(np.prod(size))
+        a, b = self.alpha, self.beta
+        if a != 1.0:
+            v = rng.uniform(-np.pi / 2, np.pi / 2, size=n)
+            w = rng.exponential(1.0, size=n)
+            zeta = b * np.tan(np.pi * a / 2.0)
+            theta = np.arctan(zeta) / a
+            x_std = (
+                (1.0 + zeta**2) ** (1.0 / (2.0 * a))
+                * np.sin(a * (v + theta)) / np.cos(v) ** (1.0 / a)
+                * (np.cos(v - a * (v + theta)) / w) ** ((1.0 - a) / a)
+            )
+            out = self.loc + self.scale * x_std
+            return out[0] if size == 1 else out
+        return super().rvs(size, random_state=rng)
 
     @classmethod
     def _initial_guess(cls, data):

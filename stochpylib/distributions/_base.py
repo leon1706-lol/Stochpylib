@@ -58,16 +58,25 @@ class Distribution:
     def _ppf_discrete(self, q):
         low, high = self.support()
         low = int(low) if np.isfinite(low) else 0
+        finite_high = np.isfinite(high)
+        high = int(high) if finite_high else None
+        # exponential search for an upper bracket k with cdf(k) >= q,
+        # clamping to the support's upper bound instead of skipping past it
         k = low
         step = 1
-        # expand upward until cdf brackets q
-        while self.cdf(k) < q:
-            k += step
+        prev = None  # last k known to satisfy cdf(prev) < q
+        while True:
+            if finite_high and k > high:
+                k = high
+            if self.cdf(k) >= q:
+                hi = k
+                break
+            prev = k
+            nxt = k + step
             step *= 2
-            if np.isfinite(high) and k >= high:
-                return high
-        # binary search between [k - step, k]
-        lo, hi = max(low, k - step), k
+            k = nxt
+        lo = max(low, prev) if prev is not None else low
+        # binary search for the smallest x in [lo, hi] with cdf(x) >= q
         while lo < hi:
             mid = (lo + hi) // 2
             if self.cdf(mid) < q:
@@ -228,6 +237,7 @@ class MultivariateDistribution:
     def entropy(self):
         raise NotImplementedError
 
+    @classmethod
     def fit(cls, data):
         raise NotImplementedError
 

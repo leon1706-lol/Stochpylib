@@ -38,3 +38,23 @@ Updated `Essential-Tasks.md` to require keeping that checklist current, running 
 suite, regenerating the vault's code-graph notes, and appending a `HANDOFF.MD` entry as part of
 wrapping up any task. Created this `development/` folder (this file, `CHANGELOG.md`,
 `Probleme.md`) to track build history and bugs separately from the design spec.
+
+## Phase 5 — Second module: `stochpylib.distributions` + `spl` CLI
+
+Finished the distributions module whose class code existed but was undelivered: added
+`distributions/__init__.py` exporting all 47 classes (+ 2 base classes) and wired it into
+`stochpylib/__init__.py`. Audited every method of every class against scipy.stats references,
+fixing four library bugs along the way (see Probleme.md [5]–[8]): GPareto pdf leaked probability
+below its support; Rice pdf overflowed to NaN for large x (now computed in log space); discrete
+`ppf` overshot bounded supports and returned the wrong atom; `MultivariateDistribution.fit` had
+a broken signature. `StableDistribution` gained exact closed-form delegation for alpha=2
+(Gaussian) and alpha=1,beta=0 (Cauchy), plus a Chambers–Mallows–Leckie sampler for all
+alpha != 1 — validated empirically against the closed-form characteristic function (the
+alpha=1, beta!=0 corner keeps a slow-but-correct inverse-CDF fallback; see Probleme [9]).
+Added the full test suite `tests/distributions/tests.py` (interface-contract matrix over all
+13 spec methods × 47 classes, scipy cross-checks, fit round-trips, stable-sampler validation);
+tests folders are now packages so same-named `tests.py` files collect cleanly. New console
+script `spl` (`stochpylib.cli`): `spl --version` prints the installed version;
+`spl --test` runs the embedded self-check suite (`stochpylib.selftest`, 101 checks) that ships
+in the wheel, so any pip install can be verified without pytest or a source checkout.
+Full suite: 143 passed / 2 skipped. Progress: 81/794 public names.

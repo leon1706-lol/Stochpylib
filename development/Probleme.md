@@ -68,3 +68,76 @@ changelog (that's [CHANGELOG.md](CHANGELOG.md)). Severity is 1 (trivial) – 10 
   excludes the vault and reads `# Project Map — stochpylib`.
 - **Severity:** 4/10
 - **Status:** Fixed
+
+### [5] `GPareto.pdf` leaked probability below its support (shape != 0 branch)
+
+- **File:** `stochpylib/distributions/continuous.py`
+- **Problem:** For `shape > 0` the pdf formula `t**(-1/shape - 1)/scale` with `t = 1 + shape*z`
+  was only masked by `t > 0`, not by membership of the support (`z >= 0`). Points *below* `loc`
+  (e.g. `x = -1` for `loc=0`) have `0 < t < 1` and returned a large positive density — mass was
+  created outside the support and the pdf did not integrate to 1.
+- **Impact:** Silent wrong densities below the support; caught by the scipy cross-check audit
+  (`ours=4.69` vs `ref=0.0` at `x=-1`).
+- **Fix:** Mask is now `(z >= 0) & (t > 0)`.
+- **Severity:** 6/10
+- **Status:** Fixed
+
+### [6] `Rice.pdf` overflowed to NaN for large x, poisoning numeric moments
+
+- **File:** `stochpylib/distributions/continuous.py`
+- **Problem:** The density factored `... * special.i0e(y) * np.exp(y)` (with `y = x*nu/sigma**2`)
+  to undo the exponential scaling of the Bessel function. The factors cancel analytically, but
+  numerically `exp(y)` overflows to `inf` for `y > ~709` while the Gaussian factor underflows to
+  `0`, producing `NaN`. Quadrature probes in generic moment/entropy fallbacks wander far into the
+  tail, so `skewness()` returned NaN even though Rice has finite moments of all orders.
+- **Impact:** Wrong/NaN moments from otherwise-correct generic machinery; latent until the
+  interface-contract tests exercised `skewness()`.
+- **Fix:** Pdf is now computed in log space using `log I0(y) = y + log(i0e(y))`; matches scipy to
+  machine precision and never overflows.
+- **Severity:** 5/10
+- **Status:** Fixed
+
+### [7] Discrete `ppf` overshot bounded supports and returned the wrong atom
+
+- **File:** `stochpylib/distributions/_base.py` (`_ppf_discrete`)
+- **Problem:** The bracket-expansion loop returned `high` as soon as the expanding index crossed
+  the support's upper bound — before the binary search could locate the true smallest atom `k`
+  with `cdf(k) >= q`. E.g. `DiscreteUniform(0, 9).ppf(0.9)` returned 9 although the correct atom
+  is 8 (`cdf(8) = 0.9`). Only bounded-support discrete distributions were affected, and only when
+  the expansion step overshot past `high`.
+- **Impact:** Wrong quantiles on boundary probabilities; generic inverse-CDF sampling over-weighted
+  the endpoint near boundary quantiles.
+- **Fix:** Expansion now clamps to `high` and falls through to the binary search, tracking the
+  last known-below bracket; verified against scipy for all bounded-support discrete classes.
+- **Severity:** 5/10
+- **Status:** Fixed
+
+### [8] `MultivariateDistribution.fit` had a broken instance-method signature
+
+- **File:** `stochpylib/distributions/_base.py`
+- **Problem:** Declared as `def fit(cls, data): raise NotImplementedError` without
+  `@classmethod` — an instance call `d.fit(data)` raised a confusing `TypeError` (missing
+  argument) instead of the intended `NotImplementedError`.
+- **Impact:** Latent only — every current multivariate class overrides `fit` properly.
+- **Fix:** Decorated with `@classmethod`.
+- **Severity:** 2/10
+- **Status:** Fixed
+
+### [9] `StableDistribution.rvs` unusably slow; special cases routed through numerics
+
+- **File:** `stochpylib/distributions/heavy_tail.py`
+- **Problem:** Generic inverse-CDF sampling evaluated the Gil-Pelaez numerical CDF once per
+  brentq iteration per sample — each evaluation being a full Fourier-inversion quadrature —
+  making `rvs(300)` take minutes. The exactly-solvable cases (alpha=2 Gaussian, alpha=1/beta=0
+  Cauchy) were also needlessly routed through numerics.
+- **Impact:** Performance made the spec-required `.rvs()` practically unusable for general
+  stables; special cases slower and less exact than necessary.
+- **Fix:** alpha=2 (any beta) now delegates exactly to Gaussian closed forms, alpha=1,beta=0 to
+  Cauchy. All alpha != 1 use a Chambers–Mallows–Leckie sampler whose constants were determined
+  empirically by matching the closed-form characteristic function at Monte-Carlo noise level
+  across symmetric and skewed parameter sets (locked in by tests).
+- **Open remainder:** No validated closed-form sampler found for `alpha == 1, beta != 0`; that
+  corner intentionally keeps the slow-but-correct inverse-CDF fallback (documented in the
+  docstring).
+- **Severity:** 4/10
+- **Status:** Partially fixed (open item: fast sampler for alpha=1, beta!=0)
