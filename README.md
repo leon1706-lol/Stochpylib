@@ -87,13 +87,20 @@ Tests live in `tests/<module>/tests.py` — one file per module, outside the ins
 ## Contributing
 
 This is early-stage and the spec is large (23 modules, ~794 public names), so the most useful
-contributions right now are implementing one module at a time against its
-[`Modules/<name>.md`](Stochpylib-Obsidian-Vault/Modules) spec file. Before opening a PR:
+contributions right now are implementing one module at a time against its target API spec.
+Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) — it covers dev setup, the ground rules (no
+`scipy.stats` wrapping, common distribution interface), the
+[versioning & deprecation policy](CONTRIBUTING.md#versioning--deprecation-policy), and the PR
+checklist. Bug reports and feature ideas go through the issue templates; security issues
+privately per [`SECURITY.md`](SECURITY.md). This project follows
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
-1. Read the target module's spec in `Stochpylib-Obsidian-Vault/Modules/<name>.md` and the
-   cross-cutting conventions in
-   [`ARCHITECTURE.md`](Stochpylib-Obsidian-Vault/ARCHITECTURE.md) (e.g. the common
-   `.pdf()/.cdf()/.rvs()/.fit()` interface every distribution must expose).
+Each tagged release `vX.Y.Z` is published to PyPI by CI and gets a matching GitHub Release
+with per-tag changelog notes.
+
+Before opening a PR:
+
+1. Read the target module's spec — open an issue first if you need the API contract.
 2. Add tests in `tests/<module>/tests.py` and make sure `pytest tests/ -v` is green.
 3. Update `development/Implementation-Checklist.md` to check off what you implemented, and add an
    entry to `development/CHANGELOG.md` (and `development/Probleme.md` if you found a bug).

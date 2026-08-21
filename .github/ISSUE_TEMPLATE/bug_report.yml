@@ -1,0 +1,56 @@
+name: Bug report
+description: Something in stochpylib returns wrong results or crashes.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time! Wrong numerical results count as bugs even if nothing
+        crashes. If this touches security, please use the private advisory channel instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Include a minimal, self-contained reproduction script and the actual vs expected output.
+      placeholder: |
+        ```python
+        from stochpylib.distributions import Normal
+        ...
+        ```
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: stochpylib version
+      description: Output of `spl --version`
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: module
+    attributes:
+      label: Affected module
+      options:
+        - distributions
+        - probability
+        - CLI (spl)
+        - packaging/installation
+        - other / not sure
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version (`python --version`), NumPy/SciPy versions
+      placeholder: "Windows 11, Python 3.12.4, numpy 2.x, scipy 1.x"
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I ran `spl --test` and include whether it passed
+        - label: The reproduction runs against the latest PyPI release

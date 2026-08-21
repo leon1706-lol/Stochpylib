@@ -58,3 +58,18 @@ script `spl` (`stochpylib.cli`): `spl --version` prints the installed version;
 `spl --test` runs the embedded self-check suite (`stochpylib.selftest`, 101 checks) that ships
 in the wheel, so any pip install can be verified without pytest or a source checkout.
 Full suite: 143 passed / 2 skipped. Progress: 81/794 public names.
+
+## Phase 6 - Open-source hygiene
+
+Added the community/policy layer: CONTRIBUTING.md (dev setup, ground rules, semver +
+deprecation policy: deprecations warn via DeprecationWarning, documented in the changelog,
+kept >= 2 minor releases or 6 months, removed only in major releases post-1.0),
+CODE_OF_CONDUCT.md (Contributor Covenant 2.1), SECURITY.md (private reporting channels,
+72h acknowledgment, scope notes for a local numerical library), GitHub issue templates
+(bug report + feature request YAML forms with spl --version pre-flight) and a PR template
+checklist mirroring the wrap-up rules. New .github/workflows/release.yml creates a GitHub
+Release with auto-generated per-tag changelog notes on every vX.Y.Z tag. Fixed a latent bug
+found during this pass: publish.yml still ran pytest against the old in-package test location
+(pytest stochpylib/) instead of tests/ - tag builds would have failed CI; it now runs the real
+suite and additionally smoke-verifies the built wheel via spl --version / spl --test before
+publishing.
