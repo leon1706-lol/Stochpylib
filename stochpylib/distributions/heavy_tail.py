@@ -8,11 +8,14 @@ no closed density exists. The two exactly-solvable special cases are delegated t
 forms for speed and accuracy: ``alpha=2`` is always Gaussian (any ``beta``), and
 ``alpha=1, beta=0`` is Cauchy.
 
-Sampling (``rvs``) uses the Chambers–Mallows–Leckie (CML) algorithm, which is exact and fast.
-The CML constants were validated empirically against this class's own closed-form characteristic
-function (max deviation at Monte-Carlo noise level across symmetric and skewed cases). For the
-one remaining corner — ``alpha=1`` with ``beta != 0`` — no validated closed-form sampler was
-found, so ``rvs`` falls back to slow-but-correct numerical inverse-CDF sampling there.
+Sampling (``rvs``) uses the Chambers–Mallows–Leckie (CML) algorithm for ``alpha != 1``
+(any ``beta``), whose constants were validated empirically against this class's own
+closed-form characteristic function (Monte-Carlo noise level across symmetric and skewed
+cases). For the ``alpha == 1`` corner — where no published closed-form sampler matches our
+parametrization — ``rvs`` uses a cached **numerical quantile function**: the exact
+Gil-Pelaez CDF is inverted once onto a monotone knot grid (PCHIP-refined), after which
+draws are a vectorized table lookup with quantile error <= ~1e-3 of the scale (asserted in
+tests). Both routes are fast; nothing here falls back to per-sample root finding.
 
 ``SubGaussian``/``SubExponential`` are tail-behavior *classes*, not single canonical
 distributions — implemented here as specific, documented parametric families representing each
@@ -22,11 +25,18 @@ not as "the" sub-Gaussian/sub-exponential distribution (there isn't one).
 
 import numpy as np
 from scipy import integrate, special
+from scipy.interpolate import PchipInterpolator
 
 from stochpylib.distributions._base import Distribution
 from stochpylib.distributions.continuous import Cauchy as _Cauchy
 from stochpylib.distributions.continuous import Normal as _Normal
 from stochpylib.distributions.continuous import Weibull as _Weibull
+
+import warnings
+
+# class-level cache of numerical quantile tables for the alpha=1 corner:
+# (alpha, beta, loc, scale) -> (q_grid, x_grid)
+_QUANTILE_LUT_CACHE = {}
 
 
 class StableDistribution(Distribution):
@@ -115,10 +125,13 @@ class StableDistribution(Distribution):
         return np.inf if self.alpha < 2 else self.scale**2 * 2
 
     def rvs(self, size=1, random_state=None):
-        """Exact sampling via Chambers–Mallows–Leckie.
+        """Fast exact-or-validated sampling.
 
-        Falls back to slow numerical inverse-CDF sampling only when ``alpha == 1`` and
-        ``beta != 0`` (no validated closed-form sampler for that corner).
+        - ``alpha == 2`` (any beta): Gaussian closed form.
+        - ``alpha == 1, beta == 0``: Cauchy closed form.
+        - ``alpha != 1``: Chambers–Mallows–Leckie (validated against the closed-form cf).
+        - ``alpha == 1, beta != 0``: cached numerical quantile table built by inverting
+          the exact Gil-Pelaez CDF once (quantile error asserted <= ~1e-3 of scale).
         """
         if self._gauss is not None:
             return self._gauss.rvs(size, random_state=random_state)
@@ -139,7 +152,74 @@ class StableDistribution(Distribution):
             )
             out = self.loc + self.scale * x_std
             return out[0] if size == 1 else out
-        return super().rvs(size, random_state=rng)
+        # alpha == 1, beta != 0: numerical quantile lookup
+        q_grid, x_grid = self._quantile_table()
+        u = rng.uniform(size=n)
+        out = np.interp(u, q_grid, x_grid)
+        return out[0] if size == 1 else out
+
+    def _quantile_table(self):
+        """Monotone (q -> x) interpolation table for the alpha=1 corner.
+
+        Three-part construction:
+
+        1. **Central region** (|x - loc| <= 25*scale): exact Gil-Pelaez CDF evaluated on a
+           grid, refined through monotone PCHIP — this is where the quadrature is reliable.
+        2. **Tails**: alpha=1 stables have exact power-law asymptotics,
+           ``1-F(x) ~ c(1+beta)/(pi*x)`` and ``F(x) ~ c(1-beta)/(pi*|x|)`` (c = scale),
+           so quantiles beyond the central window are computed analytically from those
+           formulas down to q = 1e-9 / up to 1 - 1e-9.
+
+        The pieces are stitched into one strictly monotone curve; ``np.interp`` inverts it
+        in O(n) per draw. Cached per parameter set. Quantile accuracy in the central
+        region is asserted against root-refined truth in the test suite.
+        """
+        key = (
+            round(self.alpha, 12), round(self.beta, 12),
+            round(self.loc, 12), round(self.scale, 12),
+        )
+        hit = _QUANTILE_LUT_CACHE.get(key)
+        if hit is not None:
+            return hit
+
+        c = self.scale
+        tail_right = c * (1.0 + self.beta) / np.pi
+        tail_left = c * (1.0 - self.beta) / np.pi
+        window = 25.0 * c
+
+        # --- central region: numeric CDF on a grid inside the reliable window ---
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            gx = np.linspace(self.loc - window, self.loc + window, 129)
+            gf = np.array([self._cdf_scalar(v) for v in gx])
+        gf = np.clip(gf, 0.0, 1.0)
+        gf = np.maximum.accumulate(gf)
+
+        spline = PchipInterpolator(gx, gf)
+        fine_x = np.linspace(gx[0], gx[-1], 100_001)
+        fine_f = np.maximum.accumulate(np.clip(np.asarray(spline(fine_x), dtype=float), 0.0, 1.0))
+
+        # --- analytic tails grafted onto the central endpoints ---
+        f_left_edge, f_right_edge = float(fine_f[0]), float(fine_f[-1])
+        edge_lo, edge_hi = float(fine_x[0]), float(fine_x[-1])
+
+        q_left = np.geomspace(max(f_left_edge, 1e-12), 1e-9, 400)
+        x_left = self.loc - tail_left / q_left
+        q_left = np.minimum(q_left, f_left_edge)  # keep strictly below central start
+
+        q_right = np.geomspace(max(1.0 - f_right_edge, 1e-12), 1e-9, 400)
+        x_right = self.loc + tail_right / q_right
+        q_right = 1.0 - q_right
+        q_right = np.maximum(q_right, f_right_edge)
+
+        all_q = np.concatenate([q_left[::-1], fine_f, q_right])
+        all_x = np.concatenate([x_left[::-1], fine_x, x_right])
+        order = np.argsort(all_q, kind="stable")
+        all_q, all_x = all_q[order], all_x[order]
+        keep = np.concatenate([[True], np.diff(all_q) > 0])
+        result = (all_q[keep], all_x[keep])
+        _QUANTILE_LUT_CACHE[key] = result
+        return result
 
     @classmethod
     def _initial_guess(cls, data):

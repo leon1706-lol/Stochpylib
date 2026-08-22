@@ -16,23 +16,27 @@ Implemented natively (no scipy dependency at runtime):
 - :class:`DigitalNetBase2` — general configurable GF(2) digital-net engine.
 - :class:`LowDiscrepancy` — factory/facade picking a sequence by name.
 
-Direction-number note: the base-2 nets use generator polynomials with simple canonical odd
-initial values (dimension 1 is exactly van der Corput). Consequences, verified in tests:
+Direction-number note: :class:`SobolSequence` embeds the standard Joe-Kuo lineage
+direction-number table (64 dimensions, 30 columns) — identical to the data used by
+``scipy.stats.qmc.Sobol``. Consequences, verified in tests:
 
-- Uniformity is excellent (KS p ≈ 1 per dimension at n = 4096) and discrepancy is roughly
-  50x better than pseudo-random sampling.
-- The first three 2-D points match the canonical Sobol tables exactly
-  ((1/2,1/2), (1/4,3/4), (3/4,1/4)); later values differ from published optimized
-  (Joe-Kuo style) tables because those use tuned constants we deliberately do not embed.
-- Exact (t,m,s)-net balance is certified for dimension 1 only; higher dimensions can be off
-  by +-1 sample per half-interval at n = 2^m. Upgrading to published direction-number tables
-  would certify exactness and is tracked as an open item (development/Probleme.md).
+- Every ``generate_block(m)`` (the first ``2**m`` points including the origin) is an
+  *exactly* balanced ``(t,m,s)``-net block: perfect half/quarter/eighth stratification.
+- As a set, ``generate_block(m)`` equals scipy's block bitwise; enumeration order differs
+  (natural order here, Gray-code order in scipy).
+- Streaming mode still skips the origin point, so a plain ``generate(2**m)`` window is
+  misaligned by one position and shows +-1 imbalance — use ``generate_block`` when exact
+  balance matters.
 
-Scrambling uses a seeded digital shift (base 2), which preserves net structure, or an
-additive shift mod 1 (Halton/Faure).
+:class:`NiederreiterSequence` and custom-polynomial nets beyond dimension 64 keep the
+GF(2)-recurrence machinery with simple canonical initial values (balance within +-1,
+documented). Scrambling uses a seeded digital shift (base 2), which preserves net structure,
+or an additive shift mod 1 (Halton/Faure).
 """
 
 import numpy as np
+
+from stochpylib.montecarlo import _direction_numbers as _dn
 
 __all__ = [
     "HaltonSequence",
@@ -259,25 +263,48 @@ class FaureSequence(_LowDiscrepancyBase):
 
 
 class DigitalNetBase2(_LowDiscrepancyBase):
-    """General base-2 digital net driven by per-dimension ``(degree, inner_bits)``
-    generator polynomials over GF(2).
+    """General base-2 digital net.
 
-    Points advance along the Gray-code walk ``u_k = u_{k-1} XOR V[:, tz(k)]``
-    (Antonov-Saleev), so successive points differ in exactly one direction number.
-    ``generate`` continues the stream; call :meth:`reset` to restart at the origin.
+    Two operating modes:
+
+    - **Standard table** (default for :class:`SobolSequence` with ``dim <= 64``): uses the
+      embedded Joe-Kuo lineage direction numbers (:mod:`stochpylib.montecarlo._direction_numbers`,
+      30 columns). With these, every ``generate_block(m)`` is an *exactly* balanced
+      ``(t,m,s)``-net block and the points match ``scipy.stats.qmc.Sobol`` as a set.
+    - **GF(2) machinery**: generator polynomials + direction-number recurrence (53 columns);
+      used by :class:`NiederreiterSequence`, custom ``polys``, or dims beyond the table
+      (balance then documented within +-1).
+
+    Points advance in natural order: ``x_i = XOR of V[:, b] over the set bits b of i``
+    (i = 1, 2, 3, ...; the origin point i = 0 is skipped in streaming mode).
     """
 
-    BITS = _BITS
+    BITS = _BITS  # default; instances override per operating mode
 
-    def __init__(self, dim=1, polys=None, random_state=None, init="canonical"):
+    def __init__(self, dim=1, polys=None, random_state=None, init="canonical",
+                 direction_matrix=None):
         super().__init__(dim)
-        if polys is None:
-            polys = _primitive_poly_per_degree(dim)
-        if len(polys) < dim:
-            raise ValueError(f"need {dim} generator polynomials, got {len(polys)}")
-        self.polys = [(int(d), int(b)) for d, b in polys[:dim]]
         self.init = init
-        self._V = self._build_direction_numbers()
+        if direction_matrix is not None:
+            # precomputed standard table (exact net, scipy-compatible)
+            self.BITS = int(direction_matrix.shape[1])
+            self._V = np.asarray(direction_matrix, dtype=np.int64)
+            self.polys = None
+            self.uses_standard_table = True
+        elif polys is None and dim <= _dn.MAX_TABLE_DIM:
+            self.BITS = _dn.TABLE_WIDTH
+            self._V = np.array(_dn.DIRECTION_NUMBERS[:dim], dtype=np.int64)
+            self.polys = None
+            self.uses_standard_table = True
+        else:
+            if polys is None:
+                polys = _primitive_poly_per_degree(dim)
+            if len(polys) < dim:
+                raise ValueError(f"need {dim} generator polynomials, got {len(polys)}")
+            self.polys = [(int(d), int(b)) for d, b in polys[:dim]]
+            self.BITS = 53
+            self._V = self._build_direction_numbers()
+            self.uses_standard_table = False
         rng = np.random.default_rng(random_state) if random_state is not None else None
         self._shift_mask = (
             rng.integers(0, 1 << self.BITS, size=self.dim, dtype=np.int64)
@@ -318,26 +345,32 @@ class DigitalNetBase2(_LowDiscrepancyBase):
         """Restart the stream at the beginning."""
         self._index = 0
 
-    def _raw(self, n):
-        """Points in natural order via direct bit decomposition:
-
-        ``x_i = XOR of V[:, b] over the set bits b of i`` (i = 1, 2, 3, ...).
-
-        A single-XOR Gray walk enumerates points in *Gray-code* order; a natural-order
-        increment flips many bits at once (carry), so the walk cannot track it — direct
-        decomposition is the correct construction.
-        """
-        idx = np.arange(self._index + 1, self._index + n + 1, dtype=np.int64)
-        acc = np.zeros((n, self.dim), dtype=np.int64)
+    def _points_for_indices(self, idx):
+        acc = np.zeros((len(idx), self.dim), dtype=np.int64)
         for b in range(self.BITS):
             sel = ((idx >> b) & 1).astype(bool)
             if sel.any():
                 acc[sel] ^= self._V[:, b]
-        self._index += n
         out = acc.astype(float) / float(1 << self.BITS)
         if self._shift_mask is not None:  # seeded digital shift preserves net structure
             ints = (out * (1 << self.BITS)).astype(np.int64)
             out = (ints ^ self._shift_mask) / float(1 << self.BITS)
+        return out
+
+    def generate_block(self, m):
+        """Return exactly the first ``2**m`` points INCLUDING the origin (stream indices
+        ``0 .. 2**m - 1``) — the aligned block for which the net's balance is certified
+        exact when the standard table is used. Does not disturb the stream position.
+        """
+        m = int(m)
+        if not (0 < m <= self.BITS):
+            raise ValueError(f"m must be in 1..{self.BITS}")
+        return self._points_for_indices(np.arange(0, 1 << m, dtype=np.int64))
+
+    def _raw(self, n):
+        idx = np.arange(self._index + 1, self._index + n + 1, dtype=np.int64)
+        out = self._points_for_indices(idx)
+        self._index += n
         return out
 
 
@@ -350,10 +383,21 @@ def _niederreiter_polys(dim):
 
 
 class SobolSequence(DigitalNetBase2):
-    """Sobol' (t,s)-sequence in base 2 from primitive generator polynomials."""
+    """Sobol' (t,s)-sequence in base 2.
 
-    def __init__(self, dim=1, random_state=None, init="canonical"):
-        super().__init__(dim, polys=_sobol_polys(dim), random_state=random_state, init=init)
+    Uses the embedded standard (Joe-Kuo lineage) direction-number table for
+    ``dim <= 64`` — exact ``(t,m,s)``-net balance per ``generate_block`` and set-identical
+    to ``scipy.stats.qmc.Sobol``. Beyond 64 dimensions it falls back to the GF(2)
+    machinery with canonical initial values.
+    """
+
+    def __init__(self, dim=1, random_state=None, init="canonical", standard_table=True,
+                 polys=None):
+        dm = None
+        if standard_table and polys is None and dim <= _dn.MAX_TABLE_DIM:
+            dm = np.array(_dn.DIRECTION_NUMBERS[:dim], dtype=np.int64)
+        super().__init__(dim, polys=polys, random_state=random_state, init=init,
+                         direction_matrix=dm)
 
 
 class NiederreiterSequence(DigitalNetBase2):

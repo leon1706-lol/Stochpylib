@@ -45,7 +45,9 @@ Python >= 3.10 required. NumPy/SciPy are the only runtime dependencies.
    implementation.
 5. Update docs you touched: README / sub-readmes (`stochpylib/*/README.md`, `tests/`,
    `development/`) and `development/CHANGELOG.md` (append-only, one entry per chunk of work).
-   Found and fixed a bug? Add an entry to `development/Probleme.md` with severity (1–10).
+   Found and fixed a bug? Add an entry to `development/Probleme.md` in the established
+   **Problem → Fix → Verification** format with a severity (1–10) and status from the legend
+   at the top of that file.
 6. Open the PR using the provided template.
 
 Maintainers sync the internal design-spec tracker and release notes; you don't need access to

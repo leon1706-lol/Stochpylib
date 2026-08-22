@@ -6,9 +6,11 @@ Layout:
 
 - `quasi_random.py` — Halton, Faure, Sobol, Niederreiter sequences + the general GF(2)
   digital-net engine (`DigitalNetBase2`, spec alias `DigitalNet`) and the `LowDiscrepancy`
-  facade. Native implementations; dimension 1 of the base-2 nets is exactly van der Corput
-  and the canonical 2-D prefix matches standard tables (higher dimensions are within +-1 of
-  exact net balance — see `development/Probleme.md` [11]).
+  facade. Sobol uses the embedded standard Joe-Kuo direction-number table (64 dims): every
+  `generate_block(m)` is an *exactly* balanced net block and set-identical to scipy's
+  (`generate(n)` streams from index 1, so plain windows are ±1 off by construction).
+  Niederreiter and custom-polynomial nets use the GF(2) machinery (balance within ±1,
+  documented).
 - `simulation.py` — `simulate()`, `crude_mc()`, `importance_sampling()` (self-normalized,
   with ESS), `rejection_sampling()`, `stratified_sampling()`, `quasi_montecarlo()`.
 - `variance_reduction.py` — AntitheticVariates (incl. European call/put pricing),

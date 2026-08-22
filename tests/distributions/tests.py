@@ -420,11 +420,30 @@ def test_stable_numeric_inversion_pdf_reasonable():
         assert float(d.cdf(sq)) == pytest.approx(float(p), abs=0.02)
 
 
-def test_stable_alpha_one_beta_nonzero_rvs_slow_path_runs():
-    d = D.StableDistribution(1.0, 0.5, 0.0, 1.0)
-    vals = np.asarray(d.rvs(3, random_state=0), dtype=float)
-    assert vals.shape == (3,)
-    assert np.all(np.isfinite(vals))
+@pytest.mark.parametrize("beta", [0.5, -0.7])
+def test_stable_alpha_one_skewed_sampler_matches_cf(beta):
+    """Numerical-quantile sampler: draws must reproduce the closed-form cf."""
+    d = D.StableDistribution(1.0, beta, 0.4 * (1 if beta > 0 else 0), 2.0)
+    x = np.asarray(d.rvs(20_000, random_state=31), dtype=float)
+    ts = np.linspace(-3.0, 3.0, 25)
+    emp = np.array([np.mean(np.exp(1j * t * x)) for t in ts])
+    theo = np.array([d.cf(t) for t in ts])
+    assert float(np.max(np.abs(emp - theo))) < 0.03
+    # cached: second call is instant and reproducible
+    assert np.array_equal(d.rvs(100, random_state=32), d.rvs(100, random_state=32))
+
+
+def test_stable_alpha_one_quantile_accuracy():
+    from scipy import optimize
+
+    d = D.StableDistribution(1.0, 0.5, 0.8, 2.0)
+    q_grid, x_grid = d._quantile_table()
+    for q in np.random.default_rng(33).uniform(0.02, 0.98, 10):
+        truth = float(
+            optimize.brentq(lambda v: d._cdf_scalar(v) - q, -300.0, 300.0, xtol=1e-9)
+        )
+        got = float(np.interp(q, q_grid, x_grid))
+        assert abs(got - truth) <= 2e-2 * d.scale
 
 
 # ---------------------------------------------------------------- CLI & selftest

@@ -175,16 +175,23 @@ an installation. Exits non-zero on any failure.
 
 ## Project Layout
 
-- [`stochpylib/`](stochpylib/) — the installable package, one subpackage per module
-  ([`probability/`](stochpylib/probability/README.md),
-  [`distributions/`](stochpylib/distributions/README.md),
-  [`montecarlo/`](stochpylib/montecarlo/README.md)), plus `cli.py` and `selftest.py`
-- [`tests/`](tests/README.md) — one `tests/<module>/tests.py` per module, outside the package
-- [`development/`](development/) — build history & process docs (see below)
-- `.github/workflows/` — CI matrix (Python 3.10–3.13), tag-triggered PyPI publishing
-  (Trusted Publisher/OIDC, no stored tokens), automatic GitHub Releases
-- The full design-spec vault (`Stochpylib-Obsidian-Vault/`) is maintained privately and is not
-  part of this repository
+Every folder carries its own short `README.md` as an entry-point guide — this table links
+them all:
+
+| Folder | Guide | What lives there |
+|---|---|---|
+| `stochpylib/` | [package guide](stochpylib/README.md) | the installable package: module subpackages, `cli.py`, `selftest.py` |
+| `stochpylib/probability/` | [module guide](stochpylib/probability/README.md) | core probability engine — complete, tested |
+| `stochpylib/distributions/` | [module guide](stochpylib/distributions/README.md) | 47 distributions behind one common interface — complete, tested |
+| `stochpylib/montecarlo/` | [module guide](stochpylib/montecarlo/README.md) | quasi-random sequences, estimators, variance reduction, applications |
+| `tests/` | [suite guide](tests/README.md) | one deterministic test file per module, outside the installed package |
+| `development/` | [dev-docs guide](development/README.md) | build history, bug audit log, progress checklist |
+| `.github/` | — | CI / PyPI-publish / GitHub-Release workflows, issue & PR templates |
+| `Stochpylib-Obsidian-Vault/` | — | the full design-spec vault; maintained privately, not part of this repo |
+
+Workflow details: CI runs the full test matrix (Python 3.10–3.13) on every push; pushing a
+`vX.Y.Z` tag builds + smoke-verifies the wheel, publishes to PyPI via Trusted Publisher
+(OIDC, no stored tokens), and opens the matching GitHub Release automatically.
 
 ## Development Documentation
 
@@ -195,7 +202,8 @@ Everything a contributor or maintainer needs lives in committed docs:
 - [`SECURITY.md`](SECURITY.md) — private vulnerability reporting (72 h acknowledgment)
 - [`development/Development.md`](development/Development.md) — layout decisions & workflow notes
 - [`development/CHANGELOG.md`](development/CHANGELOG.md) — append-only log, one entry per build phase
-- [`development/Probleme.md`](development/Probleme.md) — bug audit log with severity scores (11 entries so far)
+- [`development/Probleme.md`](development/Probleme.md) — bug audit log in Problem → Fix →
+  Verification format with a status legend (12 entries so far)
 - [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md) — every planned public name as a checkbox
 
 ## Test Suite

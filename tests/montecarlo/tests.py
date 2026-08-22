@@ -63,15 +63,39 @@ def test_sequence_uniformity(name):
         assert p > 1e-4, f"{name} dim {d}: KS p={p}"
 
 
-@pytest.mark.parametrize("cls", [M.SobolSequence, M.NiederreiterSequence])
-def test_base2_net_half_balance_within_one(cls):
-    pts = cls(4).generate(256)
-    for d in range(4):
-        lo = int((pts[:, d] < 0.5).sum())
-        if d == 0:
-            assert lo == 128  # dim 1 is exactly van der Corput
-        else:
-            assert abs(lo - 128) <= 1  # documented +-1 under simple direction numbers
+def test_sobol_uses_standard_direction_number_table():
+    s = M.SobolSequence(4)
+    assert s.uses_standard_table and s.BITS == 30
+
+
+def test_generate_block_exact_net_balance():
+    # aligned blocks including the origin are exactly balanced in every dimension
+    for m, dim in [(8, 4), (10, 6)]:
+        p = M.SobolSequence(dim).generate_block(m)
+        n = 1 << m
+        for d in range(dim):
+            assert int((p[:, d] < 0.5).sum()) == n // 2
+            for k in range(8):
+                cnt = int(((p[:, d] >= k / 8) & (p[:, d] < (k + 1) / 8)).sum())
+                assert cnt == n // 8, f"m={m} dim={d} eighth {k}: {cnt}"
+
+
+def test_block_matches_scipy_set_and_gray_order():
+    m = 9
+    ours = M.SobolSequence(4).generate_block(m)
+    ref = qmc_mod.Sobol(d=4, scramble=False, bits=30).random(1 << m)
+    assert np.array_equal(np.sort(ours, axis=0), np.sort(ref, axis=0))
+    g = np.arange(1 << m) ^ (np.arange(1 << m) >> 1)
+    assert np.array_equal(ours[g], ref)  # scipy enumerates along the Gray-code walk
+
+
+@pytest.mark.parametrize("name", ["sobol", "halton", "faure", "niederreiter"])
+def test_sequence_uniformity(name):
+    pts = M.LowDiscrepancy(name, dim=6).generate(4096)
+    assert pts.shape == (4096, 6)
+    for d in range(6):
+        p = spt.kstest(pts[:, d], "uniform").pvalue
+        assert p > 1e-4, f"{name} dim {d}: KS p={p}"
 
 
 def test_sequences_beat_pseudo_random_discrepancy():

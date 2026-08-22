@@ -13,8 +13,9 @@ Layout:
 - `continuous.py` — 25 classics from Normal to Kumaraswamy.
 - `multivariate.py` — MVN, Dirichlet, Wishart, InverseWishart, MultivariateT,
   MultivariatePareto.
-- `heavy_tail.py` — stable family (with exact Gaussian/Cauchy special cases + CML sampling),
-  Lévy, SubGaussian, SubExponential.
+- `heavy_tail.py` — stable family: exact Gaussian (α=2) and Cauchy (α=1, β=0) special cases,
+  validated Chambers–Mallows–Leckie sampling for all α≠1, and a cached numerical-quantile
+  sampler for the α=1, β≠0 corner; Lévy, SubGaussian, SubExponential.
 
 Import from the module level per ARCHITECTURE.md:
 `from stochpylib.distributions import Normal`.
@@ -27,5 +28,4 @@ Conventions worth knowing:
   by design.
 - `VonMises.var()` is the circular variance.
 
-Spec: vault `Modules/distributions.md` (private). Known open item: fast exact sampler for
-StableDistribution at alpha=1 with beta != 0 (slow fallback in place).
+Spec: vault `Modules/distributions.md` (private).

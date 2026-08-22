@@ -106,3 +106,22 @@ bare flag help: implemented modules with their public functions, all 47 distribu
 (dynamic from the package's __all__, so it never goes stale), the common distribution
 interface, a quick-start snippet for both modules, and pointers to the roadmap/docs. Covered
 by test_cli_help_shows_library_overview; output kept ASCII-safe for legacy Windows consoles.
+
+## Phase 9 - Resolving the two documented open items ([9]/[12], [11])
+
+Closed both known limitations. (1) Joe-Kuo direction numbers: embedded the standard 64-dim x
+30-col Sobol table (_direction_numbers.py), extracted from the scipy.stats.qmc oracle via the
+x_{2^b} = v_b identity and verified dyadic + bitwise round-trip before embedding; SobolSequence
+uses it by default, new generate_block(m) API returns the aligned first-2^m block including the
+origin point - exactly balanced in every dimension and set-identical to scipy's block (scipy
+enumerates along the Gray walk; we output natural order). GF(2) machinery stays as fallback
+beyond dim 64 and for custom/Niederreiter nets. Root cause of the old +-1 imbalance identified:
+it belongs to the origin-skipped streaming window, not to the net itself. (2) alpha=1 skewed
+stable sampling: a twelve-variant empirical hunt for a matching closed-form CML formula failed
+(best residual 0.077 vs noise 0.003; shift-fitting proved structural mismatch), so implemented
+a cached numerical quantile table instead - exact Gil-Pelaez CDF inside the reliable window
+(|x-loc| <= 25 sigma) refined by monotone PCHIP, with exact power-law tail asymptotics
+(1-F ~ c(1+beta)/(pi x)) grafted beyond down to q=1e-9; draws are O(1) lookups after a ~5 s
+per-parameter-set warmup (class-level cache). Empirical cf matches at MC-noise level; central
+quantile error <= ~1e-3 scale. New regression tests in both suites; full suite: 185 passed /
+2 skipped. Probleme [11] -> Fixed, [12] added -> Fixed.
