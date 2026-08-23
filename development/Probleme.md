@@ -259,3 +259,126 @@ q = 1e-9. Draws are a vectorized table lookup. Warmup ~5 s per parameter set
   (MC noise level) for β = ±{0.5, 0.7}.
 - Central quantile error vs root-refined truth ≤ ~1e-3 · scale (asserted over random q).
 - Seeded determinism asserted; cache reuse makes repeat instances instant.
+
+---
+
+### 13. Integrated-model forecasts seeded the recursion with raw levels
+
+**Severity:** 7/10 - **Status:** fixed (unreleased; ships with 0.2.0)
+
+**Problem:** ARIMA.forecast built its recursion history from self._y (raw levels) while
+the fitted coefficients lived on the *differenced* series - an ARIMA(1,1,0) on a
+0.5-slope trend forecast steps of +14.5 instead of +0.5. MA/ARMA lacked the transformed-
+series attribute entirely.
+
+**Fix:** Base class gained _fit_series (the series CSS actually fit); forecast seeding,
+innovation alignment (T = len(_fit_series)) and SARIMA's inverse differencing order
+(seasonal-undo before regular-undo) all corrected.
+
+**Verification:**
+- ARIMA(1,1,0) on a 0.5-slope trend now forecasts slope 0.498 (was 14.5).
+- Full statsmodels-oracle suite green.
+
+---
+
+### 14. FIGARCH applied the integration kernel instead of the differencing filter
+
+**Severity:** 5/10 - **Status:** fixed (unreleased; ships with 0.2.0)
+
+**Problem:** FIGARCH.fit built weights via frac_diff_weights(-d), i.e. the (1-B)^-d
+integration kernel, so the filtered series was MORE persistent than the input instead of
+whitened (lag-1 correlation 1.000 in the smoke test).
+
+**Fix:** Filter uses frac_diff_weights(+d); the inverse kernel is only used when mapping
+forecasts back to levels.
+
+**Verification:**
+- Round-trip identity: integrate white noise with (1-B)^-0.35, re-filter with
+  (1-B)^+0.35 -> lag-1 correlation ~0 (asserted in the suite).
+
+---
+
+### 15. KPSS p-values interpolated against a descending table
+
+**Severity:** 4/10 - **Status:** fixed (unreleased; ships with 0.2.0)
+
+**Problem:** np.interp(stat, cvs, levels) was called with the critical-value array in
+descending order; np.interp requires ascending x, so returned p-values were garbage
+(white noise reported p=0.01).
+
+**Fix:** Arrays reordered ascending ([CV10%, CV5%, CV1%] against [0.10, 0.05, 0.01]).
+
+**Verification:**
+- White noise p >= 0.10; random walk p <= 0.01; trend-stationary with regression='t'
+  p >= 0.05. The statistic itself matches statsmodels within the Newey-West lag tolerance.
+
+---
+
+### 16. ADF ignored an explicit max_lag and AIC-searched anyway
+
+**Severity:** 3/10 - **Status:** fixed (unreleased; ships with 0.2.0)
+
+**Problem:** Passing max_lag=2 still ran the AIC selection over lags {0,1,2}, so the
+reported statistic could correspond to any smaller lag - breaking exact comparison with
+statsmodels' autolag=None semantics.
+
+**Fix:** An explicit max_lag is now the exact augmentation order; AIC selection only
+applies for the default None (Schwert cap).
+
+**Verification:**
+- Statistic equals statsmodels adfuller(maxlag=2, autolag=None) to 1e-8 on identical data
+  (locked in by test_adf_stat_matches_statsmodels_fixed_lag).
+
+---
+
+### 17. ParticleFilter broadcast user log-pdfs into an n x n matrix
+
+**Severity:** 4/10 - **Status:** fixed (unreleased; ships with 0.2.0)
+
+**Problem:** An observation log-pdf returning shape (n, 1) was added directly to the (n,)
+weight vector, broadcasting into an (n, n) matrix - nine-million-element state explosions
+and crashes for perfectly reasonable user callables.
+
+**Fix:** The observation log-density output is flattened defensively before use.
+
+**Verification:**
+- The smoke test uses exactly such an (n, 1) callable; the filter tracks a local level at
+  correlation 0.978.
+
+---
+
+### 18. BOCPD changepoint hypothesis reused per-run predictives, pinning P(change) = hazard
+
+**Severity:** 6/10 - **Status:** fixed (unreleased; ships with 0.2.0)
+
+**Problem:** In the Adams-MacKay recursion, the reset hypothesis's predictive density was
+computed per old run length (copied from the growth terms) instead of using the NIG prior
+predictive. Since the reset term then agreed with every growth term, the posterior
+probability of change collapsed to exactly the hazard rate forever - the detector could
+never fire.
+
+**Fix:** The reset hypothesis now uses the NIG *prior* predictive (Student-t with the
+base hyperparameters); growth terms keep their per-run predictives.
+
+**Verification:**
+- On a two-block mean-shift series the posterior probability of change spikes above 0.5
+  at the true boundary and the detected-point list contains it.
+
+---
+
+### 19. DWT reconstruction failed for db2: unnormalized taps plus non-transpose synthesis
+
+**Severity:** 5/10 - **Status:** fixed (unreleased; ships with 0.2.0)
+
+**Problem:** Two stacked issues in the wavelet pair. (a) The Daubechies-4 scaling taps
+were missing the sqrt(2) normalization (sum h^2 = 2 instead of 1), so the analysis
+operator was not orthonormal. (b) The synthesis pass applied the analysis filters
+directly instead of their transpose, which happens to work only for symmetric filters
+like Haar.
+
+**Fix:** Taps normalized (sum h^2 = 1, verified numerically); synthesis applies the same
+filters at the same circulant taps (the transpose of the analysis operator).
+
+**Verification:**
+- Perfect reconstruction to 1e-15 for both haar and db2 over random 1024-sample inputs
+  at level 4 (test_dwt_idwt_perfect_reconstruction).

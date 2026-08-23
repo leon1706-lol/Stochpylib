@@ -184,6 +184,27 @@ def run(verbose=False):
     rpi = pi_estimation(n=100_000, random_state=9)
     st.check("MC: pi in confidence band", abs(rpi.estimate - np.pi) < 4 * rpi.std_error)
 
+    # timeseries quick checks
+    from stochpylib.timeseries import ARIMA, GARCH, KalmanFilter, SpectralAnalysis
+    from stochpylib.timeseries import adf_test as ts_adf
+
+    rng_ts = np.random.default_rng(31)
+    y_walk = np.cumsum(rng_ts.standard_normal(800))
+    arima = ARIMA(1, 1, 0).fit(y_walk)
+    fc_ts = arima.forecast(10)
+    st.check("TS: ARIMA level forecast finite", bool(np.all(np.isfinite(fc_ts.mean))))
+    g_ts = GARCH(1, 1).fit(0.01 * rng_ts.standard_normal(1200))
+    st.check("TS: GARCH persistence < 1", g_ts.persistence_ < 1.0)
+    kf_ts = KalmanFilter(F=[[1.0]], H=[[1.0]], Q=[[0.01]], R=[[1.0]])
+    kf_ts.fit(np.cumsum(rng_ts.standard_normal(300)))
+    st.check("TS: Kalman loglik finite", bool(np.isfinite(kf_ts.loglik_)))
+    t_arr = np.arange(1000) / 50.0
+    sine_sig = np.sin(2 * np.pi * 8.0 * t_arr)
+    st.check("TS: dominant frequency ~8 Hz",
+             abs(SpectralAnalysis(sine_sig, fs=50.0).dominant_frequency() - 8.0) < 0.5)
+    adf_res = ts_adf(np.cumsum(rng_ts.standard_normal(400)))
+    st.check("TS: ADF walk fails to reject", adf_res.statistic > -3.41)
+
     if verbose:
         status = "OK" if not st.failures else f"FAILED ({len(st.failures)})"
         print(f"selftest: {st.count} checks, {status}")

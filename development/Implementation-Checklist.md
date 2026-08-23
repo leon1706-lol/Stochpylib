@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 106 / 794 public names implemented.**
+**Progress: 167 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -106,79 +106,79 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `.fit()`
     - [x] `.ks_test()`
 
-## [timeseries](../Stochpylib-Obsidian-Vault/Modules/timeseries.md) — Complete time series toolkit (0/61)
+## [timeseries](../Stochpylib-Obsidian-Vault/Modules/timeseries.md) — Complete time series toolkit (61/61)
 
-- [ ] **stochpylib.timeseries** module overall
-  - [ ] `timeseries.linear_models`
-    - [ ] `AR(p)`
-    - [ ] `MA(q)`
-    - [ ] `ARMA(p,q)`
-    - [ ] `ARIMA(p,d,q)`
-    - [ ] `SARIMA(p,d,q)(P,D,Q,s)`
-    - [ ] `ARFIMA(p,d,q)`
-    - [ ] `VARMA`
-    - [ ] `VAR(p)`
-    - [ ] `VECM`
-  - [ ] `timeseries.volatility_models`
-    - [ ] `ARCH(q)`
-    - [ ] `GARCH(p,q)`
-    - [ ] `EGARCH`
-    - [ ] `TGARCH`
-    - [ ] `FIGARCH`
-    - [ ] `APARCH`
-    - [ ] `IGARCH`
-    - [ ] `GJRGARCH`
-    - [ ] `MGARCH`
-    - [ ] `DCC_GARCH`
-  - [ ] `timeseries.state_space`
-    - [ ] `StateSpaceModel`
-    - [ ] `KalmanFilter`
-    - [ ] `KalmanSmoother`
-    - [ ] `ExtendedKalmanFilter`
-    - [ ] `UnscentedKalmanFilter`
-    - [ ] `ParticleFilter`
-    - [ ] `RaoBlackwellFilter`
-  - [ ] `timeseries.latent_models`
-    - [ ] `HiddenMarkovModel`
-    - [ ] `SwitchingRegression`
-    - [ ] `RegimeSwitching`
-    - [ ] `MixtureAutoregressive`
-  - [ ] `timeseries.changepoint`
-    - [ ] `ChangePointDetection`
-    - [ ] `BayesianChangePoint`
-    - [ ] `PELT`
-    - [ ] `BinarySegmentation`
-    - [ ] `BottomUp`
-  - [ ] `timeseries.decomposition`
-    - [ ] `SeasonalDecomposition`
-    - [ ] `STLDecomposition`
-    - [ ] `X11Decomposition`
-    - [ ] `TrendFilter`
-    - [ ] `HPFilter`
-  - [ ] `timeseries.spectral`
-    - [ ] `SpectralAnalysis`
-    - [ ] `Periodogram`
-    - [ ] `PowerSpectrum`
-    - [ ] `WaveletTransform`
-    - [ ] `CWTTransform`
-    - [ ] `DWTTransform`
-    - [ ] `STFT`
-    - [ ] `Hilbert`
-  - [ ] `timeseries.tests`
-    - [ ] `adf_test()`
-    - [ ] `kpss_test()`
-    - [ ] `pp_test()`
-    - [ ] `ljung_box()`
-    - [ ] `durbin_watson()`
-    - [ ] `arch_test()`
-    - [ ] `granger_causality()`
-    - [ ] `johansen_test()`
-  - [ ] `timeseries.forecasting`
-    - [ ] `forecast()`
-    - [ ] `predict()`
-    - [ ] `confidence_bands()`
-    - [ ] `backtesting()`
-    - [ ] `cross_validation_ts()`
+- [x] **stochpylib.timeseries** module overall
+  - [x] `timeseries.linear_models`
+    - [x] `AR(p)`
+    - [x] `MA(q)`
+    - [x] `ARMA(p,q)`
+    - [x] `ARIMA(p,d,q)`
+    - [x] `SARIMA(p,d,q)(P,D,Q,s)`
+    - [x] `ARFIMA(p,d,q)`
+    - [x] `VARMA`
+    - [x] `VAR(p)`
+    - [x] `VECM`
+  - [x] `timeseries.volatility_models`
+    - [x] `ARCH(q)`
+    - [x] `GARCH(p,q)`
+    - [x] `EGARCH`
+    - [x] `TGARCH`
+    - [x] `FIGARCH`
+    - [x] `APARCH`
+    - [x] `IGARCH`
+    - [x] `GJRGARCH`
+    - [x] `MGARCH`
+    - [x] `DCC_GARCH`
+  - [x] `timeseries.state_space`
+    - [x] `StateSpaceModel`
+    - [x] `KalmanFilter`
+    - [x] `KalmanSmoother`
+    - [x] `ExtendedKalmanFilter`
+    - [x] `UnscentedKalmanFilter`
+    - [x] `ParticleFilter`
+    - [x] `RaoBlackwellFilter`
+  - [x] `timeseries.latent_models`
+    - [x] `HiddenMarkovModel`
+    - [x] `SwitchingRegression`
+    - [x] `RegimeSwitching`
+    - [x] `MixtureAutoregressive`
+  - [x] `timeseries.changepoint`
+    - [x] `ChangePointDetection`
+    - [x] `BayesianChangePoint`
+    - [x] `PELT`
+    - [x] `BinarySegmentation`
+    - [x] `BottomUp`
+  - [x] `timeseries.decomposition`
+    - [x] `SeasonalDecomposition`
+    - [x] `STLDecomposition`
+    - [x] `X11Decomposition`
+    - [x] `TrendFilter`
+    - [x] `HPFilter`
+  - [x] `timeseries.spectral`
+    - [x] `SpectralAnalysis`
+    - [x] `Periodogram`
+    - [x] `PowerSpectrum`
+    - [x] `WaveletTransform`
+    - [x] `CWTTransform`
+    - [x] `DWTTransform`
+    - [x] `STFT`
+    - [x] `Hilbert`
+  - [x] `timeseries.tests`
+    - [x] `adf_test()`
+    - [x] `kpss_test()`
+    - [x] `pp_test()`
+    - [x] `ljung_box()`
+    - [x] `durbin_watson()`
+    - [x] `arch_test()`
+    - [x] `granger_causality()`
+    - [x] `johansen_test()`
+  - [x] `timeseries.forecasting`
+    - [x] `forecast()`
+    - [x] `predict()`
+    - [x] `confidence_bands()`
+    - [x] `backtesting()`
+    - [x] `cross_validation_ts()`
 
 ## [gaussian_processes](../Stochpylib-Obsidian-Vault/Modules/gaussian_processes.md) — Gaussian process models & kernels (0/36)
 

@@ -1,5 +1,5 @@
-from stochpylib import distributions, montecarlo, probability
+from stochpylib import distributions, montecarlo, probability, timeseries
 
-__all__ = ["distributions", "montecarlo", "probability"]
+__all__ = ["distributions", "montecarlo", "probability", "timeseries"]
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stochpylib"
-version = "0.1.1"
+version = "0.2.0"
 description = "A Python library for probability, distributions, stochastic processes, and statistical computing"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "statsmodels>=0.14"]
 
 [project.scripts]
 spl = "stochpylib.cli:main"

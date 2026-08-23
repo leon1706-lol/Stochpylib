@@ -15,5 +15,6 @@ Tests live outside the installed package on purpose (they used to ship inside th
 see development/Probleme.md [3]). Each `tests/<module>/` folder contains an `__init__.py`
 so same-named `tests.py` files import as distinct modules.
 
-Current coverage: `probability` + `distributions` + `montecarlo` (182 passed / 2 skipped).
+Current coverage: `probability` + `distributions` + `montecarlo` + `timeseries`
+(236 passed / 2 skipped).
 The package also ships an embedded smoke suite runnable from any pip install: `spl --test`.

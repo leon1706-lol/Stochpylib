@@ -125,3 +125,28 @@ a cached numerical quantile table instead - exact Gil-Pelaez CDF inside the reli
 per-parameter-set warmup (class-level cache). Empirical cf matches at MC-noise level; central
 quantile error <= ~1e-3 scale. New regression tests in both suites; full suite: 185 passed /
 2 skipped. Probleme [11] -> Fixed, [12] added -> Fixed.
+
+## Phase 10 - Fourth module: `stochpylib.timeseries`
+
+Implemented the complete time-series toolkit (61/61 spec names across nine submodules),
+natively on numpy/scipy with statsmodels as a dev-only test oracle - formally resolving
+the wrap-vs-reimplement question recorded in the vault's Dependencies.md. Highlights:
+Hannan-Rissanen + CSS estimation for the ARMA family; SARIMA seasonal lag structures;
+ARFIMA fractional filtering (fixed-width binomial window); VAR OLS / VARMA CSS / VECM
+reduced-rank regression; the GARCH family via Gaussian QMLE (ARCH/GARCH/IGARCH/TGARCH/
+GJRGARCH/EGARCH/APARCH/FIGARCH plus CCC-MGARCH and scalar two-step DCC); Kalman filter +
+RTS smoother, EKF, UKF, bootstrap particle filter and a GPB(1) Rao-Blackwell mixture
+filter; Gaussian HMM (Baum-Welch + Viterbi), Markov-switching regression/AR and mixture
+AR; PELT/binseg/bottom-up changepoint detection plus Adams-MacKay BOCPD; periodogram,
+Welch PSD, Morlet CWT, DWT/IDWT (haar/db2, perfect reconstruction), STFT, Hilbert
+transform; ADF/KPSS/PP/Ljung-Box/DW/ARCH-LM/Granger/Johansen diagnostics; forecasting
+dispatchers, confidence bands, walk-forward backtesting and rolling-origin CV.
+Conventions introduced: fluent .fit() returning self and ForecastResult result objects.
+Eleven construction/logic bugs were caught by smoke tests before shipping and are logged
+in Probleme.md [13]-[19] (integrated-model forecast seeding, FIGARCH filter sign, KPSS
+interpolation direction, ADF explicit-lag semantics, particle-filter shape defense, BOCPD
+reset-hypothesis predictive, DWT normalization/synthesis pair). Oracle checks: AR/VAR
+coefficients match statsmodels exactly (shared OLS), ADF/Ljung-Box statistics to 1e-8;
+GARCH recovery on known DGPs within tolerance. Manual session exercised the full
+diagnose-fit-forecast flow on simulated ARMA+GARCH data. Suite: 236 passed / 2 skipped;
+selftest extended to 111 checks. Progress: 167/794 public names. Version bumped to 0.2.0.

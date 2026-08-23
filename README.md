@@ -13,10 +13,10 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10%2B-FF8C00?style=flat-square&labelColor=1A1A1A&logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/%F0%9F%93%84%20license-MIT-8B5CF6?style=flat-square&labelColor=1A1A1A" alt="License: MIT">
-  <img src="https://img.shields.io/badge/tests-182%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="182 tests passing">
+  <img src="https://img.shields.io/badge/tests-236%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="236 tests passing">
   <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&style=flat-square&labelColor=1A1A1A&label=CI&logo=githubactions&logoColor=white" alt="CI status"></a>
   <a href="https://pypi.org/project/stochpylib/"><img src="https://img.shields.io/pypi/v/stochpylib?style=flat-square&labelColor=1A1A1A&color=FF8C00&logo=pypi&logoColor=white" alt="PyPI version"></a>
-  <img src="https://img.shields.io/badge/public%20names-106%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="106 of 794 spec names implemented">
+  <img src="https://img.shields.io/badge/public%20names-167%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="167 of 794 spec names implemented">
 </p>
 
 <p align="center">
@@ -93,17 +93,18 @@ price = AntitheticVariates(n_simulations=100_000).price_european_call(
 
 ## Current Status
 
-Early development — three modules implemented so far:
+Early development — four modules implemented so far:
 
 | Module | Public names | What's inside |
 |---|---|---|
 | `stochpylib.probability` | 21 | sample spaces, events, conditional probability, Bayes' theorem, combinatorics (factorial … derangements, Stirling, Bell, Catalan), independence checks |
 | `stochpylib.distributions` | 60 | 47 distributions (discrete, continuous, multivariate, heavy-tailed) behind the common interface |
 | `stochpylib.montecarlo` | 25 | quasi-random sequences, crude/QMC/importance/rejection/stratified estimators, variance reduction, applications |
+| `stochpylib.timeseries` | 61 | ARIMA/SARIMA/ARFIMA/VAR/VECM, GARCH family, Kalman/EKF/UKF/particle filters, HMM & regime switching, changepoints, spectral analysis, classical diagnostics |
 
 Exact progress against the full design spec lives in
 [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md)
-(currently **106 / 794 public names**).
+(currently **167 / 794 public names**).
 
 ## Download
 
@@ -132,7 +133,7 @@ For local development (this repo cloned, a virtual environment active):
 pip install -e ".[dev]"     # runtime deps + pytest
 pytest tests/ -v            # full test suite must be green before you start changing things
 spl --version               # verify your editable install
-spl --test                  # embedded self-check (106 checks), no pytest needed
+spl --test                  # embedded self-check (111 checks), no pytest needed
 ```
 
 Then implement or improve one module at a time and run the wrap-up procedure described in
@@ -168,7 +169,7 @@ when not installed through pip.
 
 ### `spl --test`
 
-Runs the embedded self-check suite shipped inside the wheel (**106 checks**): package sanity,
+Runs the embedded self-check suite shipped inside the wheel (**111 checks**): package sanity,
 one closed-form spot check per distribution family, Monte Carlo convergence sanity. This works
 after any `pip install` — no pytest, no source checkout — making it the quickest way to verify
 an installation. Exits non-zero on any failure.
@@ -212,7 +213,7 @@ Everything a contributor or maintainer needs lives in committed docs:
 pytest tests/ -v
 ```
 
-**182 passed / 2 skipped** as of the `montecarlo` module. Tests are deterministic (fixed seeds
+**236 passed / 2 skipped** as of the `timeseries` module. Tests are deterministic (fixed seeds
 everywhere), live outside the installed package, and use `scipy.stats` as the reference oracle.
 Statistical assertions are set at ≥ 3 standard errors so results are stable while staying
 meaningful. Additionally, `spl --test` re-verifies any installation in seconds.
