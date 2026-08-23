@@ -21,24 +21,33 @@ import numpy as np
 import pytest
 from scipy import stats as spt
 
-import stochpylib
 from stochpylib import timeseries as ts
 from stochpylib.timeseries import (
-    AR, ARCH, ARFIMA, ARIMA, ARMA, BinarySegmentation, BottomUp, ChangePointDetection,
-    DecompositionResult, DCC_GARCH, DWTTransform, EGARCH, ExtendedKalmanFilter,
-    ForecastResult, GARCH, GJRGARCH, HPFilter, HiddenMarkovModel, Hilbert,
-    IDWTTransform, IGARCH, KalmanFilter, KalmanSmoother, MixtureAutoregressive,
-    MGARCH, ParticleFilter, PELT, Periodogram, PowerSpectrum, RaoBlackwellFilter,
-    RegimeSwitching, SARIMA, SpectralAnalysis, StateSpaceModel, STFT,
-    STLDecomposition, SeasonalDecomposition, SwitchingRegression, TGARCH,
-    TrendFilter, UnscentedKalmanFilter, VECM, VAR, VARMA, WaveletTransform,
-    X11Decomposition, adf_test, arch_test, backtesting, confidence_bands,
-    cross_validation_ts, durbin_watson, forecast, granger_causality,
-    johansen_test, kpss_test, ljung_box, pp_test, predict,
+    AR, ARMA, ARIMA, SARIMA, ARFIMA, VAR, VARMA, VECM,
+    GARCH, IGARCH, TGARCH, GJRGARCH, EGARCH, APARCH, FIGARCH, MGARCH, DCC_GARCH,
+    StateSpaceModel, KalmanFilter, KalmanSmoother, ExtendedKalmanFilter,
+    UnscentedKalmanFilter, ParticleFilter, RaoBlackwellFilter,
+    HiddenMarkovModel, SwitchingRegression, RegimeSwitching, MixtureAutoregressive,
+    ChangePointDetection, BayesianChangePoint, BinarySegmentation, BottomUp, PELT,
+    SpectralAnalysis, Periodogram, PowerSpectrum, WaveletTransform,
+    CWTTransform, DWTTransform, STFT,
+    SeasonalDecomposition, STLDecomposition, X11Decomposition, TrendFilter, HPFilter,
+    ForecastResult, TestResult,
+    forecast, predict, confidence_bands, backtesting, cross_validation_ts,
+    adf_test, kpss_test, pp_test, ljung_box, durbin_watson, arch_test,
+    granger_causality, johansen_test,
 )
-
 from stochpylib.timeseries._utils import frac_diff_weights
-from stochpylib.timeseries.spectral import Hilbert
+from stochpylib.timeseries.spectral import Hilbert, IDWTTransform
+from stochpylib.timeseries.decomposition import (
+    SeasonalDecomposition as _SD, STLDecomposition as _STL,
+    X11Decomposition as _X11, TrendFilter as _TF, HPFilter as _HPF,
+)
+from stochpylib.timeseries.spectral import (
+    Periodogram as _PG, PowerSpectrum as _PS, STFT as _STFT,
+)
+from stochpylib.gaussian_processes.kernels import RBFKernel
+from stochpylib.gaussian_processes.inference import ExpectationPropagation
 
 
 def _sm():
@@ -78,6 +87,7 @@ def test_spec_names_present():
     }
     missing = spec - set(ts.__all__)
     assert not missing, f"missing exports: {missing}"
+    import stochpylib
     assert stochpylib.timeseries is ts
 
 

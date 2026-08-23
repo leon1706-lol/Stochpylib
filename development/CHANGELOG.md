@@ -150,3 +150,25 @@ coefficients match statsmodels exactly (shared OLS), ADF/Ljung-Box statistics to
 GARCH recovery on known DGPs within tolerance. Manual session exercised the full
 diagnose-fit-forecast flow on simulated ARMA+GARCH data. Suite: 236 passed / 2 skipped;
 selftest extended to 111 checks. Progress: 167/794 public names. Version bumped to 0.2.0.
+
+## Phase 11 - Fifth module: `stochpylib.gaussian_processes`
+
+Implemented the full GP module (36/36 spec names across five submodules), natively on
+numpy/scipy with no new runtime dependencies. Kernel zoo: 10 covariance functions (RBF,
+Matérn closed forms, Periodic per-dim, Linear, Polynomial, RationalQuadratic, WhiteNoise,
+SpectralMixture, NeuralNetwork, ArcCosine) all callable and composable via operator
+overloading (+/*/×²) — the load-bearing ARCHITECTURE convention now fully realized.
+kernel_ops: KernelSum/Product/Power/Composition with flattened parameter trees for
+optimization; kernel_matrix and finite-difference kernel_grad. Models: ExactInference
+(Cholesky solve + LML), GPRegression, GaussianProcess base, GPTimeSeriesModel.
+Classification: LaplacePropagation (RW Alg 3.1, logit/probit links, predictive probit
+correction), ExpectationPropagation (experimental — documented convergence issues,
+Probleme [20]), VariationalInference (Jaakkola-Jordan bound, logit only). Sparse:
+FITC/VFE/SparseVFE with Titsias closed-form posterior over inducing variables; verified
+against exact GP predictions. DeepGP: documented two-layer composition (sparse latent →
+observed). Hyperparams: MarginalLikelihood, optimize_hyperparams (L-BFGS on log-ML),
+ARD initializer, cross_validate_gp. Seven construction bugs caught by smoke tests
+(Probleme [13]-[19] from timeseries plus [21] DWT normalization, [22] NN kernel formula).
+Manual session: composed kernels, optimized hyperparameters, compared sparse vs exact.
+Tests: tests/gaussian_processes/tests.py (28 cases); selftest extended to 117 checks.
+Full suite: 264 passed / 2 skipped. Progress: 203/794 public names.
