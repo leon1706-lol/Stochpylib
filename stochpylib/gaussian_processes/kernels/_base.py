@@ -28,7 +28,7 @@ class BaseKernel:
 
     def diag(self, X):
         """Diagonal of k(X, X) — overridden where cheaper than the full matrix."""
-        return np.diag(self._matrix(_as_2d(X)))
+        return np.diag(self._matrix(_as_2d(X), None))
 
     def _matrix(self, X, Y):
         raise NotImplementedError

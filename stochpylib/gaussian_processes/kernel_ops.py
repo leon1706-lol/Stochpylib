@@ -92,6 +92,14 @@ class KernelProduct(_CompositeBase):
             idx_kernel += 1
         return out
 
+    def diag(self, X):
+        out = None
+        for part in self.parts:
+            term = np.full(len(X), float(part)) \
+                if isinstance(part, (int, float)) else part.diag(X)
+            out = term.copy() if out is None else out * term
+        return out
+
 
 # grouping aliases matching the spec naming (stationary / non-stationary families)
 from stochpylib.gaussian_processes.kernels._base import (
@@ -114,6 +122,9 @@ class KernelPower(BaseKernel):
     def _matrix(self, X, Y):
         base = self.kernel(X, Y)
         return base ** self.exponent
+
+    def diag(self, X):
+        return self.kernel.diag(X) ** self.exponent
 
     def get_params(self):
         inner = {f"k__{k}": v for k, v in self.kernel.get_params().items()}

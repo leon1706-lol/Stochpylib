@@ -205,6 +205,40 @@ def run(verbose=False):
     adf_res = ts_adf(np.cumsum(rng_ts.standard_normal(400)))
     st.check("TS: ADF walk fails to reject", adf_res.statistic > -3.41)
 
+    # gaussian_processes quick checks
+    from stochpylib.gaussian_processes import (
+        GPClassification,
+        GPRegression,
+        RBFKernel,
+        SparseGaussianProcess,
+    )
+
+    rng_gp = np.random.default_rng(41)
+    X_tr = np.linspace(0.0, 1.0, 24)[:, None]
+    y_tr = np.sin(2 * np.pi * X_tr[:, 0]) + 0.05 * rng_gp.standard_normal(24)
+    gp_reg = GPRegression(kernel=RBFKernel(length_scale=0.2), noise=0.01).fit(X_tr, y_tr)
+    mu_gp, sd_gp = gp_reg.predict(X_tr, return_std=True)
+    st.check("GP: regression tracks sine", float(np.max(np.abs(mu_gp - y_tr))) < 0.15)
+    st.check("GP: predictive std positive/finite",
+             bool(np.all(sd_gp > 0)) and bool(np.all(np.isfinite(sd_gp))))
+    st.check("GP: log-marginal-likelihood finite",
+             bool(np.isfinite(gp_reg.log_marginal_likelihood_)))
+    y_cl = (X_tr[:, 0] > 0.5).astype(float)
+    gpc = GPClassification(kernel=RBFKernel(length_scale=0.2)).fit(X_tr, y_cl)
+    probs = gpc.predict_proba(X_tr)
+    st.check("GP: classification probs in [0,1]",
+             bool(np.all((probs >= 0.0) & (probs <= 1.0))))
+    st.check("GP: classifier separates halves",
+             float(probs[y_cl == 1].mean()) > 0.7
+             and float(probs[y_cl == 0].mean()) < 0.3)
+    sgp = SparseGaussianProcess(
+        kernel=RBFKernel(length_scale=0.3),
+        inducing_points=np.linspace(0.0, 1.0, 8)[:, None],
+        noise=0.01,
+    ).fit(X_tr, y_tr)
+    mu_s = sgp.predict(X_tr, return_std=False)
+    st.check("GP: sparse approximates exact", float(np.max(np.abs(mu_s - mu_gp))) < 0.2)
+
     if verbose:
         status = "OK" if not st.failures else f"FAILED ({len(st.failures)})"
         print(f"selftest: {st.count} checks, {status}")

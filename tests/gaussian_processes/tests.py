@@ -3,7 +3,8 @@
 Covers: kernel zoo (PSD/symmetry, operator identities, gradient FD checks),
 exact GP regression (zero-noise interpolation, Bayesian-ridge equivalence),
 hyperparameter optimization (lengthscale recovery), sparse approximations
-(FITC/VFE vs exact), classification accuracy (Laplace/VI), and DeepGP smoke.
+(FITC/VFE vs exact incl. the M=T identity), classification via the engines and
+the spec-facing ``GPClassification`` facade, and DeepGP smoke.
 
 All randomness is seeded.
 """
@@ -13,9 +14,10 @@ import math
 import numpy as np
 import pytest
 
+import stochpylib
 from stochpylib import gaussian_processes as gp
 from stochpylib.gaussian_processes import (
-    DeepGP, LaplacePropagation, RBFKernel, VariationalInference,
+    DeepGP, GPClassification, LaplacePropagation, RBFKernel, VariationalInference,
 )
 
 # ------------------------------------------------------------------ export surface
@@ -29,9 +31,9 @@ SPEC_NAMES = {
     "KernelSum", "KernelProduct", "KernelPower", "KernelComposition",
     "StationaryKernelOp", "NonStationaryKernelOp", "kernel_matrix", "kernel_grad",
     # models
-    "GaussianProcess", "GPRegression", "GPClassification_placeholder_removed",
-    "GPTimeSeriesModel", "SparseGaussianProcess_alias_removed",
-    "InducingPointGP_alias_removed", "DeepGP",
+    "GaussianProcess", "GPRegression", "GPClassification",
+    "GPTimeSeriesModel", "SparseGaussianProcess",
+    "InducingPointGP", "DeepGP",
     # inference
     "LaplacePropagation", "ExpectationPropagation", "VariationalInference",
     # sparse
@@ -46,6 +48,27 @@ def test_module_has_core_exports():
             "LaplacePropagation", "FITC", "VFE", "optimize_hyperparams"}
     for name in core:
         assert hasattr(gp, name), f"missing: {name}"
+
+
+def test_all_spec_names_exported():
+    for name in SPEC_NAMES:
+        assert hasattr(gp, name), f"spec name missing from package: {name}"
+
+
+def test_gaussian_processes_wired_into_top_level_package():
+    assert "gaussian_processes" in stochpylib.__all__
+    assert hasattr(stochpylib, "gaussian_processes")
+    assert "GPClassification" in stochpylib.gaussian_processes.__all__
+
+
+def test_inference_module_is_classification_only():
+    # the broken duplicate FITC/VFE copy was removed from inference.py (Probleme [21])
+    import stochpylib.gaussian_processes.inference as inf
+
+    for name in ("FITC", "VFE", "SparseVFE"):
+        assert not hasattr(inf, name), f"{name} must live in sparse.py only"
+    for name in ("LaplacePropagation", "ExpectationPropagation", "VariationalInference"):
+        assert hasattr(inf, name)
 
 
 # ------------------------------------------------------------------ kernels
@@ -124,6 +147,40 @@ def test_kernel_grad_matches_finite_difference():
 def test_matern_kernel_nu_validation():
     with pytest.raises(ValueError):
         gp.MaternKernel(nu=1.0)
+
+
+def test_diag_matches_full_matrix_all_kernels():
+    # Regression lock for the broken single-arg BaseKernel.diag (Probleme [24]):
+    # every kernel must expose a working diag() equal to diag(k(X, X)).
+    X = np.linspace(-1.5, 1.5, 21)[:, None]
+    makes = dict(KERNEL_ZOO)
+    makes["RBF_ARD"] = lambda: gp.RBFKernel(length_scale=np.array([1.0]))
+    for name, make in makes.items():
+        k = make()
+        d = k.diag(X)
+        K = k(X)
+        assert d.shape == (len(X),), name
+        assert np.allclose(d, np.diag(K)), f"{name}: diag != diag(K)"
+
+
+def test_composite_diag_and_predict_with_product_kernel():
+    # KernelProduct/KernelPower used to inherit the broken diag() and crashed any
+    # exact-GP prediction built on a composed kernel (Probleme [24]).
+    rng = np.random.default_rng(965)
+    X = np.linspace(0, 4, 100)[:, None]
+    y = np.sin(2 * np.pi * X[:, 0]) + 0.05 * rng.standard_normal(100)
+    kern = gp.RBFKernel(0.6) * gp.PeriodicKernel(1.0, length_scale=3.0)
+    model = gp.GPRegression(kernel=kern, noise=0.05).fit(X, y)
+    mu, sd = model.predict(X, return_std=True)
+    assert mu.shape == (100,) and sd.shape == (100,)
+    assert np.all(sd > 0) and np.all(np.isfinite(mu))
+    assert np.max(np.abs(mu - y)) < 0.2
+
+    kpow = gp.RBFKernel(0.8) ** 2
+    assert np.allclose(kpow.diag(X), np.diag(kpow(X)))
+    k_prod = gp.RBFKernel(0.8) * gp.WhiteNoiseKernel(0.2)
+    assert np.allclose(k_prod.diag(X), np.diag(k_prod(X)))
+    assert np.allclose(k_prod.diag(X), gp.RBFKernel(0.8).diag(X) * 0.2)
 
 
 # ------------------------------------------------------------------ exact regression
@@ -223,10 +280,57 @@ def test_sparse_vfe_approximates_exact_gp():
 
     mu_exact = exact.predict(X, return_std=False)
     mu_sparse = sparse.predict(X, return_std=False)
-    # VFE with moderate inducing count approximates but has known numerical
-    # limitations under simple direction-number initialization (Probleme [11])
+    # With the whitened (numerically stable) posterior the pseudo-point
+    # approximation tracks the exact GP closely at M=30 for T=200.
     corr = np.corrcoef(mu_exact, mu_sparse)[0, 1]
-    assert corr > 0.30
+    assert corr > 0.999
+    assert np.max(np.abs(mu_exact - mu_sparse)) < 0.05
+
+
+def test_sparse_equals_exact_gp_when_inducing_points_are_training_points():
+    # M = T: the low-rank prior spans the full covariance, so VFE/FITC must
+    # reproduce the exact GP posterior to machine precision.
+    rng = np.random.default_rng(961)
+    X = np.linspace(-2, 2, 40)[:, None]
+    y = np.sin(2 * X.ravel()) + 0.05 * rng.standard_normal(40)
+    kern = RBFKernel(1.0)
+    exact = gp.GPRegression(kernel=kern, noise=0.05).fit(X, y)
+    mu_e, sd_e = exact.predict(X, return_std=True)
+
+    for cls in (gp.VFE, gp.FITC):
+        sparse = cls(kernel=kern, inducing_points=X.copy(), noise=0.05).fit(X, y)
+        mu_s, sd_s = sparse.predict(X, return_std=True)
+        assert np.max(np.abs(mu_s - mu_e)) < 1e-8, cls.__name__
+        assert np.max(np.abs(sd_s - sd_e)) < 1e-7, cls.__name__
+
+
+def test_sparse_stable_for_many_inducing_points():
+    # Regression lock for the raw-inverse instability (Probleme [23]): with the
+    # whitened engine, growing M must converge to the exact posterior instead of
+    # blowing up once Kuu becomes near-singular.
+    rng = np.random.default_rng(962)
+    X = np.linspace(-3, 3, 120)[:, None]
+    y = np.sin(2 * X.ravel()) + 0.05 * rng.standard_normal(120)
+    kern = RBFKernel(1.5)
+    mu_e = gp.GPRegression(kernel=kern, noise=0.05).fit(X, y).predict(
+        X, return_std=False)
+    devs = []
+    for m in (20, 60, 120):
+        Z = np.linspace(-3, 3, m)[:, None]
+        sgp = gp.SparseGaussianProcess(kernel=kern, inducing_points=Z,
+                                       noise=0.05).fit(X, y)
+        devs.append(float(np.max(np.abs(sgp.predict(X, return_std=False) - mu_e))))
+    assert devs[0] < 0.1 and devs[-1] < 1e-6
+
+
+def test_sparse_lml_method_and_finite_values():
+    X = np.linspace(-1, 1, 50)[:, None]
+    y = X.ravel() ** 2 + 0.01 * np.sin(9 * X.ravel())
+    Z = np.linspace(-0.9, 0.9, 12)[:, None]
+    model = gp.VFE(kernel=RBFKernel(0.8), inducing_points=Z, noise=0.02).fit(X, y)
+    assert callable(model.log_marginal_likelihood)
+    assert np.isfinite(model.log_marginal_likelihood())
+    assert np.isfinite(model.log_marginal_likelihood_)
 
 
 def test_fitc_runs_on_small_data():
@@ -239,8 +343,21 @@ def test_fitc_runs_on_small_data():
     assert len(preds) == 50
 
 
-def test_sparse_vfe_is_vfe_alias():
+def test_spec_aliases_subclass_engines():
     assert issubclass(gp.SparseVFE, gp.VFE)
+    assert issubclass(gp.SparseGaussianProcess, gp.VFE)
+    assert issubclass(gp.InducingPointGP, gp.FITC)
+
+
+def test_inducing_point_gp_tracks_data():
+    rng = np.random.default_rng(963)
+    X = np.linspace(0, 4, 80)[:, None]
+    y = np.sin(X.ravel()) + 0.03 * rng.standard_normal(80)
+    Z = np.linspace(0, 4, 20)[:, None]
+    model = gp.InducingPointGP(kernel=RBFKernel(1.0), inducing_points=Z,
+                               noise=0.03).fit(X, y)
+    mu = model.predict(X, return_std=False)
+    assert np.max(np.abs(mu - y)) < 0.15
 
 
 # ------------------------------------------------------------------ classification
@@ -273,6 +390,55 @@ class TestClassification:
         probs = vi.predict_proba(X)
         acc = float(np.mean((probs > 0.5) == y))
         assert acc > 0.78  # JJ-bound is looser than Laplace (documented)
+
+
+class TestGPClassificationFacade:
+    @staticmethod
+    def _make_data(rng):
+        n = 120
+        X0 = rng.normal([0, 0], 0.7, size=(n // 2, 2))
+        X1 = rng.normal([2, 2], 0.7, size=(n // 2, 2))
+        X = np.vstack([X0, X1])
+        y = np.concatenate([np.zeros(n // 2), np.ones(n // 2)])
+        perm = rng.permutation(n)
+        return X[perm], y[perm]
+
+    def test_laplace_default_accuracy_and_labels(self):
+        rng = np.random.default_rng(971)
+        X, y = self._make_data(rng)
+        clf = GPClassification(kernel=RBFKernel(0.8)).fit(X, y)
+        probs = clf.predict_proba(X)
+        assert np.all((probs >= 0.0) & (probs <= 1.0))
+        acc = float(np.mean((probs > 0.5) == y))
+        assert acc > 0.90
+        labels = clf.predict(X)
+        assert set(np.unique(labels)) <= {0, 1}
+        assert np.array_equal(labels, (probs >= 0.5).astype(int))
+        assert np.isfinite(clf.log_marginal_likelihood_)
+
+    def test_vi_method_selection(self):
+        rng = np.random.default_rng(972)
+        X, y = self._make_data(rng)
+        clf = GPClassification(kernel=RBFKernel(0.8), method="vi").fit(X, y)
+        probs = clf.predict_proba(X)
+        acc = float(np.mean((probs > 0.5) == y))
+        assert acc > 0.75
+
+    def test_ep_method_runs(self):
+        rng = np.random.default_rng(973)
+        X, y = self._make_data(rng)
+        clf = GPClassification(kernel=RBFKernel(0.8), method="ep").fit(X, y)
+        probs = clf.predict_proba(X)
+        assert probs.shape == (len(y),)
+
+    def test_unknown_method_raises(self):
+        with pytest.raises(ValueError):
+            GPClassification(kernel=RBFKernel(0.8), method="nope")
+
+    def test_predict_proba_before_fit_raises(self):
+        clf = GPClassification(kernel=RBFKernel(0.8))
+        with pytest.raises(RuntimeError):
+            clf.predict_proba(np.zeros((3, 2)))
 
 
 # ------------------------------------------------------------------ deep gp

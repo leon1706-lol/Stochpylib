@@ -8,10 +8,13 @@ One subpackage per library module. Status:
   reduction, applications).
 - `timeseries/` — complete, tested (61 public names: linear models, volatility, state
   space, latent regimes, changepoints, spectral analysis, forecasting).
+- `gaussian_processes/` — complete, tested (36 public names: composable kernel zoo,
+  exact/sparse GP regression, Laplace/EP/VI classification, hyperparameter optimization).
 
 Public API is re-exported from `stochpylib/__init__.py`; currently `probability`,
-`distributions`, `montecarlo`, and `timeseries`. The package also ships a CLI (`spl`, see
-`cli.py`) and an embedded self-check suite (`selftest.py`, run via `spl --test`).
+`distributions`, `montecarlo`, `timeseries`, and `gaussian_processes`. The package also
+ships a CLI (`spl`, see `cli.py`) and an embedded self-check suite (`selftest.py`, run
+via `spl --test`).
 
 Target API for every planned module lives in the private Obsidian vault
 (`../Stochpylib-Obsidian-Vault/Modules/<name>.md`).

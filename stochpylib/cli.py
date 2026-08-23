@@ -63,6 +63,38 @@ def _implemented_overview():
             f"{name_block}"
         )
 
+    if hasattr(stochpylib, "montecarlo"):
+        blocks.append(
+            "  montecarlo       quasi-random sequences (Sobol, Halton, Faure,\n"
+            "                   Niederreiter, digital nets), crude_mc() / QMC /\n"
+            "                   importance / rejection / stratified estimators with\n"
+            "                   honest standard errors, variance reduction (antithetic,\n"
+            "                   control variates, Latin hypercube, conditioned MC),\n"
+            "                   applications (integration, pi, option pricing, VaR/ES,\n"
+            "                   reliability, sensitivity)"
+        )
+
+    if hasattr(stochpylib, "timeseries"):
+        blocks.append(
+            "  timeseries       AR/MA/ARMA/ARIMA/SARIMA/ARFIMA, VAR/VARMA/VECM,\n"
+            "                   GARCH family (ARCH..FIGARCH, MGARCH/DCC), Kalman/\n"
+            "                   EKF/UKF/particle filters, HMM & regime switching,\n"
+            "                   changepoint detection, spectral analysis (periodogram,\n"
+            "                   CWT/DWT/STFT/Hilbert), ADF/KPSS/Ljung-Box/Granger\n"
+            "                   diagnostics, forecasting & backtesting"
+        )
+
+    if hasattr(stochpylib, "gaussian_processes"):
+        blocks.append(
+            "  gaussian_processes\n"
+            "                   GP regression & classification: composable kernel zoo\n"
+            "                   (RBF, Matern, Periodic, Linear, Polynomial,\n"
+            "                   RationalQuadratic, WhiteNoise, SpectralMixture, NN,\n"
+            "                   ArcCosine) with +/*/** operators, exact inference,\n"
+            "                   Laplace/EP/VI classification engines, FITC/VFE sparse\n"
+            "                   approximations, DeepGP, hyperparameter optimization"
+        )
+
     return "\n".join(blocks)
 
 
@@ -96,9 +128,10 @@ Run everything from any Python prompt after `pip install stochpylib`.
         description=description,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
-            "roadmap: many more modules are planned (timeseries, gaussian_processes, copulas,\n"
-            "survival, queueing, financial_stochastics, montecarlo, bayesian, statistics, ...) -\n"
-            "see the repository README and development/Implementation-Checklist.md.\n\n"
+            "roadmap: many more modules are planned (copulas, survival, queueing,\n"
+            "information_theory, levy_processes, financial_stochastics, advanced_mcmc,\n"
+            "bayesian, statistics, ...) - see the repository README and\n"
+            "development/Implementation-Checklist.md.\n\n"
             "docs: README.md - contributing: CONTRIBUTING.md - security: SECURITY.md"
         ),
     )

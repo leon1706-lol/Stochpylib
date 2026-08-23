@@ -468,11 +468,22 @@ def test_cli_help_shows_library_overview(capsys):
         "Normal",
         "StableDistribution",
         ".ks_test()",
+        # implemented-module blocks
+        "montecarlo",
+        "Sobol",
+        "timeseries",
+        "GARCH",
+        "gaussian_processes",
+        "GP regression & classification",
         "Quick start",
         "--version",
         "--test",
     ):
         assert token in out, f"help output missing {token!r}"
+    # implemented modules must not be listed as roadmap/planned anymore
+    roadmap = out[out.index("roadmap:"):]
+    for planned_away in ("timeseries,", "gaussian_processes,", "montecarlo,"):
+        assert planned_away not in roadmap
 
 
 def test_cli_selftest_flag_green(capsys):

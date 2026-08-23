@@ -3,9 +3,17 @@
 import numpy as np
 
 from stochpylib.gaussian_processes._utils import _as_2d, cholesky_with_jitter
+from stochpylib.gaussian_processes.inference import (
+    ExpectationPropagation,
+    LaplacePropagation,
+    VariationalInference,
+)
 from stochpylib.timeseries._result import ForecastResult
 
-__all__ = ["ExactInference", "GaussianProcess", "GPRegression", "GPTimeSeriesModel"]
+__all__ = [
+    "ExactInference", "GaussianProcess", "GPRegression", "GPTimeSeriesModel",
+    "GPClassification",
+]
 
 
 def _as_series(y):
@@ -114,3 +122,62 @@ class GPTimeSeriesModel(GaussianProcess):
         X_future = np.arange(start, start + horizon)[:, None]
         mean, std = self.predict(X_future, return_std=True)
         return ForecastResult(mean, std)
+
+
+class GPClassification:
+    """Spec-facing binary Gaussian-process classifier (targets {0, 1}).
+
+    Thin facade over the approximate classification engines — ``method`` selects
+
+    - ``"laplace"`` (default): Laplace approximation, RW Algorithm 3.1; supports
+      ``link="logit"`` (with the kappa predictive correction) and ``"probit"``.
+    - ``"ep"``: damped expectation propagation (**experimental**, may not converge).
+    - ``"vi"``: Jaakkola-Jordan variational bound (logit link only).
+
+    Extra keyword arguments are forwarded to the engine constructor::
+
+        gp = GPClassification(kernel=k).fit(X_train, y_train)
+        probs = gp.predict_proba(X_test)          # P(y=1 | x)
+        labels = gp.predict(X_test)               # 0/1 decisions at 0.5
+    """
+
+    _engines = {
+        "laplace": LaplacePropagation,
+        "ep": ExpectationPropagation,
+        "vi": VariationalInference,
+    }
+
+    def __init__(self, kernel, method="laplace", **engine_kwargs):
+        if method not in self._engines:
+            raise ValueError(
+                f"unknown method {method!r}; expected one of {sorted(self._engines)}")
+        self.kernel = kernel
+        self.method = str(method)
+        self.engine_kwargs = dict(engine_kwargs)
+        self.engine_ = None
+        self.X_train = None
+        self.y_train = None
+        self.log_marginal_likelihood_ = None
+
+    def fit(self, X, y):
+        engine = self._engines[self.method](self.kernel, **self.engine_kwargs)
+        self.engine_ = engine.fit(X, y)
+        self.X_train = self.engine_.X_train
+        self.y_train = self.engine_.y_train
+        self.log_marginal_likelihood_ = getattr(
+            engine, "log_marginal_likelihood_", None)
+        return self
+
+    def predict_proba(self, X_test):
+        """Posterior P(y=1 | x) for each test point."""
+        if self.engine_ is None:
+            raise RuntimeError("fit() must be called first")
+        if hasattr(self.engine_, "predict_proba"):
+            probs = self.engine_.predict_proba(X_test)
+        else:  # LaplacePropagation exposes .predict for class probabilities
+            probs = self.engine_.predict(X_test)
+        return np.asarray(probs, dtype=float)
+
+    def predict(self, X_test):
+        """0/1 class labels at the 0.5 probability threshold."""
+        return (self.predict_proba(X_test) >= 0.5).astype(int)

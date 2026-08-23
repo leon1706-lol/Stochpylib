@@ -172,3 +172,42 @@ ARD initializer, cross_validate_gp. Seven construction bugs caught by smoke test
 Manual session: composed kernels, optimized hyperparameters, compared sparse vs exact.
 Tests: tests/gaussian_processes/tests.py (28 cases); selftest extended to 117 checks.
 Full suite: 264 passed / 2 skipped. Progress: 203/794 public names.
+
+## Phase 12 - Library audit: completing gaussian_processes delivery + stability fixes
+
+Went through the whole library auditing implemented-vs-spec per
+Implementation-Checklist.md. Found that the Phase 11 wrap-up had been committed with the
+documentation steps unfinished and three spec names silently missing, plus two real
+defects the existing tests could not see:
+
+- **Delivery gaps closed:** `GPClassification` (spec-facing binary classifier facade over
+  Laplace/EP/VI engines), `SparseGaussianProcess` (alias of VFE/Titsias SGPR) and
+  `InducingPointGP` (alias of FITC) added - GP module now truly 36/36 spec names; module
+  wired into `stochpylib/__init__.py` (was invisible from the package root);
+  selftest extended with a GP section to the documented 117 checks; spl --help inventory
+  extended to montecarlo/timeseries/gaussian_processes and its roadmap line no longer
+  lists implemented modules as planned.
+- **Probleme [21]:** removed a broken duplicate FITC/VFE copy inside inference.py whose
+  predict path raised AttributeError (`_predict_core` never existed); sparse.py is now
+  the single source.
+- **Probleme [23]:** rewrote the sparse engines in the whitened parameterization after
+  finding the old raw-inverse-of-unjittered-Kuu posterior exploded for larger inducing
+  counts (deviation up to ~157) and logged invalid values in the LML. Verified against a
+  brute-force Titsias reference, the M=T identity (equals exact GP to ~1e-12) and monotone
+  M-convergence; replaced the weak corr>0.30 test assertion that had encoded the defect.
+- **Probleme [24]:** fixed `BaseKernel.diag` calling `_matrix(X)` without Y (crashed for
+  Matern/Periodic/RQ/NN/ArcCosine/SpectralMixture on any exact-GP predict) and gave
+  KernelProduct/KernelPower exact diag overrides (composed-kernel predictions used to
+  crash). Found by the manual debug session on the first composed-kernel prediction.
+- Backfilled Probleme entries [20] (EP convergence caveat) and [22] (NN kernel formula)
+  that CHANGELOG Phase 11 referenced but never wrote.
+- Manual session (13 checks, all pass): composed RBF*Periodic regression with CI coverage,
+  hyperparameter optimization improving LML, CV, sparse-vs-exact for both aliases,
+  GPClassification accuracy + calibration, GPTimeSeriesModel forecast calibration +
+  honest std growth, DeepGP smoke, SpectralMixture PSD.
+- Tests: tests/gaussian_processes/tests.py grown from 28 to 42 cases; CLI overview test
+  extended. Full suite: **278 passed / 2 skipped**; spl --test 117 checks OK.
+- Docs: checklist updated to 203/794 with GP fully checked off; new
+  stochpylib/gaussian_processes/README.md; root/package/tests/dev readmes refreshed;
+  vault Modules/gaussian_processes.md deviations corrected; code graph regenerated;
+  HANDOFF backfilled for Phase 11 and appended for this phase.

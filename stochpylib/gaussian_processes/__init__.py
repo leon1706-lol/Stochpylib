@@ -12,12 +12,15 @@ from stochpylib.gaussian_processes.kernel_ops import (
     NonStationaryKernelOp, StationaryKernelOp, kernel_grad, kernel_matrix,
 )
 from stochpylib.gaussian_processes.models import (
-    ExactInference, GaussianProcess, GPRegression, GPTimeSeriesModel,
+    ExactInference, GaussianProcess, GPClassification, GPRegression,
+    GPTimeSeriesModel,
 )
 from stochpylib.gaussian_processes.inference import (
     ExpectationPropagation, LaplacePropagation, VariationalInference,
 )
-from stochpylib.gaussian_processes.sparse import FITC, SparseVFE, VFE
+from stochpylib.gaussian_processes.sparse import (
+    FITC, InducingPointGP, SparseGaussianProcess, SparseVFE, VFE,
+)
 from stochpylib.gaussian_processes.deep_gp import DeepGP
 from stochpylib.gaussian_processes.hyperparams import (
     ARD, MarginalLikelihood, cross_validate_gp, optimize_hyperparams,
@@ -35,10 +38,11 @@ __all__ = [
     "kernel_matrix", "kernel_grad",
     # models
     "GaussianProcess", "GPRegression", "ExactInference", "GPTimeSeriesModel",
+    "GPClassification",
     # inference engines
     "LaplacePropagation", "ExpectationPropagation", "VariationalInference",
     # sparse
-    "FITC", "VFE", "SparseVFE",
+    "FITC", "VFE", "SparseVFE", "InducingPointGP", "SparseGaussianProcess",
     # deep
     "DeepGP",
     # hyperparams

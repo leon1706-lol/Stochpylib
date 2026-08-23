@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 167 / 794 public names implemented.**
+**Progress: 203 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -180,50 +180,50 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `backtesting()`
     - [x] `cross_validation_ts()`
 
-## [gaussian_processes](../Stochpylib-Obsidian-Vault/Modules/gaussian_processes.md) — Gaussian process models & kernels (0/36)
+## [gaussian_processes](../Stochpylib-Obsidian-Vault/Modules/gaussian_processes.md) — Gaussian process models & kernels (36/36)
 
-- [ ] **stochpylib.gaussian_processes** module overall
-  - [ ] `gaussian_processes.models`
-    - [ ] `GaussianProcess`
-    - [ ] `GPRegression`
-    - [ ] `GPClassification`
-    - [ ] `GPTimeSeriesModel`
-    - [ ] `SparseGaussianProcess`
-    - [ ] `InducingPointGP`
-    - [ ] `DeepGP`
-  - [ ] `gaussian_processes.kernels`
-    - [ ] `RBFKernel`
-    - [ ] `MaternKernel`
-    - [ ] `PeriodicKernel`
-    - [ ] `LinearKernel`
-    - [ ] `PolynomialKernel`
-    - [ ] `RationalQuadraticKernel`
-    - [ ] `WhiteNoiseKernel`
-    - [ ] `SpectralMixtureKernel`
-    - [ ] `NeuralNetworkKernel`
-    - [ ] `ArcCosineKernel`
-  - [ ] `gaussian_processes.kernel_ops`
-    - [ ] `KernelComposition`
-    - [ ] `KernelSum`
-    - [ ] `KernelProduct`
-    - [ ] `KernelPower`
-    - [ ] `StationaryKernel`
-    - [ ] `NonStationaryKernel`
-    - [ ] `kernel_matrix()`
-    - [ ] `kernel_grad()`
-  - [ ] `gaussian_processes.inference`
-    - [ ] `ExactInference`
-    - [ ] `LaplacePropagation`
-    - [ ] `ExpectationPropagation`
-    - [ ] `VariationalInference`
-    - [ ] `FITC`
-    - [ ] `VFE`
-    - [ ] `SparseVFE`
-  - [ ] `gaussian_processes.hyperparams`
-    - [ ] `MarginalLikelihood`
-    - [ ] `ARD`
-    - [ ] `optimize_hyperparams()`
-    - [ ] `cross_validate_gp()`
+- [x] **stochpylib.gaussian_processes** module overall
+  - [x] `gaussian_processes.models`
+    - [x] `GaussianProcess`
+    - [x] `GPRegression`
+    - [x] `GPClassification`
+    - [x] `GPTimeSeriesModel`
+    - [x] `SparseGaussianProcess`
+    - [x] `InducingPointGP`
+    - [x] `DeepGP`
+  - [x] `gaussian_processes.kernels`
+    - [x] `RBFKernel`
+    - [x] `MaternKernel`
+    - [x] `PeriodicKernel`
+    - [x] `LinearKernel`
+    - [x] `PolynomialKernel`
+    - [x] `RationalQuadraticKernel`
+    - [x] `WhiteNoiseKernel`
+    - [x] `SpectralMixtureKernel`
+    - [x] `NeuralNetworkKernel`
+    - [x] `ArcCosineKernel`
+  - [x] `gaussian_processes.kernel_ops`
+    - [x] `KernelComposition`
+    - [x] `KernelSum`
+    - [x] `KernelProduct`
+    - [x] `KernelPower`
+    - [x] `StationaryKernel`
+    - [x] `NonStationaryKernel`
+    - [x] `kernel_matrix()`
+    - [x] `kernel_grad()`
+  - [x] `gaussian_processes.inference`
+    - [x] `ExactInference`
+    - [x] `LaplacePropagation`
+    - [x] `ExpectationPropagation`
+    - [x] `VariationalInference`
+    - [x] `FITC`
+    - [x] `VFE`
+    - [x] `SparseVFE`
+  - [x] `gaussian_processes.hyperparams`
+    - [x] `MarginalLikelihood`
+    - [x] `ARD`
+    - [x] `optimize_hyperparams()`
+    - [x] `cross_validate_gp()`
 
 ## [copulas](../Stochpylib-Obsidian-Vault/Modules/copulas.md) — Dependence modeling with copulas (0/26)
 

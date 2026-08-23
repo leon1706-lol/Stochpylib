@@ -1,9 +1,4 @@
-"""Approximate inference engines for sparse regression and GP classification.
-
-Sparse regression (shared fit/predict surface):
-- ``FITC``  — fully independent training conditional (Snelson & Ghahramani, 2006).
-- ``VFE``   — Titsias' variational free-energy bound (SGPR); ``SparseVFE`` is the
-  spec-facing alias.
+"""Approximate inference engines for GP classification.
 
 Classification engines (binary targets {0,1}, latent f ~ N(0, K)):
 - ``LaplacePropagation`` — Rasmussen-Williams Algorithm 3.1 (Newton on the mode),
@@ -13,116 +8,24 @@ Classification engines (binary targets {0,1}, latent f ~ N(0, K)):
   Gauss-Hermite quadrature of ``p(y|f) N(f | cavity)`` (correct by construction).
 - ``VariationalInference`` — Jaakkola-Jordan bound for the LOGIT link: closed-form
   coordinate ascent between xi and the Gaussian posterior (documented: logit only).
+
+The sparse-regression engines (``FITC``/``VFE``/``SparseVFE``) live in
+:mod:`stochpylib.gaussian_processes.sparse` — the duplicate copy that used to sit in
+this module had a broken predict path and was removed (Probleme [21]).
 """
 
 import numpy as np
 from scipy import special, stats
 
-from stochpylib.gaussian_processes._utils import _as_2d, cholesky_with_jitter
+from stochpylib.gaussian_processes._utils import _as_2d
 
 __all__ = [
-    "FITC", "VFE", "SparseVFE",
     "LaplacePropagation", "ExpectationPropagation", "VariationalInference",
 ]
 
 
 def _sigmoid(z):
     return special.expit(z)
-
-
-# ---------------------------------------------------------------------------
-# sparse regression
-
-
-class _SparseRegressionBase:
-    """Shared FITC/VFE machinery."""
-
-    objective = "vfe"
-
-    def __init__(self, kernel, inducing_points, noise=0.1):
-        self.kernel = kernel
-        self.noise = float(noise)
-        self.Z = _as_2d(inducing_points)
-        self.X_train = None
-        self.y_train = None
-        self.log_marginal_likelihood_ = None
-
-    def fit(self, X, y):
-        X = _as_2d(X)
-        y = np.asarray(y, dtype=float).ravel()
-        if len(y) != len(X):
-            raise ValueError("X and y must have equal length")
-        Z = self.Z
-        M = len(Z)
-        sigma2 = max(self.noise, 1e-10)
-
-        Kzz = self.kernel(Z) + 1e-10 * np.eye(M)
-        Lz, _ = cholesky_with_jitter(Kzz)
-        Kxz = self.kernel(Z, X)                                    # (M, T)
-        Qff_diag = np.sum(np.linalg.solve(Lz, Kxz) ** 2, axis=0)   # diag(Qff)
-
-        if self.objective == "fitc":
-            diag_noise = sigma2 + np.maximum(self.kernel.diag(X) - Qff_diag, 0.0)
-        else:
-            diag_noise = np.full(len(X), sigma2)
-
-        Sig = np.diag(diag_noise) + Kxz.T @ np.linalg.solve(Kzz, Kxz)
-        Ls, _ = cholesky_with_jitter(Sig)
-        alpha = np.linalg.solve(Ls.T, np.linalg.solve(Ls, y))
-
-        # posterior over inducing values
-        W = np.linalg.solve(Lz.T, Kxz.T / diag_noise[None, :])
-        Sig_u = Kzz - W @ np.diag(diag_noise) @ W.T
-        Sig_u = 0.5 * (Sig_u + Sig_u.T)
-        mu_u = Sig_u @ np.linalg.solve(Kzz, Kxz @ (y / diag_noise))
-
-        self.L_z_, self.Sigma_u_, self.mu_u_ = Lz, Sig_u, mu_u
-        self.X_train, self.y_train = X, y
-
-        ll = float(-0.5 * float(y @ alpha)
-                   - 0.5 * float(np.log(np.diag(2 * np.pi * Sig)).sum()))
-        if self.objective == "vfe":
-            ll += 0.5 * float(np.sum(np.log(np.clip(np.diag(Kzz), 1e-12, None)))) \
-                  - 0.5 * float(np.sum(np.log(diag_noise)))
-        self.log_marginal_likelihood_ = ll
-        return self
-
-    def predict(self, X_test, return_std=True, full_cov=False):
-        X_test = _as_2d(X_test)
-        k_zt = self.kernel(self.Z, X_test)                         # (M, t)
-        mean = k_zt.T @ np.linalg.solve(
-            self.L_z_.T, np.linalg.solve(self.L_z_, self.mu_u_))
-        v = np.linalg.solve(self.L_z_, k_zt)
-        var = np.clip(self.kernel.diag(X_test) - np.sum(v**2, axis=0), 1e-12, None)
-        if full_cov:
-            second = np.diag(var)
-        else:
-            second = np.sqrt(var)
-        if not (return_std or full_cov):
-            return mean
-        return mean, second
-
-
-class FITC(_SparseRegressionBase):
-    """Fully independent training conditional (Snelson & Ghahramani, 2006)."""
-
-    objective = "fitc"
-
-    def fit(self, X, y):
-        return super().fit(X, y)
-
-    def predict(self, X_test, return_std=True, full_cov=False):
-        return self._predict_core(X_test, return_std=return_std, full_cov=full_cov)
-
-
-class VFE(FITC):
-    """Variational free energy bound (Titsias, 2009)."""
-
-    objective = "vfe"
-
-
-class SparseVFE(VFE):
-    """Spec-facing alias of the VFE engine."""
 
 
 # ---------------------------------------------------------------------------
@@ -314,7 +217,6 @@ class VariationalInference:
         Kinv_y = np.linalg.solve(K, y_signed / 2.0)
         xi = np.ones(n)
         C = None
-        prev = -np.inf
         converged = False
         for it in range(1, self.max_iter + 1):
             lam = 0.5 * np.tanh(xi / 2.0) / xi
@@ -325,7 +227,6 @@ class VariationalInference:
                 converged = True
                 xi = new_xi
                 break
-            prev = it
             xi = new_xi
         self.f_post_mean_, self.f_post_cov_ = mu, C
         self.converged_, self.n_iter_ = converged, it
@@ -341,10 +242,4 @@ class VariationalInference:
             self.kernel(self.X_train) + 1e-10 * np.eye(len(self.y_train)),
             self.f_post_mean_)
         return _sigmoid(mean)
-
-
-__all__ = [
-    "FITC", "VFE", "SparseVFE",
-    "LaplacePropagation", "ExpectationPropagation", "VariationalInference",
-]
 

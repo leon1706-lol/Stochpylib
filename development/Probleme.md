@@ -382,3 +382,123 @@ filters at the same circulant taps (the transpose of the analysis operator).
 **Verification:**
 - Perfect reconstruction to 1e-15 for both haar and db2 over random 1024-sample inputs
   at level 4 (test_dwt_idwt_perfect_reconstruction).
+
+---
+
+### 20. ExpectationPropagation does not always converge to informative posteriors
+
+**Severity:** 3/10 · **Status:** 🟡 `partial` (documented experimental caveat)
+
+**Problem:** The damped EP implementation can converge to a degenerate solution for some
+datasets: predictive probabilities collapse toward 0.5 instead of separating the classes.
+The tilted-moment machinery itself is exact (Gauss-Hermite quadrature of
+``p(y|f) N(f | cavity)``), but the fixed-point iteration is not guaranteed to reach an
+informative fixed point from its prior initialization.
+
+**Fix:** None applied — the class carries an explicit **experimental** warning and steers
+users to :class:`LaplacePropagation` (reliable) or :class:`VariationalInference`
+(logit-link alternative). The spec-facing ``GPClassification`` facade defaults to Laplace.
+
+**Verification:**
+- Laplace and VI classification accuracy tests (>0.90 / >0.78 on a separated 2-D
+  Gaussian mixture) pass; EP remains usable as a smoke-tested engine.
+
+---
+
+### 21. Broken duplicate FITC/VFE copy inside ``inference.py`` crashed on predict
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed`
+
+**Problem:** Besides the canonical implementation in ``sparse.py``, ``inference.py``
+carried a second, older copy of ``_SparseRegressionBase``/``FITC``/``VFE``/
+``SparseVFE`` whose ``FITC.predict`` called a nonexistent ``self._predict_core`` — any
+direct import of the sparse engines from ``inference.py`` raised ``AttributeError`` at
+prediction time. The package ``__init__`` imported from ``sparse.py`` only, so the test
+suite never touched the broken copy.
+
+**Fix:** Duplicate removed; ``inference.py`` now contains only the three classification
+engines, with a module docstring pointing to ``sparse.py`` as the single source of the
+sparse-regression engines.
+
+**Verification:**
+- New regression test ``test_inference_module_is_classification_only`` asserts the
+  sparse names no longer exist there while the classification engines do; full GP suite
+  green against the canonical implementations.
+
+---
+
+### 22. NeuralNetworkKernel initially used an incorrect closed form
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (caught pre-release during Phase 11 construction)
+
+**Problem:** The first draft of the neural-network covariance did not implement the
+Rasmussen & Williams eq. 4.29–4.31 construction correctly (bias-augmented inputs and
+the exact arc-sine integral), producing a matrix that failed PSD spot checks at larger
+variance/bias combinations.
+
+**Fix:** Rewritten as the standard depth-1 NN kernel:
+bias-augment each input with ``sqrt(bias_variance)``, then
+``k(x, x') = variance * (2/pi) * asin(2 u'v / sqrt((1+2u'u)(1+2v'v)))``.
+
+**Verification:**
+- Symmetry + PSD across the whole kernel zoo (min eigenvalue > -1e-8,
+  ``test_kernel_symmetry_and_psd[NN]``); positive definiteness by construction.
+
+---
+
+### 23. Sparse GP posterior used raw inverses of near-singular Kuu — predictions exploded
+
+**Severity:** 7/10 · **Status:** 🟢 `fixed`
+
+**Problem:** The sparse engines (FITC/VFE) computed ``Kuu_inv = np.linalg.inv(Kuu)``
+on the *unjittered* inducing-point kernel and inverted the unwhitened posterior
+precision ``A = Kuu_inv + Kuf Lam^-1 Kfu^T``. RBF ``Kuu`` becomes numerically singular
+once inducing points number a few dozen (eigenvalues down to ~1e-16), so predictive
+means blew up (max deviation from the exact GP grew from ~0.9 at M=10 to ~157 at M=24)
+and the LML evaluated ``log`` of negative values (RuntimeWarning, garbage bound). The
+old test suite encoded the defect as a weak ``corr > 0.30`` assertion plus a
+copy-pasted comment referencing the unrelated Sobol-table problem [11].
+
+**Fix:** Rewrote ``sparse.py`` in the **whitened parameterization**: everything runs
+through jittered Cholesky solves of ``Luu``; the posterior lives on whitened inducing
+values with precision ``I + V Lam^-1 V^T`` (eigenvalues >= 1 by construction); the LML
+uses the closed-form Titsias SGPR bound (identical formula serves the FITC
+pseudo-evidence); sparse classes gained a ``log_marginal_likelihood()`` method for
+``MarginalLikelihood``/``optimize_hyperparams`` parity.
+
+**Verification:**
+- Matches a brute-force Titsias reference exactly on well-conditioned inputs.
+- M = T identity: with Z = X the sparse posterior equals the exact GP mean/std to
+  ~1e-12 (locked in by ``test_sparse_equals_exact_gp_when_inducing_points_are_training_points``).
+- Monotone M-convergence locked in by ``test_sparse_stable_for_many_inducing_points``
+  (deviation < 0.1 at M=20, < 1e-6 at M=120 where the old code produced garbage).
+- Old weak correlation assertion replaced by ``corr > 0.999`` and max-dev < 0.05.
+
+---
+
+### 24. ``BaseKernel.diag`` crashed for most kernels and all product/power compositions
+
+**Severity:** 7/10 · **Status:** 🟢 `fixed`
+
+**Problem:** Two stacked defects in the diagonal path that every exact-GP *predict*
+call exercises. (a) ``BaseKernel.diag(X)`` invoked ``self._matrix(_as_2d(X))`` without
+the second argument, so every kernel relying on the inherited implementation (Matern,
+Periodic, RationalQuadratic, NeuralNetwork, ArcCosine, SpectralMixture) raised
+``TypeError`` whenever ``diag`` was reached. (b) ``KernelProduct`` and ``KernelPower``
+had no ``diag`` override at all, so *any* GP prediction using the headline composability
+convention (``k1 * k2``, ``k ** 2``) crashed — fits worked, predictions did not, and the
+existing tests only ever evaluated full matrices.
+
+**Fix:** ``BaseKernel.diag`` now passes ``Y=None`` explicitly (every ``_matrix``
+implementation already handles ``None`` since ``__call__(X)`` depends on it);
+``KernelProduct.diag`` returns the elementwise product of part diagonals and
+``KernelPower.diag`` the powered base diagonal (both exact and cheaper than the full
+matrix).
+
+**Verification:**
+- ``test_diag_matches_full_matrix_all_kernels`` locks diag == diag(K) for the entire
+  zoo incl. ARD RBF.
+- ``test_composite_diag_and_predict_with_product_kernel`` predicts end-to-end through
+  an ``RBF * Periodic`` composition and checks product/power diag identities.
+- Surfaced by the manual debug session (composed-kernel workflow crashed at first
+  predict); full suite green after the fix.
