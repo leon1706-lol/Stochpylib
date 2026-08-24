@@ -239,6 +239,34 @@ def run(verbose=False):
     mu_s = sgp.predict(X_tr, return_std=False)
     st.check("GP: sparse approximates exact", float(np.max(np.abs(mu_s - mu_gp))) < 0.2)
 
+    # copulas quick checks
+    from scipy.special import ndtr as _norm_cdf
+
+    from stochpylib.copulas import (
+        CheckerboardCopula,
+        ClaytonCopula,
+        CopulaFit,
+        GaussianCopula,
+        VineCopula,
+    )
+
+    rng_c = np.random.default_rng(61)
+    zc = rng_c.multivariate_normal([0.0, 0.0], [[1.0, .6], [.6, 1.0]], 1200)
+    gc_fit = GaussianCopula().fit(_norm_cdf(zc))
+    st.check("COP: gaussian rho recovery",
+             abs(float(gc_fit.correlation_[0, 1]) - 0.6) < 0.06)
+    cl_data = ClaytonCopula(theta=3.0).sample(1500, random_state=62)
+    cl_fit = ClaytonCopula().fit(cl_data)
+    st.check("COP: clayton tail dependence",
+             abs(cl_fit.tail_dependence()["lower"] - 2 ** (-1.0 / 3.0)) < 0.08)
+    cb_fit = CheckerboardCopula(n_bins=10).fit(cl_data)
+    st.check("COP: checkerboard mass", abs(cb_fit.cell_mass_.sum() - 1.0) < 1e-9)
+    vine_fit = VineCopula(type="DVine").fit(_norm_cdf(zc))
+    vs = vine_fit.sample(800, random_state=63)
+    st.check("COP: vine margins", bool(np.all(np.abs(vs.mean(axis=0) - .5) < .06)))
+    best = CopulaFit(families=("clayton", "gaussian", "frank")).fit(cl_data)
+    st.check("COP: CopulaFit ranking", best.best_name_ == "clayton")
+
     if verbose:
         status = "OK" if not st.failures else f"FAILED ({len(st.failures)})"
         print(f"selftest: {st.count} checks, {status}")

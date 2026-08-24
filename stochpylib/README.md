@@ -10,11 +10,13 @@ One subpackage per library module. Status:
   space, latent regimes, changepoints, spectral analysis, forecasting).
 - `gaussian_processes/` — complete, tested (36 public names: composable kernel zoo,
   exact/sparse GP regression, Laplace/EP/VI classification, hyperparameter optimization).
+- `copulas/` — complete, tested (26 public names: elliptical/Archimedean/empirical
+  copula families, C-/D-/R-vines, dependence measures and CopulaFit dispatcher).
 
 Public API is re-exported from `stochpylib/__init__.py`; currently `probability`,
-`distributions`, `montecarlo`, `timeseries`, and `gaussian_processes`. The package also
-ships a CLI (`spl`, see `cli.py`) and an embedded self-check suite (`selftest.py`, run
-via `spl --test`).
+`distributions`, `montecarlo`, `timeseries`, `gaussian_processes`, and `copulas`.
+The package also ships a CLI (`spl`, see
+`cli.py`) and an embedded self-check suite (`selftest.py`, run via `spl --test`).
 
 Target API for every planned module lives in the private Obsidian vault
 (`../Stochpylib-Obsidian-Vault/Modules/<name>.md`).

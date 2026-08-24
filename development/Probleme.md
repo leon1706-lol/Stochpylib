@@ -502,3 +502,145 @@ matrix).
   an ``RBF * Periodic`` composition and checks product/power diag identities.
 - Surfaced by the manual debug session (composed-kernel workflow crashed at first
   predict); full suite green after the fix.
+
+---
+
+### 25. Elliptical copula CDF factorized densities instead of integrating them
+
+**Severity:** 8/10 - **Status:** fixed (unreleased; ships with 0.3.0)
+
+**Problem:** The first Gaussian/t-copula CDF used a chain rule of the form
+F(z) = prod P(Z_k <= z_k | Z_<k = z_<k), treating conditionals as pinned at the
+realized limits. That factorizes DENSITIES, not distribution functions - values
+came out badly wrong (e.g. C(.3,.4)=0.159 vs oracle 0.209).
+
+**Fix:** Replaced with exact recursive 1-D integration over truncated
+conditionals (scipy.integrate.quad per level, Schur-complement state updates;
+multivariate-t conditionals stay t with nu+1). No quadrature-free shortcut
+exists for general d.
+
+**Verification:**
+- Matches an independent bivariate-normal quadrature oracle to ~1e-16 on a grid;
+  boundary identities C(u,1)=u and independence product exact; monotone in every
+  coordinate (locked in tests).
+
+---
+
+### 26. Copula samplers inverted the wrong conditional transform
+
+**Severity:** 9/10 - **Status:** fixed (unreleased; ships with 0.3.0)
+
+**Problem:** Sequential samplers treated P(U<=w|V=v) as if it were the ratio
+C(v,w)/C(v,1) - true only in special cases, false for Archimedean and Plackett
+families. Sampled margins came out non-uniform (means ~0.33-0.43) and sampled
+Kendall's tau far off theory (Frank: 0.27 vs 0.46).
+
+**Fix:** Archimedean families now invert the generator-derivative conditional
+psi'(phi(u)+phi(w))/psi'(phi(u)) on a fixed w-grid (exact, vectorized);
+Plackett uses its closed-form dC/dv ratio. The wrong quadratic-inversion
+shortcut was removed entirely.
+
+**Verification:**
+- All families: sampled margins uniform within MC noise and empirical Kendall's
+  tau within 5 standard errors of theory at n=12000 (locked in by tests).
+
+---
+
+### 27. Archimedean generator algebra errors across five families
+
+**Severity:** 7/10 - **Status:** fixed (unreleased; ships with 0.3.0)
+
+**Problem:** Several closed-form primitives were wrong: BB1/BB7 used generator
+exponent conventions inconsistent with their documented CDFs; BB7's
+phi/phi-inverse pair was mutually inconsistent; Joe's phi' carried a wrong sign
+and scale; Frank's and Clayton's psi'' had leftover algebra slips. Grid-mass
+integration exposed them (Joe's 'density' integrated to -1.17e6).
+
+**Fix:** All primitives rederived from the documented CDFs; a validation harness
+compares each family's CDF against independent textbook formulas (~1e-15),
+checks psi(phi(u))=u round-trips, and compares bivariate densities against
+finite differences of the CDF plus grid mass in [0.96, 0.98].
+
+**Verification:**
+- Full family matrix passes the harness; densities strictly positive with unit-
+  approximating mass; tau formulas (Genest-MacKay) match known closed forms
+  (Clayton theta/(theta+2), Gumbel 1-1/theta).
+
+---
+
+### 28. Dependence-measure plumbing: O(n^2) memory and unbounded inversion cost
+
+**Severity:** 4/10 - **Status:** fixed (unreleased; ships with 0.3.0)
+
+**Problem:** (a) kendall_tau_estimate materialized n x n sign matrices -
+2.98 GB allocation failure at n=20000. (b) Frank/Joe tau inversion probed the
+Genest-MacKay integral at extreme theta where the substituted integrand is
+near-singular - quad hung for minutes inside vine pair selection. (c) The
+Student-t profile MLE re-ran the full marginal transform per scalar-MLE
+iteration (6036 loglik evaluations per fitted pair at n=1500, ~25 s).
+
+**Fix:** (a) Fenwick-tree inversion counting, O(n log n) time / O(n) memory,
+verified equal to scipy.stats.kendalltau with and without ties. (b) Frank uses
+the exact Debye-D1 relation; bounds tightened (Clayton<=300, Gumbel<=200,
+Joe<=60); remaining numeric inversions run over a cached per-class monotone
+tau(theta) curve with bracketed local refinement. (c) Coarse nu grid (14 pts)
+plus ONE bounded refinement; t-copula density vectorized (was one slogdet per
+row). Net effect: fitted pair cost at n=1500 dropped from ~24.5 s to ~3.8 s.
+
+**Verification:**
+- tau estimator equals scipy on tie-free and heavy-tie data to 1e-10;
+  df recovery stays accurate after the coarse-grid change (nu=3.86 on nu=4
+  ground truth); full vine fit of 10 edges dropped from >15 min to ~2 min.
+
+---
+
+### 29. Vine sampler cluster: shallow introductions, mirrored sides, stale cache
+
+**Severity:** 8/10 - **Status:** fixed (unreleased; ships with 0.3.0)
+
+**Problem:** Four stacked defects made simulated vines inconsistent with their
+own fitted pairs. (a) Introduction order used shallow-tree edges, so variables
+were drawn from single-sibling conditionals instead of their full conditionals.
+(b) Mid-realization fallback drew conditioning leaves marginally without
+marking them done, so later plan steps re-introduced and OVERWROTE them.
+(c) realize()/columns() assumed mirror sides ('a'<->'b') instead of following
+each edge's stored away-side, deep trees conditioned on the wrong sibling
+column (margins overshooting fit taus, e.g. 0.487 vs 0.264 ground truth).
+(d) _col_cache persisted from fit(), serving stale n=1200 arrays to post-fit
+calls on larger samples (phantom KS failures).
+
+**Fix:** Planner rewritten as R-vine-matrix-style PEELING (deepest-first greedy:
+every variable introduced through an edge whose entire leaf set minus that
+variable is already drawn; seed tried exhaustively). Edges store their actual
+away-sides; realization and column recomputation follow stored sides. Column
+cache is call-local. Validation switched to what theory guarantees: Rosenblatt
+KS-uniformity restricted to realization-diagonal edges, adjacent-margin taus
+equal to effective rotated pair taus, refit stability.
+
+**Verification:**
+- D/C/R-vines on 5-d Gaussian data: diagonal-edge KS <= 0.0066 at n=40k;
+  all tree-1 margin taus within MC noise of their rotated pairs; pairwise tau
+  recovery corr=0.99 (max dev 0.046); refit-on-own-samples stable; d=3 C-vine
+  cross-checked against a brute-force numeric conditional sampler.
+
+---
+
+### 30. Rotated pair-copula conventions were internally inconsistent
+
+**Severity:** 6/10 - **Status:** fixed (unreleased; ships with 0.3.0)
+
+**Problem:** h-functions for rotations 90/270 swapped the arguments of the base
+conditional, rot180's docstring showed the wrong CDF sign, and the fitting
+transform handed the base copula columns that did not correspond to its
+rotation's density convention. Consequences: AIC selected rotations against the
+wrong likelihoods, and sampled rotated pairs broke Rosenblatt calibration.
+
+**Fix:** Single consistent set: C90 = v - Q(1-u,v), C180 = u+v-1+Q(1-u,1-v),
+C270 = u - Q(u,1-v); h-functions verified as exactly dC_rot/dv; density
+transforms c90=c_Q(1-u,v), c180=c_Q(1-u,1-v), c270=c_Q(u,1-v) aligned between
+fitting and evaluation.
+
+**Verification:**
+- For all four rotations: analytic h matches central-difference dC/dv to <1e-4
+  and base-density-at-rotated-columns matches the mixed partial of the rotated
+  CDF to ~1e-6 (regression-tested).

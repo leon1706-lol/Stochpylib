@@ -13,10 +13,9 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10%2B-FF8C00?style=flat-square&labelColor=1A1A1A&logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/%F0%9F%93%84%20license-MIT-8B5CF6?style=flat-square&labelColor=1A1A1A" alt="License: MIT">
-  <img src="https://img.shields.io/badge/tests-278%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="278 tests passing">
-  <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&style=flat-square&labelColor=1A1A1A&label=CI&logo=githubactions&logoColor=white" alt="CI status"></a>
+  <img src="https://img.shields.io/badge/tests-329%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="329 tests passing">  <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&style=flat-square&labelColor=1A1A1A&label=CI&logo=githubactions&logoColor=white" alt="CI status"></a>
   <a href="https://pypi.org/project/stochpylib/"><img src="https://img.shields.io/pypi/v/stochpylib?style=flat-square&labelColor=1A1A1A&color=FF8C00&logo=pypi&logoColor=white" alt="PyPI version"></a>
-  <img src="https://img.shields.io/badge/public%20names-203%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="203 of 794 spec names implemented">
+  <img src="https://img.shields.io/badge/public%20names-229%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="229 of 794 spec names implemented">
 </p>
 
 <p align="center">
@@ -37,7 +36,7 @@ is a single load-bearing contract: every distribution exposes the same method se
 (`.pdf()/.cdf()/.ppf()/.rvs()/.mean()/.var()/.skewness()/.kurtosis()/.entropy()/.mgf()/.cf()/.fit()/.ks_test()`),
 every stochastic method takes a `random_state=` seed, and every Monte Carlo estimator returns a
 shared result object carrying its point estimate together with an honest standard error and
-confidence interval. Around that contract, five modules are live today: a **probability
+confidence interval. Around that contract, six modules are live today: a **probability
 engine** (sample spaces, Bayes' theorem, exact-integer combinatorics, independence
 testing), **47 distributions** across discrete/continuous/multivariate/heavy-tailed
 families — including stable laws with Chambers–Mallows–Leckie sampling and numerically
@@ -46,10 +45,11 @@ sequences (Sobol, Halton, Faure, Niederreiter), variance-reduction techniques (a
 control variates, Latin hypercube, conditioned MC, rejection control), and applications
 from option pricing validated against Black–Scholes to reliability analysis driven by the
 library's own distribution objects, a **time-series toolkit** (ARIMA family, GARCH family,
-Kalman/particle filters, HMMs, changepoints, spectral analysis) and **Gaussian processes**
-(a composable kernel zoo with exact, sparse and approximate-classification inference).
+Kalman/particle filters, HMMs, changepoints, spectral analysis), **Gaussian processes**
+(a composable kernel zoo with exact, sparse and approximate-classification inference) and **copulas**
+(elliptical, Archimedean and empirical families plus C-/D-/R-vine dependence models).
 The thesis this project exists to test: a complete stochastic-computing stack can live in
-one coherent, well-tested package — the roadmap takes it onward through copulas, Lévy
+one coherent, well-tested package — the roadmap takes it onward through Lévy
 processes, MCMC and beyond (23 modules, ~794 public names planned).
 
 ## Table of Contents
@@ -96,7 +96,7 @@ price = AntitheticVariates(n_simulations=100_000).price_european_call(
 
 ## Current Status
 
-Early development — five modules implemented so far:
+Early development — six modules implemented so far:
 
 | Module | Public names | What's inside |
 |---|---|---|
@@ -105,10 +105,11 @@ Early development — five modules implemented so far:
 | `stochpylib.montecarlo` | 25 | quasi-random sequences, crude/QMC/importance/rejection/stratified estimators, variance reduction, applications |
 | `stochpylib.timeseries` | 61 | ARIMA/SARIMA/ARFIMA/VAR/VECM, GARCH family, Kalman/EKF/UKF/particle filters, HMM & regime switching, changepoints, spectral analysis, classical diagnostics |
 | `stochpylib.gaussian_processes` | 36 | composable kernel zoo (10 kernels with +/*/² operators), exact GP regression, FITC/VFE sparse approximations, Laplace/EP/VI classification, hyperparameter optimization, DeepGP |
+| `stochpylib.copulas` | 26 | elliptical (Gaussian/t), Archimedean (Clayton/Gumbel/Frank/Joe/AMH/BB1/BB7) + Plackett, empirical (Empirical/Checkerboard/Beta), C-/D-/R-vines with AIC pair selection & rotations, CopulaFit dispatcher, dependence measures |
 
 Exact progress against the full design spec lives in
 [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md)
-(currently **203 / 794 public names**).
+(currently **229 / 794 public names**).
 
 ## Download
 
@@ -137,7 +138,7 @@ For local development (this repo cloned, a virtual environment active):
 pip install -e ".[dev]"     # runtime deps + pytest
 pytest tests/ -v            # full test suite must be green before you start changing things
 spl --version               # verify your editable install
-spl --test                  # embedded self-check (117 checks), no pytest needed
+spl --test                  # embedded self-check (122 checks), no pytest needed
 ```
 
 Then implement or improve one module at a time and run the wrap-up procedure described in
@@ -191,6 +192,7 @@ them all:
 | `stochpylib/montecarlo/` | [module guide](stochpylib/montecarlo/README.md) | quasi-random sequences, estimators, variance reduction, applications |
 | `stochpylib/timeseries/` | [module guide](stochpylib/timeseries/README.md) | linear/volatility models, filters, changepoints, spectral analysis |
 | `stochpylib/gaussian_processes/` | [module guide](stochpylib/gaussian_processes/README.md) | composable kernels, exact/sparse GP regression & classification |
+| `stochpylib/copulas/` | [module guide](stochpylib/copulas/README.md) | elliptical/Archimedean/empirical copulas, vines, dependence measures |
 | `tests/` | [suite guide](tests/README.md) | one deterministic test file per module, outside the installed package |
 | `development/` | [dev-docs guide](development/README.md) | build history, bug audit log, progress checklist |
 | `.github/` | — | CI / PyPI-publish / GitHub-Release workflows, issue & PR templates |
@@ -210,7 +212,7 @@ Everything a contributor or maintainer needs lives in committed docs:
 - [`development/Development.md`](development/Development.md) — layout decisions & workflow notes
 - [`development/CHANGELOG.md`](development/CHANGELOG.md) — append-only log, one entry per build phase
 - [`development/Probleme.md`](development/Probleme.md) — bug audit log in Problem → Fix →
-  Verification format with a status legend (24 entries so far)
+  Verification format with a status legend (30 entries so far)
 - [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md) — every planned public name as a checkbox
 
 ## Test Suite
@@ -219,7 +221,7 @@ Everything a contributor or maintainer needs lives in committed docs:
 pytest tests/ -v
 ```
 
-**278 passed / 2 skipped** as of the `gaussian_processes` module. Tests are deterministic
+**329 passed / 2 skipped** as of the `copulas` module. Tests are deterministic
 (fixed seeds everywhere), live outside the installed package, and use `scipy.stats`,
 `statsmodels` and brute-force references as independent oracles. Statistical assertions are
 set at ≥ 3 standard errors so results are stable while staying meaningful. Additionally,
@@ -245,7 +247,7 @@ Publishing.
 
 ## Roadmap
 
-Eighteen modules remain on the spec (in rough implementation order):
+Seventeen modules remain on the spec (in rough implementation order):
 copulas, survival analysis, queueing theory, information theory, Lévy processes,
 financial stochastics, advanced MCMC, Bayesian inference, statistics, nonparametric
 methods, robust statistics, numerical methods, random matrix theory, spatial statistics,

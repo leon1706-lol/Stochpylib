@@ -211,3 +211,28 @@ defects the existing tests could not see:
   stochpylib/gaussian_processes/README.md; root/package/tests/dev readmes refreshed;
   vault Modules/gaussian_processes.md deviations corrected; code graph regenerated;
   HANDOFF backfilled for Phase 11 and appended for this phase.
+
+## Phase 13 - Sixth module: `stochpylib.copulas`
+Implemented dependence modeling end to end (26/26 spec names across five submodules),
+natively on numpy/scipy.special/optimize/integrate with scipy.stats as test oracle only.
+Elliptical: exact recursive-integration CDF for any dimension (validated vs a bivariate
+normal quadrature oracle to ~1e-16), tau-based correlation + profile-MLE degrees of
+freedom. Archimedean: generator framework (CDF = psi(sum phi)), exact bivariate
+densities via psi'', Genest-MacKay tau, tau-inversion fits (closed forms + cached
+numeric curves; Frank via Debye D1), Marshall-Olkin/Kanter fast samplers plus generator-
+derivative conditional inversion; BB1/BB7 two-parameter tails; Plackett odds-ratio family.
+Empirical: e.c.d.f., checkerboard with multilinear CDF, Bernstein/Beta smoothing.
+Vines: one recursive edge machinery behind C/D/R structures, AIC pair-family selection
+with rotations, Disshmann-style MST R-vine selection, peel-order sequential Rosenblatt
+sampler. Methods: CopulaFit dispatcher, CopulaSample, tail_dependence, copula_density,
+conditional_copula, kendall_tau, spearman_rho.
+Six construction defects were caught and fixed during validation (Probleme [25]-[30]):
+wrong elliptical chain-rule CDF, wrong conditional transform family in samplers,
+archimedean generator algebra errors, O(n^2) Kendall-tau memory blowup, Frank/Joe tau-
+inversion hangs, vine rotation-h/away-head/mirror-side/stale-cache cluster.
+Manual session (10 checks ALL PASS): t-copula df recovery + analytic-vs-empirical tail
+dependence, CopulaFit ranking on clayton data, 5-d RVine fit/sample/refit with pairwise
+tau recovery corr=1.00, Gumbel upper-tail estimation.
+Tests: tests/copulas/tests.py (51 cases); selftest extended to 122 checks; spl --help
+gained the copulas block. Full suite: 329 passed / 2 skipped. Version bumped to 0.3.0.
+Progress: 229/794 public names.

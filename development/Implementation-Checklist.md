@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 203 / 794 public names implemented.**
+**Progress: 229 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -225,40 +225,40 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `optimize_hyperparams()`
     - [x] `cross_validate_gp()`
 
-## [copulas](../Stochpylib-Obsidian-Vault/Modules/copulas.md) — Dependence modeling with copulas (0/26)
+## [copulas](../Stochpylib-Obsidian-Vault/Modules/copulas.md) — Dependence modeling with copulas (26/26)
 
-- [ ] **stochpylib.copulas** module overall
-  - [ ] `copulas.elliptical`
-    - [ ] `GaussianCopula`
-    - [ ] `StudentTCopula`
-  - [ ] `copulas.archimedean`
-    - [ ] `ClaytonCopula`
-    - [ ] `FrankCopula`
-    - [ ] `GumbelCopula`
-    - [ ] `JoeCopula`
-    - [ ] `AliMikhailHaqCopula`
-    - [ ] `PlackettCopula`
-    - [ ] `BB1Copula`
-    - [ ] `BB7Copula`
-  - [ ] `copulas.empirical`
-    - [ ] `EmpiricalCopula`
-    - [ ] `CheckerboardCopula`
-    - [ ] `BetaCopula`
-  - [ ] `copulas.vine`
-    - [ ] `VineCopula`
-    - [ ] `CVine`
-    - [ ] `DVine`
-    - [ ] `RVine`
-    - [ ] `PairCopulaConstruction`
-    - [ ] `VineStructureSelect()`
-  - [ ] `copulas.methods`
-    - [ ] `CopulaFit()`
-    - [ ] `CopulaSample()`
-    - [ ] `kendall_tau()`
-    - [ ] `spearman_rho()`
-    - [ ] `tail_dependence()`
-    - [ ] `copula_density()`
-    - [ ] `conditional_copula()`
+- [x] **stochpylib.copulas** module overall
+  - [x] `copulas.elliptical`
+    - [x] `GaussianCopula`
+    - [x] `StudentTCopula`
+  - [x] `copulas.archimedean`
+    - [x] `ClaytonCopula`
+    - [x] `FrankCopula`
+    - [x] `GumbelCopula`
+    - [x] `JoeCopula`
+    - [x] `AliMikhailHaqCopula`
+    - [x] `PlackettCopula`
+    - [x] `BB1Copula`
+    - [x] `BB7Copula`
+  - [x] `copulas.empirical`
+    - [x] `EmpiricalCopula`
+    - [x] `CheckerboardCopula`
+    - [x] `BetaCopula`
+  - [x] `copulas.vine`
+    - [x] `VineCopula`
+    - [x] `CVine`
+    - [x] `DVine`
+    - [x] `RVine`
+    - [x] `PairCopulaConstruction`
+    - [x] `VineStructureSelect()`
+  - [x] `copulas.methods`
+    - [x] `CopulaFit()`
+    - [x] `CopulaSample()`
+    - [x] `kendall_tau()`
+    - [x] `spearman_rho()`
+    - [x] `tail_dependence()`
+    - [x] `copula_density()`
+    - [x] `conditional_copula()`
 
 ## [survival](../Stochpylib-Obsidian-Vault/Modules/survival.md) — Survival & reliability analysis (0/28)
 

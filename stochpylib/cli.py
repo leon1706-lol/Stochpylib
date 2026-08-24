@@ -95,6 +95,16 @@ def _implemented_overview():
             "                   approximations, DeepGP, hyperparameter optimization"
         )
 
+    if hasattr(stochpylib, "copulas"):
+        blocks.append(
+            "  copulas          dependence modeling: elliptical (Gaussian, Student-t),\n"
+            "                   Archimedean (Clayton, Gumbel, Frank, Joe, AMH, BB1,\n"
+            "                   BB7) + Plackett, empirical copulas (Empirical,\n"
+            "                   Checkerboard, Beta/Bernstein), C-/D-/R-vines with\n"
+            "                   AIC pair selection & rotations, CopulaFit dispatcher,\n"
+            "                   Kendall's tau / Spearman's rho / tail dependence"
+        )
+
     return "\n".join(blocks)
 
 
@@ -128,7 +138,7 @@ Run everything from any Python prompt after `pip install stochpylib`.
         description=description,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
-            "roadmap: many more modules are planned (copulas, survival, queueing,\n"
+            "roadmap: many more modules are planned (survival, queueing,\n"
             "information_theory, levy_processes, financial_stochastics, advanced_mcmc,\n"
             "bayesian, statistics, ...) - see the repository README and\n"
             "development/Implementation-Checklist.md.\n\n"

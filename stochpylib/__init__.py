@@ -1,4 +1,5 @@
 from stochpylib import (
+    copulas,
     distributions,
     gaussian_processes,
     montecarlo,
@@ -7,6 +8,7 @@ from stochpylib import (
 )
 
 __all__ = [
+    "copulas",
     "distributions",
     "gaussian_processes",
     "montecarlo",
@@ -14,4 +16,4 @@ __all__ = [
     "timeseries",
 ]
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"

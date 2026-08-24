@@ -16,6 +16,6 @@ see development/Probleme.md [3]). Each `tests/<module>/` folder contains an `__i
 so same-named `tests.py` files import as distinct modules.
 
 Current coverage: `probability` + `distributions` + `montecarlo` + `timeseries` +
-`gaussian_processes` (278 passed / 2 skipped).
+`gaussian_processes` + `copulas` (329 passed / 2 skipped).
 The package also ships an embedded smoke suite runnable from any pip install: `spl --test`
-(117 checks).
+(122 checks).
