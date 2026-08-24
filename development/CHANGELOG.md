@@ -236,3 +236,31 @@ tau recovery corr=1.00, Gumbel upper-tail estimation.
 Tests: tests/copulas/tests.py (51 cases); selftest extended to 122 checks; spl --help
 gained the copulas block. Full suite: 329 passed / 2 skipped. Version bumped to 0.3.0.
 Progress: 229/794 public names.
+
+## Phase 14 - V0.3.1 audit: spec conformance suite + cross-module tests + doc sync
+
+Library-wide audit requested for V0.3.1: verify every implemented module is
+complete per spec, documentation reflects reality, and end-to-end coverage
+exists. Outcome:
+- Implementation state confirmed complete (229/794 names across six modules);
+  the only contract deviations are the documented multivariate ones (7 classes
+  expose pdf instead of pmf and omit scalar-argument mgf/cf).
+- New cross-module suite tests/library/tests.py (20 cases): spec-name
+  conformance generated from development/Implementation-Checklist.md via
+  tests/library/_extract_spec_names.py (lists cached in _spec_names.json),
+  pinned documented extras (MCResult, DigitalNetBase2, timeseries result
+  objects, GP kernel base/ops, BaseCopula), and end-to-end workflows spanning
+  modules: reliability_mc on library Weibull vs closed form, t-copula margins
+  through library Student_t (KS), ARIMA vs GPTimeSeriesModel short-horizon
+  agreement, CopulaFit->sample->refit round trip, Sobol-QMC vs crude estimator
+  consistency.
+- spl --test extended from 122 to 130 checks: per-module export conformance,
+  distributions contract spot check, reliability closed-form and t-copula df
+  recovery - all runnable from any pip install without pytest.
+- Documentation sync: CONTRIBUTING.md selftest count (101 -> 130), root README
+  spl --version example and Quickstart gained GP/copulas snippets, README
+  selftest description now mentions conformance/cross-module checks,
+  tests/README documents tests/library/, vault ARCHITECTURE.md status updated
+  to 229/794 across six modules.
+Suite: 349 passed / 2 skipped. Version 0.3.1 (tests + docs only; no API
+changes).

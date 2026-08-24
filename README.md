@@ -94,6 +94,18 @@ price = AntitheticVariates(n_simulations=100_000).price_european_call(
     S=100, K=100, T=1, r=0.05, sigma=0.2)                      # option pricing
 ```
 
+```python
+from stochpylib.gaussian_processes import GPRegression, RBFKernel
+
+gp = GPRegression(kernel=RBFKernel(length_scale=1.0), noise=0.01).fit(X_train, y_train)
+mu, sigma = gp.predict(X_test, return_std=True)     # mean + uncertainty
+
+from stochpylib.copulas import CopulaFit
+
+fit = CopulaFit().fit(returns_2d)                   # dependence modeling
+simulated = fit.best_.sample(10_000)                # best family by AIC
+```
+
 ## Current Status
 
 Early development — six modules implemented so far:
@@ -138,7 +150,7 @@ For local development (this repo cloned, a virtual environment active):
 pip install -e ".[dev]"     # runtime deps + pytest
 pytest tests/ -v            # full test suite must be green before you start changing things
 spl --version               # verify your editable install
-spl --test                  # embedded self-check (122 checks), no pytest needed
+spl --test                  # embedded self-check (130 checks), no pytest needed
 ```
 
 Then implement or improve one module at a time and run the wrap-up procedure described in
@@ -174,8 +186,9 @@ when not installed through pip.
 
 ### `spl --test`
 
-Runs the embedded self-check suite shipped inside the wheel (**117 checks**): package sanity,
-one closed-form spot check per distribution family, Monte Carlo convergence sanity. This works
+Runs the embedded self-check suite shipped inside the wheel (**130 checks**): package sanity and per-module spec
+conformance, one closed-form spot check per distribution family, Monte Carlo
+convergence sanity, cross-module workflows. This works
 after any `pip install` — no pytest, no source checkout — making it the quickest way to verify
 an installation. Exits non-zero on any failure.
 

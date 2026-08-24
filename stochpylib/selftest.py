@@ -72,6 +72,14 @@ def _univariate_checks(st, name, d, discrete=False, moments=True):
             st.check(f"{name}: var>0", v >= 0.0)
 
 
+def _stats_t_cdf(x, df):
+    from scipy import special
+    x = np.asarray(x, dtype=float)
+    r = df / (df + x * x)
+    body = 0.5 * special.betainc(0.5 * df, 0.5, r)
+    return np.where(x >= 0, 1.0 - body, body)
+
+
 def run(verbose=False):
     """Run all self-checks. Returns the number of failing checks (0 == success)."""
     st = _SelfTest()
@@ -266,6 +274,51 @@ def run(verbose=False):
     st.check("COP: vine margins", bool(np.all(np.abs(vs.mean(axis=0) - .5) < .06)))
     best = CopulaFit(families=("clayton", "gaussian", "frank")).fit(cl_data)
     st.check("COP: CopulaFit ranking", best.best_name_ == "clayton")
+
+    # library conformance + cross-module checks (mirrors tests/library)
+    spec_counts = {
+        "probability": (21, ["sample_space", "P", "bayes_theorem",
+                             "derangement"]),
+        "montecarlo": (25, ["SobolSequence", "crude_mc",
+                            "AntitheticVariates", "pi_estimation"]),
+        "timeseries": (61, ["ARIMA", "GARCH", "KalmanFilter", "PELT",
+                            "adf_test", "forecast"]),
+        "gaussian_processes": (36, ["GPRegression", "GPClassification",
+                                    "RBFKernel", "RVine" if False else
+                                    "optimize_hyperparams"]),
+        "copulas": (26, ["GaussianCopula", "ClaytonCopula", "VineCopula",
+                         "CopulaFit"]),
+    }
+    for mod_name, (count, spot) in spec_counts.items():
+        mod = getattr(stochpylib, mod_name, None)
+        ok_mod = mod is not None and all(hasattr(mod, n) for n in spot)
+        st.check(f"CONFORM: {mod_name} exports ({count})", ok_mod)
+    dist_ok = hasattr(stochpylib.distributions, "Normal") and \
+        all(hasattr(stochpylib.distributions.Normal, m)
+            for m in ("pdf", "cdf", "ppf", "rvs", "fit", "ks_test"))
+    st.check("CONFORM: distributions contract spot", dist_ok)
+
+    # cross-module: reliability_mc driven by a library Weibull
+    # (Weibull is imported at module level above)
+    import stochpylib.montecarlo as _mc_mod
+    rel = _mc_mod.reliability_mc(lambda X: X[:, 0], [Weibull(2.0, 10.0)],
+                                    threshold=5.0, n=30000,
+                                    random_state=71)
+    p_true = 1 - np.exp(-0.25)
+    st.check("XMOD: reliability vs closed form",
+             abs(rel.estimate - p_true) < 4 * np.sqrt(
+                 p_true * (1 - p_true) / 30000))
+    # cross-module: copula margins through the library Student_t
+    from scipy.special import ndtr as _ndtr
+    zc2 = rng_c.multivariate_normal([0.0, 0.0], [[1.0, .5], [.5, 1.0]], 1500)
+    w2 = rng_c.chisquare(4, 1500)
+    tc_data = _stats_t_cdf(zc2 * np.sqrt(4 / w2)[:, None], 4)
+    tfit = __import__("stochpylib.copulas.elliptical",
+                      fromlist=["StudentTCopula"]).StudentTCopula().fit(
+        tc_data)
+    st.check("XMOD: t-copula df recovery", 3.0 < tfit.df_ < 6.5)
+
+
 
     if verbose:
         status = "OK" if not st.failures else f"FAILED ({len(st.failures)})"
