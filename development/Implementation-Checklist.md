@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 229 / 794 public names implemented.**
+**Progress: 257 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -260,43 +260,43 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `copula_density()`
     - [x] `conditional_copula()`
 
-## [survival](../Stochpylib-Obsidian-Vault/Modules/survival.md) — Survival & reliability analysis (0/28)
+## [survival](../Stochpylib-Obsidian-Vault/Modules/survival.md) — Survival & reliability analysis (28/28)
 
-- [ ] **stochpylib.survival** module overall
-  - [ ] `survival.nonparametric`
-    - [ ] `KaplanMeier`
-    - [ ] `NelsonAalen`
-    - [ ] `LifeTable`
-    - [ ] `EmpiricalSurvival`
-    - [ ] `BreslowEstimator`
-  - [ ] `survival.functions`
-    - [ ] `SurvivalFunction`
-    - [ ] `HazardFunction`
-    - [ ] `CumulativeHazard`
-    - [ ] `ResidualLifetime`
-    - [ ] `MeanResidualLife`
-  - [ ] `survival.parametric`
-    - [ ] `WeibullSurvival`
-    - [ ] `ExponentialSurvival`
-    - [ ] `LogNormalSurvival`
-    - [ ] `LogLogisticSurvival`
-    - [ ] `GompertzSurvival`
-  - [ ] `survival.regression`
-    - [ ] `CoxProportionalHazards`
-    - [ ] `AcceleratedFailureTime`
-    - [ ] `AalenAdditiveModel`
-    - [ ] `FineGrayModel`
-    - [ ] `StratifiedCox`
-  - [ ] `survival.tests`
-    - [ ] `LogRankTest`
-    - [ ] `WilcoxonSurvival`
-    - [ ] `TaroneWareTest`
-    - [ ] `PetoTest`
-    - [ ] `FlemingHarrington`
-  - [ ] `survival.competing_risks`
-    - [ ] `CumulativeIncidenceFunction`
-    - [ ] `CompetingRisksModel`
-    - [ ] `CauseSpecificHazard`
+- [x] **stochpylib.survival** module overall
+  - [x] `survival.nonparametric`
+    - [x] `KaplanMeier`
+    - [x] `NelsonAalen`
+    - [x] `LifeTable`
+    - [x] `EmpiricalSurvival`
+    - [x] `BreslowEstimator`
+  - [x] `survival.functions`
+    - [x] `SurvivalFunction`
+    - [x] `HazardFunction`
+    - [x] `CumulativeHazard`
+    - [x] `ResidualLifetime`
+    - [x] `MeanResidualLife`
+  - [x] `survival.parametric`
+    - [x] `WeibullSurvival`
+    - [x] `ExponentialSurvival`
+    - [x] `LogNormalSurvival`
+    - [x] `LogLogisticSurvival`
+    - [x] `GompertzSurvival`
+  - [x] `survival.regression`
+    - [x] `CoxProportionalHazards`
+    - [x] `AcceleratedFailureTime`
+    - [x] `AalenAdditiveModel`
+    - [x] `FineGrayModel`
+    - [x] `StratifiedCox`
+  - [x] `survival.tests`
+    - [x] `LogRankTest`
+    - [x] `WilcoxonSurvival`
+    - [x] `TaroneWareTest`
+    - [x] `PetoTest`
+    - [x] `FlemingHarrington`
+  - [x] `survival.competing_risks`
+    - [x] `CumulativeIncidenceFunction`
+    - [x] `CompetingRisksModel`
+    - [x] `CauseSpecificHazard`
 
 ## [queueing](../Stochpylib-Obsidian-Vault/Modules/queueing.md) — Queueing theory & networks (0/29)
 

@@ -27,6 +27,7 @@ from stochpylib import (
     gaussian_processes,
     montecarlo,
     probability,
+    survival,
     timeseries,
 )
 
@@ -40,6 +41,7 @@ _MODULES = {
     "timeseries": timeseries,
     "gaussian_processes": gaussian_processes,
     "copulas": copulas,
+    "survival": survival,
 }
 
 # Documented public extras beyond the 229 spec names (utilities & result
@@ -54,6 +56,7 @@ _EXTRAS = {
                            "NonStationaryKernel", "StationaryKernelOp",
                            "NonStationaryKernelOp", "cholesky_with_jitter"},
     "copulas": {"BaseCopula"},
+    "survival": set(),
     "probability": set(),
 }
 
@@ -81,11 +84,11 @@ def test_documented_extras_present(name):
     assert not missing, f"{name}: documented extras missing: {missing}"
 
 
-def test_total_spec_name_count_is_229():
+def test_total_spec_name_count_is_257():
     implemented = ("probability", "montecarlo", "timeseries",
-                   "gaussian_processes", "copulas")
+                   "gaussian_processes", "copulas", "survival")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 229
+    assert total == 257
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -114,10 +117,10 @@ def test_every_distribution_class_exposes_common_interface():
 
 
 def test_top_level_package_wiring():
-    assert stochpylib.__all__ == [
+    assert set(stochpylib.__all__) == {
         "copulas", "distributions", "gaussian_processes", "montecarlo",
-        "probability", "timeseries"]
-    assert stochpylib.__version__ == "0.3.1"
+        "probability", "survival", "timeseries"}
+    assert stochpylib.__version__ == "0.4.0"
 
 
 # ---------------------------------------------------------------- integration

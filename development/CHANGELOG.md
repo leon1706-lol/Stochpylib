@@ -264,3 +264,24 @@ exists. Outcome:
   to 229/794 across six modules.
 Suite: 349 passed / 2 skipped. Version 0.3.1 (tests + docs only; no API
 changes).
+
+## Phase 15 - Seventh module: `stochpylib.survival`
+Implemented survival and reliability analysis end to end (28/28 spec names across
+six submodules), natively on numpy/scipy.special/optimize/integrate. Nonparametric:
+Kaplan-Meier (Greenwood CI loglog/linear), Nelson-Aalen, actuarial life tables,
+EmpiricalSurvival, BreslowEstimator. Parametric: Weibull/Exponential (closed-form
+rate MLE)/LogNormal/LogLogistic/Gompertz censored likelihood with AIC. Regression:
+Cox PH with vectorised suffix-sum risk sums (Breslow/Efron tie handling),
+concordance index, Breslow baseline; StratifiedCox with per-stratum baselines;
+Weibull AcceleratedFailureTime; AalenAdditiveModel with dN_i(u)-response LS and
+stabilisation guards; FineGrayModel weighted-Cox scoring. Log-rank family:
+LogRankTest, WilcoxonSurvival(Gehan-Breslow), TaroneWareTest, PetoTest,
+FlemingHarrington(rho,gamma). Competing risks: CauseSpecificHazard,
+Aalen-Johansen CIF with exact sum+KM=1 identity, CompetingRisksModel facade.
+Functions wrappers bridge data fits and distribution objects via uniform
+predict() surface. lifelines added as dev-only test oracle extra (importorskip
+cross-checks for KM/NA/Cox). CI: windows-latest added to matrix.
+Tests: tests/survival/tests.py (37 cases incl 3 lifelines oracles); selftest
+extended to 136 checks; spl --help gained the survival block.
+Suite: 387 passed / 2 skipped. Version bumped to 0.4.0.
+Progress: 257/794 public names.

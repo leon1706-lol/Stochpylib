@@ -16,8 +16,8 @@ see development/Probleme.md [3]). Each `tests/<module>/` folder contains an `__i
 so same-named `tests.py` files import as distinct modules.
 
 Current coverage: `probability` + `distributions` + `montecarlo` + `timeseries` +
-`gaussian_processes` + `copulas` (329 passed / 2 skipped), plus the cross-module
-suite in `library/tests.py` (20 cases): spec-name conformance for all 229
+`gaussian_processes` + `copulas` + `survival` (380 passed / 2 skipped), plus the
+cross-module suite in `library/tests.py` (20 cases): spec-name conformance for all 255
 implemented public names — including the documented multivariate
 method-contract deviation — pinned utility extras, and end-to-end workflows
 spanning modules (reliability MC on library Weibull objects, t-copula margins

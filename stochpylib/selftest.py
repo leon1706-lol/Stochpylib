@@ -275,6 +275,32 @@ def run(verbose=False):
     best = CopulaFit(families=("clayton", "gaussian", "frank")).fit(cl_data)
     st.check("COP: CopulaFit ranking", best.best_name_ == "clayton")
 
+    # survival quick checks
+    from stochpylib.survival import (
+        KaplanMeier,
+        CoxProportionalHazards,
+        LogRankTest,
+    )
+    rng_s = np.random.default_rng(81)
+    ts_exp = rng_s.exponential(2.0, 3000)
+    cs = rng_s.uniform(.2, 8, 3000)
+    s_km = KaplanMeier().fit(np.minimum(ts_exp, cs), (ts_exp <= cs).astype(int))
+    st.check("SURV: KM exp S(2)", abs(float(s_km.predict([2.0])[0]) -
+                                     np.exp(-1.0)) < .04)
+    t_cox_a = rng_s.exponential(2, 800)
+    c_cox_a = rng_s.uniform(.5, 8, 800)
+    t_cox_b = rng_s.exponential(.5, 800)
+    c_cox_b = rng_s.uniform(.5, 8, 800)
+    t_cox = np.r_[np.minimum(t_cox_a, c_cox_a),
+                  np.minimum(t_cox_b, c_cox_b)]
+    e_cox = np.r_[(t_cox_a <= c_cox_a).astype(int),
+                  (t_cox_b <= c_cox_b).astype(int)]
+    x_cox = np.r_[np.zeros(800), np.ones(800)]
+    cph = CoxProportionalHazards().fit(t_cox, e_cox, x_cox)
+    st.check("SURV: Cox coef sign", cph.coefficients_[0] > .3)
+    lr = LogRankTest().fit(t_cox, e_cox, np.repeat(['A', 'B'], 800))
+    st.check("SURV: logrank separates", lr.p_value_ < 1e-10)
+
     # library conformance + cross-module checks (mirrors tests/library)
     spec_counts = {
         "probability": (21, ["sample_space", "P", "bayes_theorem",

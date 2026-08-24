@@ -105,6 +105,16 @@ def _implemented_overview():
             "                   Kendall's tau / Spearman's rho / tail dependence"
         )
 
+    if hasattr(stochpylib, "survival"):
+        blocks.append(
+            "  survival         survival & reliability analysis: Kaplan-Meier,\n"
+            "                   Nelson-Aalen, life tables, parametric fits (Weibull,\n"
+            "                   Exponential, LogNormal, LogLogistic, Gompertz),\n"
+            "                   Cox PH (Breslow/Efron) with stratification, Weibull\n"
+            "                   AFT, Aalen additive hazards, Fine-Gray competing\n"
+            "                   risks, log-rank test family, Aalen-Johansen CIF"
+        )
+
     return "\n".join(blocks)
 
 
@@ -138,7 +148,7 @@ Run everything from any Python prompt after `pip install stochpylib`.
         description=description,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
-            "roadmap: many more modules are planned (survival, queueing,\n"
+            "roadmap: many more modules are planned (queueing,\n"
             "information_theory, levy_processes, financial_stochastics, advanced_mcmc,\n"
             "bayesian, statistics, ...) - see the repository README and\n"
             "development/Implementation-Checklist.md.\n\n"

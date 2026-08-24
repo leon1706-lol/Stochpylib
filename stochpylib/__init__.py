@@ -4,6 +4,7 @@ from stochpylib import (
     gaussian_processes,
     montecarlo,
     probability,
+    survival,
     timeseries,
 )
 
@@ -13,7 +14,8 @@ __all__ = [
     "gaussian_processes",
     "montecarlo",
     "probability",
+    "survival",
     "timeseries",
 ]
 
-__version__ = "0.3.1"
+__version__ = "0.4.0"

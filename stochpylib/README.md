@@ -12,10 +12,13 @@ One subpackage per library module. Status:
   exact/sparse GP regression, Laplace/EP/VI classification, hyperparameter optimization).
 - `copulas/` — complete, tested (26 public names: elliptical/Archimedean/empirical
   copula families, C-/D-/R-vines, dependence measures and CopulaFit dispatcher).
+- `survival/` — complete, tested (28 public names: Kaplan-Meier/Nelson-Aalen,
+  parametric censored fits, Cox/AFT/Aalen/FineGray regression, log-rank family,
+  competing risks).
 
 Public API is re-exported from `stochpylib/__init__.py`; currently `probability`,
-`distributions`, `montecarlo`, `timeseries`, `gaussian_processes`, and `copulas`.
-The package also ships a CLI (`spl`, see
+`distributions`, `montecarlo`, `timeseries`, `gaussian_processes`, `copulas`, and
+`survival`. The package also ships a CLI (`spl`, see
 `cli.py`) and an embedded self-check suite (`selftest.py`, run via `spl --test`).
 
 Target API for every planned module lives in the private Obsidian vault
