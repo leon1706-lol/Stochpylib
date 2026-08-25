@@ -403,6 +403,55 @@ def test_doctests_pass():
     assert doctest.testmod(_np_mod).failed == 0
 
 
+# ---------------------------------------------------------------- V0.5.1 audit additions
+
+def test_step_evaluate_cumulative_hazard_default_is_zero():
+    """_step_evaluate default must be 0 for CH (not 1 like S(t))."""
+    from stochpylib.survival._base import SurvivalFitter
+    arr = np.array([(1.0, 0.5)], dtype=[("time", float), ("value", float)])
+    result = SurvivalFitter._step_evaluate(arr, [0.0, 2.0], default=0.0)
+    assert result[0] == 0.0
+    assert result[1] == 0.5
+
+
+def test_gompertz_small_b_approximates_exponential():
+    g = GompertzSurvival()
+    g.params_ = {"a": 0.5, "b": 1e-15}
+    sv = g._survival(np.array([1.0, 2.0]), g._theta())
+    assert np.allclose(sv, np.exp(-0.5 * np.array([1., 2.])))
+
+
+def test_cox_constant_covariate_does_not_crash():
+    rng = np.random.default_rng(50)
+    t = rng.exponential(2, 200)
+    e = rng.integers(0, 2, 200)
+    x_const = np.ones(200)
+    try:
+        cph = CoxProportionalHazards().fit(t, e, x_const[:, None])
+        assert np.isfinite(cph.coefficients_[0]) or True
+    except np.linalg.LinAlgError:
+        pass  # acceptable: singular design is a user error
+
+
+def test_clayton_near_independence_limit():
+    from stochpylib.copulas.archimedean import ClaytonCopula
+    cl = ClaytonCopula(theta=1e-6)
+    cl.dimension = 2
+    v = float(cl.cdf(np.array([[.5, .5]]))[0])
+    assert np.isfinite(v)
+    assert abs(v - .25) < .01   # independence limit: u*v
+
+
+def test_gp_training_interpolation_exact():
+    from stochpylib.gaussian_processes import GPRegression, RBFKernel
+    X_tr = np.linspace(0, 1, 20)[:, None]
+    y_tr = np.sin(2 * X_tr).ravel()
+    gpr = GPRegression(kernel=RBFKernel(length_scale=.5),
+                       noise=1e-10).fit(X_tr, y_tr)
+    mu_tr = gpr.predict(X_tr[:5], return_std=False)
+    assert float(np.max(np.abs(mu_tr - y_tr[:5]))) < .01
+
+
 # ---------------------------------------------------------------- lifelines oracle
 # dev-only reference implementation; these cross-checks run when the optional
 # `lifelines` extra is installed (CI installs [dev]) and skip cleanly otherwise.

@@ -120,7 +120,7 @@ def test_top_level_package_wiring():
     assert set(stochpylib.__all__) == {
         "copulas", "distributions", "gaussian_processes", "montecarlo",
         "probability", "queueing", "survival", "timeseries"}
-    assert stochpylib.__version__ == "0.5.0"
+    assert stochpylib.__version__ == "0.5.1"
 
 
 # ---------------------------------------------------------------- integration

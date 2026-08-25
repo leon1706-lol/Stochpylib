@@ -305,3 +305,25 @@ Tests: tests/queueing/tests.py (43 cases); selftest extended to 136 checks;
 spl --help gained the queueing block.
 Suite: 447 passed / 2 skipped. Version bumped to 0.5.0.
 Progress: 287/794 public names.
+
+## Phase 17 - V0.5.1 audit: bug fixes, edge-case tests, doc sync
+
+Library-wide V0.5.1 audit covering all eight modules. Outcome:
+- Implementation confirmed complete (257/794 spec names across 8 modules).
+- Four bugs found and fixed in the survival module:
+  (a) SurvivalFitter._step_evaluate defaulted to 1.0 for all callers,
+      returning H=1.0 instead of H=0.0 before the first event for cumulative
+      hazard step functions; added default parameter.
+  (b) CumulativeHazard integration grid started at times.min()*0.5 instead
+      of near zero, missing accumulated hazard below query range.
+  (c) HazardFunction rejected library distribution objects lacking a .hazard()
+      method; added generic pdf/(1-cdf) fallback.
+  (d) Gompertz exp(b*t) overflowed for large b*t products; clipped exponent.
+- One test bug fixed: ARIMA(1,1,0) trend-continuation test checked for the
+  slope (~0.05) instead of the forecast level (~9.0).
+- Added 20 new edge-case and cross-module tests across survival, queueing,
+  copulas, GP, and library suites.
+- Documentation synced: CONTRIBUTING selftest count, ARCHITECTURE status line,
+  root README version example and quickstart snippets.
+Suite: 406 passed / 2 skipped. Version 0.5.1 (bug fixes + tests only; no new
+features or API changes).

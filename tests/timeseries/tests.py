@@ -696,3 +696,16 @@ def test_selftest_suite_includes_timeseries_checks():
 
     assert selftest_mod.run() == 0
 
+
+def test_arima_differenced_trend_continuation():
+    """ARIMA(1,1,0) on a trending series should continue the trend in
+    forecasts (V0.5.1 regression test for level-vs-slope confusion)."""
+    rng = np.random.default_rng(91)
+    t_arr = np.arange(200)
+    y_trend = .05 * t_arr + rng.standard_normal(200) * .01
+    ar = ts.ARIMA(1, 1, 0).fit(y_trend[:180])
+    fc = ar.forecast(horizon=10)
+    last_level = float(y_trend[179])
+    assert abs(float(np.mean(fc.mean)) - last_level) < 1.5, (
+        float(np.mean(fc.mean)), last_level)
+
