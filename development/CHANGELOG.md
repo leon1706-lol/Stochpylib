@@ -327,3 +327,25 @@ Library-wide V0.5.1 audit covering all eight modules. Outcome:
   root README version example and quickstart snippets.
 Suite: 406 passed / 2 skipped. Version 0.5.1 (bug fixes + tests only; no new
 features or API changes).
+
+## Phase 18 - Ninth module: `stochpylib.information_theory`
+Implemented information-theoretic measures end to end (31/31 spec names across
+five submodules), natively on numpy/scipy. Entropy: Shannon (discrete),
+JointEntropy, ConditionalEntropy, CrossEntropy, TsallisEntropy (q-generalised),
+RenyiEntropy (alpha-generalised, converges to Shannon at alpha=1),
+DifferentialEntropy (histogram-based continuous), MaxEntropy (bounded
+optimisation). Divergences: KLDivergence/RelativeEntropy, JensenShannonDivergence
+(symmetric/bounded), WassersteinDistance (scipy 1-D), HellingerDistance,
+TotalVariation, ChiSquaredDivergence, AlphaDivergence. Mutual info:
+MutualInformation (contingency table), NormalizedMutualInformation,
+VariationOfInformation, ConditionalMutualInfo, InteractionInformation,
+MultiInformation (total correlation). Channels: ChannelCapacity (BSC/BEC/Z),
+InformationGain, TransferEntropy (lagged conditional MI with discretisation),
+DirectedInformation, SymbolicTransferEntropy (ordinal-pattern encoding).
+Coding: ShannonLimit (BSC capacity), HuffmanCode (optimal prefix-free tree),
+TypicalSet (AEP membership test), AEP bounds.
+Also backfilled Probleme.md entries [31]-[34] for V0.5.1 survival bug fixes.
+Tests: tests/information_theory/tests.py (45 cases); selftest extended to
+136 checks; spl --help gained the information_theory block.
+Suite: 496 passed / 2 skipped. Version bumped to 0.6.0.
+Progress: 288/794 public names.

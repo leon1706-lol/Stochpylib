@@ -148,10 +148,9 @@ Run everything from any Python prompt after `pip install stochpylib`.
         description=description,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
-            "roadmap: many more modules are planned (queueing,\n"
-            "information_theory, levy_processes, financial_stochastics, advanced_mcmc,\n"
-            "bayesian, statistics, ...) - see the repository README and\n"
-            "development/Implementation-Checklist.md.\n\n"
+            "roadmap: many more modules are planned (levy_processes,\n"
+            "financial_stochastics, advanced_mcmc, bayesian, statistics, ...) -\n"
+            "see the repository README and development/Implementation-Checklist.md.\n\n"
             "docs: README.md - contributing: CONTRIBUTING.md - security: SECURITY.md"
         ),
     )

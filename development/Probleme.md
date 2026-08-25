@@ -644,3 +644,72 @@ fitting and evaluation.
 - For all four rotations: analytic h matches central-difference dC/dv to <1e-4
   and base-density-at-rotated-columns matches the mixed partial of the rotated
   CDF to ~1e-6 (regression-tested).
+
+---
+
+### 31. SurvivalFitter._step_evaluate defaulted to 1.0 for all callers
+
+**Severity:** 6/10 - **Status:** fixed (unreleased; ships with V0.5.1)
+
+**Problem:** The shared step-function evaluator hardcoded `default=1.0` for
+entries before the first step, which is correct for survival functions but
+wrong for cumulative hazards (should be H=0 before first event) and CIFs
+(should be 0). Nelson-Aalen with no events returned H=1.0 instead of 0.
+
+**Fix:** Added a ``default`` parameter; all cumulative-hazard and CIF callers
+pass ``default=0.0``.
+
+**Verification:**
+- NA with zero events returns H=0; CIF predict returns 0 before first event;
+  KM still returns S=1 (regression-tested).
+
+---
+
+### 32. CumulativeHazard integration grid started too late
+
+**Severity:** 5/10 - **Status:** fixed (unreleased; ships with V0.5.1)
+
+**Problem:** The parametric-model integration grid started at
+times.min()*0.5, missing accumulated hazard between 0 and that point.
+WeibullSurvival(shape=1, scale=2) at t=2 returned H=0.50 instead of 1.00.
+
+**Fix:** Grid starts at 1e-8 (near zero); also fixed shape mismatch in the
+Riemann sum (h[:-1] * diff(grid) instead of h * diff(grid)).
+
+**Verification:**
+- WeibullSurvival(shape=1, scale=2) at t=2 returns H=1.0000 exactly;
+  regression-tested.
+
+---
+
+### 33. HazardFunction rejected library distribution objects
+
+**Severity:** 4/10 - **Status:** fixed (unreleased; ships with V0.5.1)
+
+**Problem:** HazardFunction wrapper required source objects to expose
+.hazard() or .hazard_(), but none of the 47 library distributions implement
+those methods — they only have .pdf()/.cdf(). Wrapping Exponential(0.5)
+raised TypeError.
+
+**Fix:** Added generic fallback computing hazard as pdf(t)/(1-cdf(t)) from
+any object exposing pdf and cdf callables.
+
+**Verification:**
+- HazardFunction(source=Exponential(0.5)).predict([3]) returns 0.5 exactly
+  (constant hazard for exponential); regression-tested.
+
+---
+
+### 34. Gompertz exp(b*t) overflowed for large b*t products
+
+**Severity:** 3/10 - **Status:** fixed (unreleased; ships with V0.5.1)
+
+**Problem:** GompertzSurvival._survival computed exp(a/b*(1-exp(b*t)))
+without clipping; for large b*t products the inner exponential overflowed to
+inf, producing NaN after the outer multiplication.
+
+**Fix:** Clipped inner exponent argument to [-700, 0].
+
+**Verification:**
+- GompertzSurvival(a=.5, b=1e-15).survival([1,2]) equals exp(-.5*[1,2])
+  to machine precision; regression-tested.

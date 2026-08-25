@@ -25,6 +25,7 @@ from stochpylib import (
     copulas,
     distributions,
     gaussian_processes,
+    information_theory,
     montecarlo,
     probability,
     survival,
@@ -118,9 +119,10 @@ def test_every_distribution_class_exposes_common_interface():
 
 def test_top_level_package_wiring():
     assert set(stochpylib.__all__) == {
-        "copulas", "distributions", "gaussian_processes", "montecarlo",
+        "copulas", "distributions", "gaussian_processes",
+        "information_theory", "montecarlo",
         "probability", "queueing", "survival", "timeseries"}
-    assert stochpylib.__version__ == "0.5.1"
+    assert stochpylib.__version__ == "0.6.0"
 
 
 # ---------------------------------------------------------------- integration
