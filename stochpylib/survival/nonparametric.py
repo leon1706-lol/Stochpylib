@@ -128,7 +128,7 @@ class NelsonAalen(SurvivalFitter):
 
     def predict(self, times):
         self._require_fit()
-        return self._step_evaluate(self.cumulative_hazard_, times)
+        return self._step_evaluate(self.cumulative_hazard_, times, default=0.0)
 
     def _require_fit(self):
         if self.cumulative_hazard_ is None:

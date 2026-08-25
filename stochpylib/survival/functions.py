@@ -65,8 +65,19 @@ def _as_hazard_callable(source):
         return lambda t: np.asarray(
             source.hazard(np.atleast_1d(np.asarray(t, dtype=float))),
             dtype=float)
+    # generic fallback: hazard = pdf / (1 - cdf) from any distribution
+    if hasattr(source, "pdf") and callable(source.pdf) \
+            and hasattr(source, "cdf") and callable(source.cdf):
+        def haz_from_pdf(t):
+            t = np.atleast_1d(np.asarray(t, dtype=float))
+            dens = np.asarray(source.pdf(t), dtype=float)
+            surv = np.clip(1.0 - np.asarray(source.cdf(t), dtype=float),
+                           1e-300, 1.0)
+            return dens / surv
+        return haz_from_pdf
     raise TypeError("source must be a NelsonAalen fit, a parametric survival "
-                    "model with hazard_(t), or a distribution with hazard(t)")
+                    "model with hazard_(t), or a distribution with pdf/cdf "
+                    "or hazard(t)")
 
 
 class _FromDataOrSourceMixin:
@@ -127,13 +138,13 @@ class CumulativeHazard(_FromDataOrSourceMixin):
             from stochpylib.survival._base import SurvivalFitter
             return np.asarray(
                 SurvivalFitter._step_evaluate(
-                    self.source_.cumulative_hazard_, times), dtype=float)
+                    self.source_.cumulative_hazard_, times, default=0.0),
+                dtype=float)
         if self._mode == "integrate":
-            lo = max(float(times.min()) * .5, 1e-6)
             hi = float(times.max()) * 1.02 + 1e-6
-            grid = np.linspace(lo, hi, 20001)
+            grid = np.linspace(1e-8, hi, 20001)
             h = np.asarray(self._haz(grid), dtype=float)
-            H = np.concatenate([[0.0], np.cumsum(h * (grid[1] - grid[0]))])
+            H = np.concatenate([[0.0], np.cumsum(h[:-1] * np.diff(grid))])
             idx = np.clip(np.searchsorted(grid, times), 0, len(H) - 1)
             return H[idx]
         s = np.clip(self._sf(times), 1e-300, 1.0)

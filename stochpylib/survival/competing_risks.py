@@ -39,7 +39,8 @@ class CauseSpecificHazard:
         if self.cumulative_hazard_ is None:
             raise RuntimeError("fit() must be called first")
         from stochpylib.survival._base import SurvivalFitter
-        return SurvivalFitter._step_evaluate(self.cumulative_hazard_, times)
+        return SurvivalFitter._step_evaluate(self.cumulative_hazard_, times,
+                                             default=0.0)
 
 
 class CumulativeIncidenceFunction:
@@ -100,7 +101,7 @@ class CumulativeIncidenceFunction:
         if self.cif_ is None:
             raise RuntimeError("fit() must be called first")
         from stochpylib.survival._base import SurvivalFitter
-        return SurvivalFitter._step_evaluate(self.cif_, times)
+        return SurvivalFitter._step_evaluate(self.cif_, times, default=0.0)
 
 
 class CompetingRisksModel:

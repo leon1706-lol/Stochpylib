@@ -221,7 +221,7 @@ class GompertzSurvival(_ParametricBase):
         tt = np.maximum(t, 0.0)
         if abs(b) < 1e-10:
             return np.exp(-a * tt)
-        return np.exp(a / b * (1.0 - np.exp(b * tt)))
+        return np.exp(np.clip(a / b * (1.0 - np.exp(b * tt)), -700, 0.0))
 
     def _hazard(self, t, th):
         a, b = th

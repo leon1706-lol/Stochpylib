@@ -452,3 +452,164 @@ def test_cox_coefficients_match_lifelines():
     lff.fit(pd.DataFrame(df, columns=["T", "E", "x"]), "T", "E")
     assert abs(ours.coefficients_[0] -
                lff.params_["x"]) < max(1e-6, 0.05 * abs(lff.params_["x"]))
+
+
+# ---------------------------------------------------------------- V0.4.1 audit additions
+
+def test_km_all_censored_median_is_inf():
+    km = KaplanMeier().fit(np.array([1., 2., 3.]), np.zeros(3, dtype=int))
+    assert km.median_survival_time_ == float("inf")
+    assert float(km.predict([5.0])[0]) == 1.0
+
+
+def test_na_all_censored_h_is_zero():
+    na = NelsonAalen().fit(np.array([1., 2.]), np.zeros(2, dtype=int))
+    assert float(na.predict([5.0])[0]) == 0.0
+
+
+def test_step_evaluate_cumulative_hazard_default_is_zero():
+    from stochpylib.survival._base import SurvivalFitter
+    arr = np.array([(1.0, 0.5)], dtype=[("time", float), ("value", float)])
+    result = SurvivalFitter._step_evaluate(arr, [0.0, 2.0], default=0.0)
+    assert result[0] == 0.0
+    assert result[1] == 0.5
+
+
+def test_gompertz_small_b_approximates_exponential():
+    g = GompertzSurvival()
+    g.params_ = {"a": 0.5, "b": 1e-15}
+    sv = g._survival(np.array([1.0, 2.0]), g._theta())
+    assert np.allclose(sv, np.exp(-0.5 * np.array([1., 2.])))
+
+
+def test_loglogistic_density_positive_at_alpha():
+    ll = LogLogisticSurvival()
+    ll.params_ = {"alpha": 5.0, "beta": 2.0}
+    d = float(ll._density(np.array([5.0]), ll._theta())[0])
+    assert d > 0
+
+
+def test_stratified_cox_three_strata():
+    rng = np.random.default_rng(30)
+    t3 = np.r_[rng.exponential(2, 500), rng.exponential(3, 500),
+               rng.exponential(1.5, 500)]
+    c3 = rng.uniform(.3, 10, 1500)
+    d3 = np.minimum(t3, c3)
+    e3 = (t3 <= c3).astype(int)
+    z3 = rng.standard_normal(1500)
+    strata3 = np.repeat(["X", "Y", "Z"], 500)
+    sc = StratifiedCox().fit(d3, e3, z3[:, None], strata3)
+    assert len(sc.baseline_by_stratum_) == 3
+    assert np.isfinite(sc.coefficients_[0])
+
+
+def test_logrank_three_groups_df_two():
+    rng = np.random.default_rng(31)
+    parts_t = []
+    parts_e = []
+    labs = []
+    for gi, rate in enumerate((.3, .6, 1.2)):
+        tt = np.minimum(rng.exponential(1 / rate, 500),
+                        rng.uniform(.2, 8, 500))
+        ee = (rng.exponential(1 / rate, 500) <=
+              rng.uniform(.2, 8, 500)).astype(int)
+        parts_t.append(tt)
+        parts_e.append(ee)
+        labs.append(np.full(500, f"G{gi}"))
+    t = np.concatenate(parts_t)
+    e = np.concatenate(parts_e)
+    g = np.concatenate(labs)
+    lr = LogRankTest().fit(t, e, g)
+    assert lr.degrees_of_freedom_ == 2
+    assert np.isfinite(lr.p_value_)
+
+
+def test_competing_risks_three_causes_identity():
+    rng = np.random.default_rng(32)
+    cause3 = rng.choice([1, 2, 3], 800)
+    tt3 = rng.exponential(2, 800)
+    cc3 = rng.uniform(.2, 8, 800)
+    T3 = np.minimum(tt3, cc3)
+    C3 = np.where(tt3 <= cc3, cause3, 0)
+    crm = CompetingRisksModel().fit(T3, C3)
+    assert crm.check_identity() < 1e-9
+
+
+def test_mrl_exponential_memoryless():
+    from stochpylib.distributions import Exponential as DExp
+    rl = ResidualLifetime(source=DExp(0.5))
+    assert abs(rl.value(0) - 2.0) < .05
+    assert abs(rl.value(3) - 2.0) < .05   # memoryless
+
+
+def test_cumulative_hazard_from_parametric_integration():
+    ws = WeibullSurvival()
+    ws.params_ = {"shape": 1.0, "scale": 2.0}
+    ch = CumulativeHazard(source=ws)
+    assert abs(float(ch.predict([2.0])[0]) - 1.0) < .05
+
+
+def test_hazard_function_from_distribution():
+    from stochpylib.distributions import Exponential as DExp
+    hf = HazardFunction(source=DExp(0.5))
+    assert abs(float(hf.predict([3.0])[0]) - .5) < .01
+
+
+def test_survival_function_from_parametric_model():
+    ws = WeibullSurvival()
+    ws.params_ = {"shape": 1.5, "scale": 10.0}
+    sf = SurvivalFunction(source=ws)
+    expected = np.exp(-(10 / 10) ** 1.5)
+    assert abs(float(sf.predict([10.0])[0]) - expected) < 1e-8
+
+
+def test_breslow_baseline_survival_in_unit_interval():
+    rng = np.random.default_rng(33)
+    t = np.minimum(rng.exponential(2, 500), rng.uniform(.2, 8, 500))
+    be = BreslowEstimator().fit(t, np.ones(500, dtype=int), np.ones(500))
+    bs = be.baseline_survival_(np.array([1.0, 2.0, 4.0]))
+    assert np.all((bs >= 0) & (bs <= 1))
+
+
+def test_cox_predict_partial_hazard_shape():
+    rng = np.random.default_rng(34)
+    x1 = rng.standard_normal(200)
+    t_cox = rng.exponential(2, 200)
+    c_cox = rng.uniform(.2, 8, 200)
+    dur = np.minimum(t_cox, c_cox)
+    ev = (t_cox <= c_cox).astype(int)
+    m = CoxProportionalHazards().fit(dur, ev, x1[:, None])
+    ph = m.predict_partial_hazard(x1[:10][:, None])
+    assert ph.shape == (10,)
+
+
+def test_aalen_multi_time_monotone():
+    rng = np.random.default_rng(35)
+    am = AalenAdditiveModel().fit(
+        np.minimum(rng.exponential(2, 500), rng.uniform(.5, 8, 500)),
+        np.ones(500, dtype=int), np.ones((500, 1)))
+    times = np.array([0.5, 1.0, 2.0, 4.0])
+    preds = am.predict([1.0], times)
+    assert np.all(np.diff(preds) >= -1e-12)
+
+
+def test_finegray_no_competing_risks_still_runs():
+    rng = np.random.default_rng(36)
+    T1 = rng.exponential(2, 300)
+    C1 = rng.uniform(.1, 10, 300)
+    cause1_only = np.where(T1 <= C1, 1, 0)
+    fg = FineGrayModel().fit(T1, cause1_only,
+                              np.column_stack([rng.random(300)]),
+                             cause_of_interest=1)
+    assert np.isfinite(fg.coefficients_[0])
+
+
+def test_cox_perfect_separation_converges():
+    rng = np.random.default_rng(37)
+    t_sep = np.r_[rng.exponential(1, 50), rng.exponential(10, 50)]
+    c_sep = rng.uniform(.5, 20, 100)
+    d_sep = np.minimum(t_sep, c_sep)
+    ev_sep = (t_sep <= c_sep).astype(int)
+    x_sep = np.r_[np.zeros(50), np.ones(50)]
+    m = CoxProportionalHazards().fit(d_sep, ev_sep, x_sep[:, None])
+    assert np.isfinite(m.coefficients_[0])

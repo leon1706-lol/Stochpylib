@@ -45,13 +45,15 @@ class SurvivalFitter:
         return arr[order]
 
     @staticmethod
-    def _step_evaluate(step_arr, times):
-        """Right-continuous evaluation of a ('time','value') step array."""
+    def _step_evaluate(step_arr, times, default=1.0):
+        """Right-continuous evaluation of a ('time','value') step array.
+
+        ``default`` is the value before the first step (1.0 for survival
+        functions, 0.0 for cumulative hazards)."""
         times = np.atleast_1d(np.asarray(times, dtype=float))
         idx = np.searchsorted(step_arr["time"], times, side="right") - 1
-        out = np.empty(len(idx))
+        out = np.full(len(idx), float(default))
         ok = idx >= 0
-        out[~ok] = 1.0            # before first event: S=1, H=0 convention
         if np.any(ok):
             out[ok] = step_arr["value"][idx[ok]]
         return out
