@@ -119,8 +119,8 @@ def test_every_distribution_class_exposes_common_interface():
 def test_top_level_package_wiring():
     assert set(stochpylib.__all__) == {
         "copulas", "distributions", "gaussian_processes", "montecarlo",
-        "probability", "survival", "timeseries"}
-    assert stochpylib.__version__ == "0.4.0"
+        "probability", "queueing", "survival", "timeseries"}
+    assert stochpylib.__version__ == "0.5.0"
 
 
 # ---------------------------------------------------------------- integration

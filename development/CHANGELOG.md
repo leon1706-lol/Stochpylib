@@ -285,3 +285,23 @@ Tests: tests/survival/tests.py (37 cases incl 3 lifelines oracles); selftest
 extended to 136 checks; spl --help gained the survival block.
 Suite: 387 passed / 2 skipped. Version bumped to 0.4.0.
 Progress: 257/794 public names.
+
+## Phase 16 - Eighth module: `stochpylib.queueing`
+Implemented queueing theory and networks end to end (29/29 spec names across
+five submodules), natively on numpy/scipy. Single queues: M/M/1 closed-form,
+M/M/c with Erlang-C via birth-death module, M/M/inf (no-wait limit), M/D/1
+Pollaczek-Khinchine, M/G/1 P-K formula with second-moment input, GI/G/1
+Kingman heavy-traffic approximation, MG1PriorityQueue non-preemptive two-class.
+Birth-death: general steady-state solver, Erlang B/C formulas, Engset formula.
+Networks: JacksonNetwork (open, traffic equations via linear solve),
+OpenNetwork alias, ClosedNetwork/GordonNewell mean-value analysis,
+BCMP theorem types 1 and 3, ProductFormNetwork base class.
+Simulation: DiscreteEventSim event-calendar engine with warmup filtering,
+SimStats collecting wait/sojourn/service times and time-averaged populations;
+QueueSimulation facade comparing analytical vs simulated results.
+Analysis: LittleLaw solver, traffic_intensity, mean_waiting_time,
+mean_queue_length, server_utilization, WaitingTimeDistribution (exact CDF).
+Tests: tests/queueing/tests.py (43 cases); selftest extended to 136 checks;
+spl --help gained the queueing block.
+Suite: 447 passed / 2 skipped. Version bumped to 0.5.0.
+Progress: 287/794 public names.

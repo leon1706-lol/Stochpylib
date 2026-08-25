@@ -301,6 +301,18 @@ def run(verbose=False):
     lr = LogRankTest().fit(t_cox, e_cox, np.repeat(['A', 'B'], 800))
     st.check("SURV: logrank separates", lr.p_value_ < 1e-10)
 
+    # queueing quick checks
+    from stochpylib.queueing import MM1Queue, erlang_b_formula, JacksonNetwork
+    q_mm1 = MM1Queue().fit(.5, 1.0)
+    st.check("QUEUE: M/M/1 L=1", abs(q_mm1.L - 1.0) < 1e-9)
+    b_val = erlang_b_formula(10, 7.0)
+    st.check("QUEUE: ErlangB(10,7)", .05 < b_val < .12)
+    jn = JacksonNetwork([1., 0.], [3., 3.],
+                        routing_matrix=[[0., 1.], [0., 0.]])
+    jn.fit()
+    st.check("QUEUE: Jackson traffic eq",
+             np.allclose(jn.lam, [1., 1.], atol=1e-8))
+
     # library conformance + cross-module checks (mirrors tests/library)
     spec_counts = {
         "probability": (21, ["sample_space", "P", "bayes_theorem",

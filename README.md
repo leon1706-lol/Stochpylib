@@ -13,9 +13,9 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10%2B-FF8C00?style=flat-square&labelColor=1A1A1A&logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/%F0%9F%93%84%20license-MIT-8B5CF6?style=flat-square&labelColor=1A1A1A" alt="License: MIT">
-  <img src="https://img.shields.io/badge/tests-380%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="329 tests passing">  <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&style=flat-square&labelColor=1A1A1A&label=CI&logo=githubactions&logoColor=white" alt="CI status"></a>
+  <img src="https://img.shields.io/badge/tests-449%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="329 tests passing">  <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&style=flat-square&labelColor=1A1A1A&label=CI&logo=githubactions&logoColor=white" alt="CI status"></a>
   <a href="https://pypi.org/project/stochpylib/"><img src="https://img.shields.io/pypi/v/stochpylib?style=flat-square&labelColor=1A1A1A&color=FF8C00&logo=pypi&logoColor=white" alt="PyPI version"></a>
-  <img src="https://img.shields.io/badge/public%20names-257%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="229 of 794 spec names implemented">
+  <img src="https://img.shields.io/badge/public%20names-287%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="229 of 794 spec names implemented">
 </p>
 
 <p align="center">
@@ -47,8 +47,9 @@ from option pricing validated against Black–Scholes to reliability analysis dr
 library's own distribution objects, a **time-series toolkit** (ARIMA family, GARCH family,
 Kalman/particle filters, HMMs, changepoints, spectral analysis), **Gaussian processes**
 (a composable kernel zoo with exact, sparse and approximate-classification inference),
-**survival analysis** (Kaplan-Meier, Cox regression, parametric censored fits,
-competing risks) and **copulas**
+**survival analysis**
+(Kaplan-Meier, Cox regression, parametric censored fits, competing risks),
+**queueing theory** (M/M/1 to Jackson networks with discrete-event simulation) and **copulas**
 (elliptical, Archimedean and empirical families plus C-/D-/R-vine dependence models).
 The thesis this project exists to test: a complete stochastic-computing stack can live in
 one coherent, well-tested package — the roadmap takes it onward through Lévy
@@ -110,7 +111,7 @@ simulated = fit.best_.sample(10_000)                # best family by AIC
 
 ## Current Status
 
-Early development — seven modules implemented so far:
+Early development — eight modules implemented so far:
 
 | Module | Public names | What's inside |
 |---|---|---|
@@ -121,10 +122,11 @@ Early development — seven modules implemented so far:
 | `stochpylib.gaussian_processes` | 36 | composable kernel zoo (10 kernels with +/*/² operators), exact GP regression, FITC/VFE sparse approximations, Laplace/EP/VI classification, hyperparameter optimization, DeepGP |
 | `stochpylib.copulas` | 26 | elliptical (Gaussian/t), Archimedean (Clayton/Gumbel/Frank/Joe/AMH/BB1/BB7) + Plackett, empirical (Empirical/Checkerboard/Beta), C-/D-/R-vines with AIC pair selection & rotations, CopulaFit dispatcher, dependence measures |
 | `stochpylib.survival` | 28 | Kaplan-Meier/Nelson-Aalen/life tables, parametric censored fits (Weibull/Exponential/LogNormal/LogLogistic/Gompertz), Cox PH (Breslow/Efron), stratified Cox, Weibull AFT, Aalen additive, Fine-Gray competing risks, log-rank family, Aalen-Johansen CIF |
+| `stochpylib.queueing` | 29 | M/M/1 through M/G/1 priority queues (closed-form), Jackson/closed/BCMP networks with product-form and MVA, Erlang B/C/Engset blocking formulas, discrete-event simulation engine |
 
 Exact progress against the full design spec lives in
 [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md)
-(currently **257 / 794 public names**).
+(currently **287 / 794 public names**).
 
 ## Download
 
@@ -238,7 +240,7 @@ Everything a contributor or maintainer needs lives in committed docs:
 pytest tests/ -v
 ```
 
-**380 passed / 2 skipped** as of the `survival` module. Tests are deterministic
+**447 passed / 2 skipped** as of the `survival` module. Tests are deterministic
 (fixed seeds everywhere), live outside the installed package, and use `scipy.stats`,
 `statsmodels` and brute-force references as independent oracles. Statistical assertions are
 set at ≥ 3 standard errors so results are stable while staying meaningful. Additionally,
@@ -264,7 +266,7 @@ Publishing.
 
 ## Roadmap
 
-Sixteen modules remain on the spec (in rough implementation order):
+Fifteen modules remain on the spec (in rough implementation order):
 queueing theory, information theory, Lévy processes,
 financial stochastics, advanced MCMC, Bayesian inference, statistics, nonparametric
 methods, robust statistics, numerical methods, random matrix theory, spatial statistics,
