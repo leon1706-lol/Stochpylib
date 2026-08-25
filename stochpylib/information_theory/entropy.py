@@ -141,7 +141,7 @@ class RenyiEntropy:
         if abs(a - 1.0) < 1e-12:
             self.result_ = Entropy.compute(p_v)
         elif abs(a) < 1e-12:
-            self.result_ = float(np.log(max((p_v > 0).sum(), 1)))
+            self.result_ = float(np.log2(max((p_v > 0).sum(), 1)))
         else:
             s = float(np.sum(p_v ** a))
             self.result_ = float(np.log2(max(s, 1e-300)) / (1.0 - a))

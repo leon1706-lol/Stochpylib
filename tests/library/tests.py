@@ -122,7 +122,7 @@ def test_top_level_package_wiring():
         "copulas", "distributions", "gaussian_processes",
         "information_theory", "montecarlo",
         "probability", "queueing", "survival", "timeseries"}
-    assert stochpylib.__version__ == "0.6.0"
+    assert stochpylib.__version__ == "0.6.1"
 
 
 # ---------------------------------------------------------------- integration

@@ -71,11 +71,13 @@ class InformationGain:
         self.bins = int(bins)
 
     def fit(self, x, y):
+        y_arr = np.asarray(y).ravel()
+        _, counts = np.unique(y_arr, return_counts=True)
+        hy = Entropy().fit(counts).result_
         ce = ConditionalEntropy()
         if self.bins > 0:
             ce.bins = self.bins
-        ce.fit(y, x)   # H(Y|X)
-        hy = Entropy.compute(np.asarray(y))
+        ce.fit(y_arr, x)
         self.result_ = max(hy - ce.result_, 0.0)
         self.h_y_ = hy
         self.h_y_given_x_ = ce.result_

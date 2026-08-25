@@ -340,3 +340,87 @@ def test_module_wiring():
         "TypicalSet", "AEP"}
     missing = spec_names - set(information_theory.__all__)
     assert not missing, f"missing: {missing}"
+
+
+# ---------------------------------------------------------------- V0.6.1 additions
+
+def test_renyi_alpha_0_returns_log2_k_in_bits():
+    """Renyi alpha=0 is Hartley entropy: log(K) must be in bits not nats."""
+    r = RenyiEntropy(alpha=0).fit([.25] * 4).result_
+    assert abs(r - 2.0) < .01   # log2(4) = 2 bits
+
+
+def test_cmi_compute_returns_float_directly():
+    rng = np.random.default_rng(42)
+    x = rng.integers(0, 4, 500)
+    y = rng.integers(0, 3, 500)
+    z = rng.integers(0, 2, 500)
+    result = ConditionalMutualInfo.compute(x, y, z)
+    assert isinstance(result, float)
+
+
+def test_transfer_entropy_bias_floor_independent():
+    """Plug-in TE estimator has positive finite-sample bias O(K^2/n)."""
+    rng = np.random.default_rng(99)
+    x_ind = rng.standard_normal(2000)
+    y_ind = rng.standard_normal(2000)
+    te = TransferEntropy(lag=1, n_bins=8).compute(x_ind, y_ind, lag=1)
+    # should be small but NOT exactly zero due to discretisation bias
+    assert te < .12
+
+
+def test_max_entropy_with_mean_constraint():
+    from stochpylib.information_theory.entropy import MaxEntropy as ME
+    me = ME(support_size=20, mean_constraint=.7, lower=0., upper=1.).fit()
+    mean_val = float(np.sum(me.support_ * me.distribution_))
+    assert abs(mean_val - .7) < .05
+    assert np.isfinite(me.result_)
+
+
+def test_alpha_divergence_near_1_approximates_kl():
+    p = [.3, .7]
+    q = [.5, .5]
+    ad = AlphaDivergence(alpha=1.001).compute(p, q)
+    kl = KLDivergence.compute(p, q)
+    assert abs(ad - kl) < .15
+
+
+def test_information_gain_equals_mutual_info():
+    rng = np.random.default_rng(45)
+    x = rng.integers(0, 3, 300)
+    y = rng.integers(0, 2, 300)
+    ig = InformationGain().fit(x, y).result_
+    mi = MutualInformation().fit(x, y).result_
+    assert abs(ig - mi) < .01
+
+
+def test_typical_set_biased_source():
+    ts = TypicalSet(epsilon=.1).fit([.9, .1])
+    # balanced sequence NOT typical under biased source
+    assert not ts.is_typical([0, 1] * 10)
+    # biased sequence IS typical
+    assert ts.is_typical([0] * 18 + [1] * 2)
+
+
+def test_multi_info_independent_near_zero():
+    rng = np.random.default_rng(46)
+    cols = [rng.integers(0, 2, 5000) for _ in range(4)]
+    mi_all = MultiInformation().fit(*cols).result_
+    assert mi_all < .03
+
+
+def test_vi_identical_zero():
+    rng = np.random.default_rng(47)
+    x = rng.integers(0, 5, 1000)
+    vi = VariationOfInformation().fit(x, x).result_
+    assert abs(vi) < 1e-9
+
+
+def test_interaction_information_xor_negative():
+    """XOR creates pure synergy -> negative interaction information."""
+    rng = np.random.default_rng(48)
+    xr = rng.integers(0, 2, 3000)
+    yr = rng.integers(0, 2, 3000)
+    zr = xr ^ yr
+    ii = InteractionInformation().compute(zr, xr, yr)
+    assert ii < 0

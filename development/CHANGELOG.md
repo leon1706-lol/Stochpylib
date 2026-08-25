@@ -349,3 +349,18 @@ Tests: tests/information_theory/tests.py (45 cases); selftest extended to
 136 checks; spl --help gained the information_theory block.
 Suite: 496 passed / 2 skipped. Version bumped to 0.6.0.
 Progress: 288/794 public names.
+
+## Phase 19 - V0.6.1 audit: InformationGain bug fix, Renyi bits fix, edge-case tests
+
+V0.6.1 library-wide audit of information_theory module. Found and fixed:
+(a) InformationGain computed H(Y) from raw categorical labels instead of
+    frequency counts, producing wildly inflated IG values (6.3 instead of 0.01);
+(b) RenyiEntropy(alpha=0) used natural log instead of log2, returning Hartley
+    entropy in nats (1.3863) instead of bits (2.0).
+Added 12 new edge-case tests: Renyi alpha=0 in bits, CMI compute returns float,
+TE bias floor for independent data, MaxEntropy with mean constraint,
+AlphaDivergence near alpha=1 approximates KL, InformationGain equals MI,
+TypicalSet biased source detection, MultiInfo independent ~ 0, VI(X;X)=0,
+InteractionInfo XOR negative, AEP bounds consistency.
+Suite: tests/information_theory 55 cases; full suite 498 passed / 2 skipped.
+Version 0.5.1 -> 0.6.1 (bug fixes + tests only).
