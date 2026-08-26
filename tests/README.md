@@ -1,8 +1,35 @@
-# tests/ — test suite
+# tests/
 
-One file per package module, mirroring the layout: `tests/<module>/tests.py`
-(e.g. `probability/tests.py`). Files are named `tests.py` so pytest picks them up via
-`python_files = ["tests.py"]` in `pyproject.toml`.
+The test suite: one deterministic file per package module plus a cross-module
+library suite, living outside the installed package on purpose (tests used to
+ship inside the wheel — `development/Probleme.md` [3]).
+
+## Conventions
+
+- One file per module, mirroring the layout: `tests/<module>/tests.py` (e.g.
+  `probability/tests.py`). Files are named `tests.py` so pytest picks them up
+  via `python_files = ["tests.py"]` in `pyproject.toml`; each folder carries an
+  `__init__.py` so same-named files import as distinct modules.
+- Deterministic everywhere: fixed seeds on every stochastic path.
+- Independent oracles: `scipy.stats`, `statsmodels` and `lifelines` are used
+  *only* in tests — never in library code. Statistical assertions are set at
+  >= 3 standard errors so results are stable while staying meaningful.
+- Doctests run via a dedicated `test_doctests_pass` case in each suite.
+
+## Layout
+
+- `tests/<module>/tests.py` — one suite per implemented module (nine today:
+  probability, distributions, montecarlo, timeseries, gaussian_processes,
+  copulas, survival, queueing, information_theory).
+- `tests/library/tests.py` — the cross-module suite: spec-name conformance for
+  all 317 implemented public names (generated from
+  `development/Implementation-Checklist.md` via `_extract_spec_names.py`, cached
+  in `_spec_names.json`), pinned documented extras (`MCResult`,
+  `DigitalNetBase2`, timeseries result objects, GP kernel base/ops,
+  `BaseCopula`), the sanctioned multivariate method-contract deviation, and
+  end-to-end workflows spanning modules (reliability MC on library Weibull,
+  t-copula margins through the library Student_t, ARIMA vs GP forecasting
+  agreement, `CopulaFit` refit round trips, Sobol-QMC vs crude consistency).
 
 Run everything from the repo root:
 
@@ -10,21 +37,7 @@ Run everything from the repo root:
 pytest tests/ -v
 ```
 
-Doctests are included via a dedicated `test_doctests_pass` case in each suite.
-Tests live outside the installed package on purpose (they used to ship inside the wheel —
-see development/Probleme.md [3]). Each `tests/<module>/` folder contains an `__init__.py`
-so same-named `tests.py` files import as distinct modules.
-
-Current coverage: `probability` + `distributions` + `montecarlo` + `timeseries` +
-`gaussian_processes` + `copulas` + `survival` + `queueing` + `information_theory`
-(496 passed / 2 skipped), plus the
-cross-module suite in `library/tests.py` (20 cases): spec-name conformance for all 287
-implemented public names — including the documented multivariate
-method-contract deviation — pinned utility extras, and end-to-end workflows
-spanning modules (reliability MC on library Weibull objects, t-copula margins
-through the library Student_t, ARIMA vs GP forecasting agreement, CopulaFit
-refit round trips, QMC/crude estimator consistency). The conformance lists are
-generated from development/Implementation-Checklist.md via
-tests/library/_extract_spec_names.py.
-
-The package also ships an embedded smoke suite runnable from any pip install: `spl --test` (130 checks), which includes the conformance and cross-module spot checks.
+The package also ships an embedded smoke suite runnable from any pip install:
+`spl --test` (136 checks), which includes the per-module conformance and
+cross-module spot checks. The live pass count lives only in the root README
+badge — deliberately no second copy here to go stale.

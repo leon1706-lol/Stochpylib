@@ -713,3 +713,86 @@ inf, producing NaN after the outer multiplication.
 **Verification:**
 - GompertzSurvival(a=.5, b=1e-15).survival([1,2]) equals exp(-.5*[1,2])
   to machine precision; regression-tested.
+
+---
+
+### 35. InformationGain computed H(Y) from raw labels instead of frequency counts
+
+**Severity:** 6/10 - **Status:** fixed (unreleased; ships with V0.6.1)
+
+**Problem:** InformationGain.fit passed the raw categorical label array to the
+entropy estimator instead of its frequency counts. H(Y) was then computed over
+n distinct "symbols" each seen once, producing wildly inflated gains (6.3 bits
+instead of 0.01 for near-independent data).
+
+**Fix:** Compute H(Y) from np.unique(y, return_counts=True) counts before
+subtracting the conditional entropy.
+
+**Verification:**
+- IG equals MutualInformation on the same (x, y) pair for independent and
+  dependent datasets; regression-tested (12 new edge-case tests in
+  tests/information_theory/tests.py).
+
+---
+
+### 36. RenyiEntropy(alpha=0) used natural log instead of log2
+
+**Severity:** 3/10 - **Status:** fixed (unreleased; ships with V0.6.1)
+
+**Problem:** The alpha=0 corner (Hartley/max-entropy case, log of the support
+size) used np.log instead of np.log2, returning nats (1.3863 for a uniform
+4-symbol source) where every other Renyi order returns bits.
+
+**Fix:** Use log2 at alpha=0; the alpha->1 Shannon limit path was already
+correct.
+
+**Verification:**
+- RenyiEntropy(alpha=0) on a uniform 4-symbol source returns exactly 2.0 bits;
+  monotone convergence to Shannon as alpha -> 1 regression-tested.
+
+---
+
+### 37. Implementation-Checklist queueing section never checked off; headline progress figure arithmetically wrong
+
+**Severity:** 4/10 - **Status:** fixed (V0.6.2)
+
+**Problem:** The queueing module shipped complete in Phase 16 (29/29 spec
+names, full test file, module README), but its Implementation-Checklist section
+kept every box unchecked. The checklist's own arithmetic chain then broke:
+Phase 16 reported 287/794 (257 + 29 is 286, not 287), and Phase 18 added
+information_theory's 31 names to that wrong base and reported 288. The true
+implemented total across the nine shipped modules is 317/794
+(21+60+25+61+36+26+28+29+31). Every document quoting 288 inherited the error,
+and the library conformance test had been weakened to >= 280 to accommodate
+it.
+
+**Fix:** Checked off the entire queueing checklist section (72 boxes), set the
+progress line to 317/794, restored the conformance test to the exact
+== 317 invariant with queueing in the implemented tuple, and propagated the
+correct figure through README, development docs and the new
+tests/docs/tests.py consistency suite (which now recomputes the checklist
+totals from the section headers and fails on any drift).
+
+**Verification:**
+- tests/docs/tests.py::test_implementation_checklist_progress_line_matches_reality
+  recomputes 317 from the checklist sections against tests/library/
+  _spec_names.json and passes; full docs suite green.
+
+---
+
+### 38. spl --help inventory missing the queueing and information_theory blocks
+
+**Severity:** 3/10 - **Status:** fixed (V0.6.2)
+
+**Problem:** CHANGELOG Phases 16 and 18 both claim "spl --help gained the
+<module> block", but cli.py::_implemented_overview() never received those
+blocks - the inventory stopped at survival. Any pip install's primary
+self-description silently omitted the two newest modules.
+
+**Fix:** Added the queueing and information_theory inventory blocks (guarded by
+the same hasattr pattern as the other seven).
+
+**Verification:**
+- New tests/docs/tests.py::test_spl_help_invents_every_module asserts every
+  implemented module name appears in spl --help output; manual session
+  confirmed all nine blocks render.

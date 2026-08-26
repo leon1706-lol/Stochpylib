@@ -364,3 +364,67 @@ TypicalSet biased source detection, MultiInfo independent ~ 0, VI(X;X)=0,
 InteractionInfo XOR negative, AEP bounds consistency.
 Suite: tests/information_theory 55 cases; full suite 498 passed / 2 skipped.
 Version 0.5.1 -> 0.6.1 (bug fixes + tests only).
+
+## Phase 20 - V0.6.2 documentation overhaul: AQ-style restructure, corrected progress accounting, doc-consistency suite
+
+Library-wide documentation cleanup phase (no API changes; the only library-code
+change is the spl --help inventory fix, Probleme [38]). Outcome:
+
+- **Progress accounting corrected:** the queueing section of
+  Implementation-Checklist.md had shipped complete but was never checked off,
+  and the headline figure had drifted to a mathematically impossible 288/794
+  (Probleme [37]). True implemented total: **317/794 across nine modules**
+  (21+60+25+61+36+26+28+29+31). Checklist queueing section checked off,
+  progress line corrected, tests/library conformance test restored to the
+  strict == 317 invariant.
+- **Documentation restructured in the Aether-Quant house style** (dense
+  ownership-first prose, index tables, honest known-limitations sections):
+  all nine module READMEs rewritten to a common template (status line, Files,
+  Conventions, Known limitations, spec/tests pointers) including a NEW
+  stochpylib/information_theory/README.md (the only implemented module without
+  one); stochpylib/README.md now carries the full nine-subpackage table with
+  per-module guide links; tests/README.md documents the docs-consistency suite
+  and defers the live pass count to the README badge; development/README.md
+  converted to an index table.
+- **New development docs:** development/architecture.md (objective, system-flow
+  and tech-stack mermaid diagrams, module map, the common distribution
+  contract, cross-cutting conventions, package layout rules, known design
+  gaps), development/infrastructure.md (local setup, spl CLI, GitHub Actions
+  workflows, PyPI Trusted-Publisher release pipeline, wheel hygiene),
+  development/project_structure.md (annotated directory tree). Development.md
+  reworked into the folder index; the repo banner now uses the new project
+  logo (development/logo.png).
+- **Main README rebuilt:** AQ-style banner (logo, tagline, identity + tech
+  badge rows), Known Limitations section (PyPI lag: latest published release
+  0.1.1 vs repo 0.6.1; 14 of 23 modules remaining; the sanctioned multivariate
+  deviation; experimental EP; heavy suite), Current Status table extended with
+  information_theory, every stale figure replaced (tests 522 passed / 2
+  skipped, selftest 136 checks, version example 0.6.1, 317/794, roadmap lists
+  exactly the 14 remaining modules), footer in the house style.
+- **Doc-consistency suite added:** tests/docs/tests.py (14 cases) - the README
+  test badge and pass/skip statement must match live pytest collection; spl
+  --test check count must match every doc that quotes it; version strings must
+  agree across pyproject/__init__/README; the Current Status table must cover
+  every subpackage with spec-accurate name counts (from
+  tests/library/_spec_names.json); all relative links and TOC anchors must
+  resolve; stale claims ("288", "496", "133 checks", "0.1.0", ...) fail the
+  suite; checklist progress line is recomputed from its own sections;
+  Probleme numbering must stay continuous; the logo must exist and be
+  referenced. Runs in CI unchanged (ci.yml executes the full pytest tree).
+- **Bugs found by the new suite and fixed:** spl --help was missing the
+  queueing and information_theory inventory blocks despite the Phase 16/18
+  changelog claims (Probleme [38]); tmp_fix_checklist.py leftover scaffolding
+  removed from the repo root.
+- **Probleme backfill:** entries [35] (V0.6.1 InformationGain counts) and [36]
+  (V0.6.1 Renyi alpha=0 bits) were referenced by Phase 19 but never written;
+  now recorded. New entries [37]/[38] for this phase's finds.
+- **Manual session (all pass):** every README quickstart snippet run verbatim
+  (Bayes 0.1667; Weibull fit recovery 2.0/10.0 -> 2.065/10.314 with KS p=0.92;
+  Sobol block + antithetic call 10.488 +- 0.033; GP predict shapes; CopulaFit
+  -> GaussianCopula on t margins), BSC capacity exact against the closed form,
+  Huffman optimality within the [H, H+1] bound, M/M/1 closed form exact
+  (L=4, Wq=4, rho=0.8), spl CLI surface end to end.
+
+Suite: 524 collected - 522 passed / 2 skipped (the 2 permanent skips are the
+VonMises/Kumaraswamy scipy cross-checks with no direct oracle mapping). Docs
+only; no API changes; version stays 0.6.1.

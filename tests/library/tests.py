@@ -85,11 +85,12 @@ def test_documented_extras_present(name):
     assert not missing, f"{name}: documented extras missing: {missing}"
 
 
-def test_total_spec_name_count_is_257():
+def test_total_spec_name_count():
     implemented = ("probability", "montecarlo", "timeseries",
-                   "gaussian_processes", "copulas", "survival")
+                   "gaussian_processes", "copulas", "survival", "queueing",
+                   "information_theory")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 257
+    assert total == 317  # 317/794 across the nine implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method

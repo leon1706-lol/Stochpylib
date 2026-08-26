@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 257 / 794 public names implemented.**
+**Progress: 317 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -298,83 +298,83 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `CompetingRisksModel`
     - [x] `CauseSpecificHazard`
 
-## [queueing](../Stochpylib-Obsidian-Vault/Modules/queueing.md) — Queueing theory & networks (0/29)
+## [queueing](../Stochpylib-Obsidian-Vault/Modules/queueing.md) — Queueing theory & networks (29/29)
 
-- [ ] **stochpylib.queueing** module overall
-  - [ ] `queueing.single_queues`
-    - [ ] `MM1Queue`
-    - [ ] `MMCQueue`
-    - [ ] `MMInfinityQueue`
-    - [ ] `MD1Queue`
-    - [ ] `MG1Queue`
-    - [ ] `GI1Queue`
-    - [ ] `GIGQueue`
-    - [ ] `MG1PriorityQueue`
-  - [ ] `queueing.networks`
-    - [ ] `JacksonNetwork`
-    - [ ] `GordonNewell`
-    - [ ] `BCMP`
-    - [ ] `OpenNetwork`
-    - [ ] `ClosedNetwork`
-    - [ ] `ProductFormNetwork`
-  - [ ] `queueing.analysis`
-    - [ ] `LittleLaw()`
-    - [ ] `traffic_intensity()`
-    - [ ] `mean_waiting_time()`
-    - [ ] `mean_queue_length()`
-    - [ ] `server_utilization()`
-    - [ ] `WaitingTimeDistribution`
-    - [ ] `SojournTime`
-  - [ ] `queueing.birth_death`
-    - [ ] `BirthDeathQueue`
-    - [ ] `ErlangBFormula()`
-    - [ ] `ErlangCFormula()`
-    - [ ] `EngsetFormula()`
-  - [ ] `queueing.simulation`
-    - [ ] `QueueSimulation`
-    - [ ] `EventDrivenSim`
-    - [ ] `DiscreteEventSim`
-    - [ ] `SimStats`
+- [x] **stochpylib.queueing** module overall
+  - [x] `queueing.single_queues`
+    - [x] `MM1Queue`
+    - [x] `MMCQueue`
+    - [x] `MMInfinityQueue`
+    - [x] `MD1Queue`
+    - [x] `MG1Queue`
+    - [x] `GI1Queue`
+    - [x] `GIGQueue`
+    - [x] `MG1PriorityQueue`
+  - [x] `queueing.networks`
+    - [x] `JacksonNetwork`
+    - [x] `GordonNewell`
+    - [x] `BCMP`
+    - [x] `OpenNetwork`
+    - [x] `ClosedNetwork`
+    - [x] `ProductFormNetwork`
+  - [x] `queueing.analysis`
+    - [x] `LittleLaw()`
+    - [x] `traffic_intensity()`
+    - [x] `mean_waiting_time()`
+    - [x] `mean_queue_length()`
+    - [x] `server_utilization()`
+    - [x] `WaitingTimeDistribution`
+    - [x] `SojournTime`
+  - [x] `queueing.birth_death`
+    - [x] `BirthDeathQueue`
+    - [x] `ErlangBFormula()`
+    - [x] `ErlangCFormula()`
+    - [x] `EngsetFormula()`
+  - [x] `queueing.simulation`
+    - [x] `QueueSimulation`
+    - [x] `EventDrivenSim`
+    - [x] `DiscreteEventSim`
+    - [x] `SimStats`
 
-## [information_theory](../Stochpylib-Obsidian-Vault/Modules/information_theory.md) — Information-theoretic measures (0/31)
+## [information_theory](../Stochpylib-Obsidian-Vault/Modules/information_theory.md) — Information-theoretic measures (31/31)
 
-- [ ] **stochpylib.information_theory** module overall
-  - [ ] `information_theory.entropy`
-    - [ ] `Entropy`
-    - [ ] `JointEntropy`
-    - [ ] `ConditionalEntropy`
-    - [ ] `CrossEntropy`
-    - [ ] `TsallisEntropy`
-    - [ ] `RenyiEntropy`
-    - [ ] `DifferentialEntropy`
-    - [ ] `MaxEntropy`
-  - [ ] `information_theory.divergences`
-    - [ ] `KLDivergence`
-    - [ ] `RelativeEntropy`
-    - [ ] `JensenShannonDivergence`
-    - [ ] `WassersteinDistance`
-    - [ ] `HellingerDistance`
-    - [ ] `TotalVariation`
-    - [ ] `ChiSquaredDivergence`
-    - [ ] `AlphaDivergence`
-  - [ ] `information_theory.mutual_info`
-    - [ ] `MutualInformation`
-    - [ ] `NormalizedMutualInformation`
-    - [ ] `VariationOfInformation`
-    - [ ] `ConditionalMutualInfo`
-    - [ ] `InteractionInformation`
-    - [ ] `MultiInformation`
-  - [ ] `information_theory.channels`
-    - [ ] `ChannelCapacity`
-    - [ ] `InformationGain`
-    - [ ] `TransferEntropy`
-    - [ ] `DirectedInformation`
-    - [ ] `SymbolicTransferEntropy`
-  - [ ] `information_theory.coding`
-    - [ ] `ShannonLimit()`
-    - [ ] `HuffmanCode()`
-    - [ ] `TypicalSet()`
-    - [ ] `AEP()`
+- [x] **stochpylib.information_theory** module overall
+  - [x] `information_theory.entropy`
+    - [x] `Entropy`
+    - [x] `JointEntropy`
+    - [x] `ConditionalEntropy`
+    - [x] `CrossEntropy`
+    - [x] `TsallisEntropy`
+    - [x] `RenyiEntropy`
+    - [x] `DifferentialEntropy`
+    - [x] `MaxEntropy`
+  - [x] `information_theory.divergences`
+    - [x] `KLDivergence`
+    - [x] `RelativeEntropy`
+    - [x] `JensenShannonDivergence`
+    - [x] `WassersteinDistance`
+    - [x] `HellingerDistance`
+    - [x] `TotalVariation`
+    - [x] `ChiSquaredDivergence`
+    - [x] `AlphaDivergence`
+  - [x] `information_theory.mutual_info`
+    - [x] `MutualInformation`
+    - [x] `NormalizedMutualInformation`
+    - [x] `VariationOfInformation`
+    - [x] `ConditionalMutualInfo`
+    - [x] `InteractionInformation`
+    - [x] `MultiInformation`
+  - [x] `information_theory.channels`
+    - [x] `ChannelCapacity`
+    - [x] `InformationGain`
+    - [x] `TransferEntropy`
+    - [x] `DirectedInformation`
+    - [x] `SymbolicTransferEntropy`
+  - [x] `information_theory.coding`
+    - [x] `ShannonLimit()`
+    - [x] `HuffmanCode()`
+    - [x] `TypicalSet()`
+    - [x] `AEP()`
 
 ## [random_matrix](../Stochpylib-Obsidian-Vault/Modules/random_matrix.md) — Random matrix theory (0/23)
 

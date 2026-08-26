@@ -1,27 +1,33 @@
-# stochpylib/ — the installable package
+# stochpylib/
 
-One subpackage per library module. Status:
+The installable package: one subpackage per library module behind a single
+load-bearing contract — every distribution exposes the same method set, every
+stochastic method takes `random_state=`, every Monte Carlo estimator returns a
+shared result object. Nine subpackages live today (317/794 spec names):
 
-- `probability/` — complete, tested (21 public names).
-- `distributions/` — complete, tested (60 public names: 47 distributions + 13 shared methods).
-- `montecarlo/` — complete, tested (25 public names: sequences, estimators, variance
-  reduction, applications).
-- `timeseries/` — complete, tested (61 public names: linear models, volatility, state
-  space, latent regimes, changepoints, spectral analysis, forecasting).
-- `gaussian_processes/` — complete, tested (36 public names: composable kernel zoo,
-  exact/sparse GP regression, Laplace/EP/VI classification, hyperparameter optimization).
-- `copulas/` — complete, tested (26 public names: elliptical/Archimedean/empirical
-  copula families, C-/D-/R-vines, dependence measures and CopulaFit dispatcher).
-- `survival/` — complete, tested (28 public names: Kaplan-Meier/Nelson-Aalen,
-  parametric censored fits, Cox/AFT/Aalen/FineGray regression, log-rank family,
-  competing risks).
+| Subpackage | Spec names | What it owns | Guide |
+|---|---|---|---|
+| `probability/` | 21 | sample spaces, Bayes, exact combinatorics, independence | [README](probability/README.md) |
+| `distributions/` | 60 | 47 distributions behind the common interface | [README](distributions/README.md) |
+| `montecarlo/` | 25 | quasi-random sequences, estimators, variance reduction, applications | [README](montecarlo/README.md) |
+| `timeseries/` | 61 | linear/volatility models, filters, changepoints, spectral analysis | [README](timeseries/README.md) |
+| `gaussian_processes/` | 36 | composable kernel zoo, exact/sparse GP regression & classification | [README](gaussian_processes/README.md) |
+| `copulas/` | 26 | elliptical/Archimedean/empirical copulas, vines, dependence measures | [README](copulas/README.md) |
+| `survival/` | 28 | Kaplan-Meier, parametric fits, Cox/AFT/FineGray, competing risks | [README](survival/README.md) |
+| `queueing/` | 29 | M/M/1 to Jackson networks, birth-death formulas, discrete-event simulation | [README](queueing/README.md) |
+| `information_theory/` | 31 | entropy, divergences, mutual information, channels, coding | [README](information_theory/README.md) |
 
-Public API is re-exported from `stochpylib/__init__.py`; currently `probability`,
-`distributions`, `montecarlo`, `timeseries`, `gaussian_processes`, `copulas`, and
-`survival`. The package also ships a CLI (`spl`, see
-`cli.py`) and an embedded self-check suite (`selftest.py`, run via `spl --test`).
+Package-level files:
+
+- `__init__.py` — re-exports every subpackage; `__version__` lives here.
+- `cli.py` — the `spl` console command (`--help` library inventory,
+  `--version`, `--test` embedded self-check).
+- `selftest.py` — the 136-check self-check suite shipped inside the wheel,
+  runnable from any pip install without pytest or a source checkout.
 
 Target API for every planned module lives in the private Obsidian vault
-(`../Stochpylib-Obsidian-Vault/Modules/<name>.md`).
+(`../Stochpylib-Obsidian-Vault/Modules/<name>.md`); exact progress against the
+full design spec is tracked in
+[`../development/Implementation-Checklist.md`](../development/Implementation-Checklist.md).
 
 Run all tests from the repo root: `pytest tests/ -v`.

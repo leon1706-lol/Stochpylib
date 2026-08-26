@@ -115,6 +115,26 @@ def _implemented_overview():
             "                   risks, log-rank test family, Aalen-Johansen CIF"
         )
 
+    if hasattr(stochpylib, "queueing"):
+        blocks.append(
+            "  queueing         queueing theory & networks: M/M/1, M/M/c, M/M/inf,\n"
+            "                   M/D/1, M/G/1, GI/G/1 (Kingman), priority queues,\n"
+            "                   Erlang B/C and Engset formulas, Jackson/closed/BCMP\n"
+            "                   networks with mean-value analysis, Little's law,\n"
+            "                   discrete-event simulation with warmup filtering"
+        )
+
+    if hasattr(stochpylib, "information_theory"):
+        blocks.append(
+            "  information_theory\n"
+            "                   information-theoretic measures: Shannon/Renyi/\n"
+            "                   Tsallis/differential/max entropy, divergences (KL,\n"
+            "                   Jensen-Shannon, Wasserstein, Hellinger, TV, chi-square,\n"
+            "                   alpha), mutual-information quantities, channel\n"
+            "                   capacity (BSC/BEC/Z), transfer entropy, Huffman\n"
+            "                   coding, typical sets and AEP bounds"
+        )
+
     return "\n".join(blocks)
 
 
