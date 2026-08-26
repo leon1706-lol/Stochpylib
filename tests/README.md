@@ -30,6 +30,13 @@ ship inside the wheel — `development/Probleme.md` [3]).
   end-to-end workflows spanning modules (reliability MC on library Weibull,
   t-copula margins through the library Student_t, ARIMA vs GP forecasting
   agreement, `CopulaFit` refit round trips, Sobol-QMC vs crude consistency).
+- `tests/docs/tests.py` — the documentation-consistency suite: every number the
+  docs claim (test counts, versions, spec-name tables, links, checklist
+  progress) is recomputed from reality; a drifted doc fails the suite.
+- `tests/cli/tests.py` — the `spl` CLI suite: PyPI awareness (`--version`,
+  `--list`), `spl update` (validation, dry-run, prompts, editable refusal),
+  `spl info`/`show`/`demo`/`cite` — all with **mocked PyPI responses and mocked
+  subprocess**, so no test ever touches the network or runs pip.
 
 Run everything from the repo root:
 
@@ -38,6 +45,6 @@ pytest tests/ -v
 ```
 
 The package also ships an embedded smoke suite runnable from any pip install:
-`spl --test` (136 checks), which includes the per-module conformance and
+`spl --test` (139 checks), which includes the per-module conformance and
 cross-module spot checks. The live pass count lives only in the root README
 badge — deliberately no second copy here to go stale.

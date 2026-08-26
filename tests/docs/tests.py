@@ -172,7 +172,8 @@ def test_no_stale_claims_in_readme():
     readme = _read(README)
     for stale in (r"\b288\b", r"\b287\b", r"\b496\b", r"\b329\b", r"\b257\b",
                   r"\b229\b", r"\b133 checks\b", r"\b130 checks\b",
-                  r"\b0\.1\.0\b", r"seven modules", r"eight modules"):
+                  r"spl --version\n0\.1\.0\b", r"\b136 checks\b",
+                  r"\b136-check\b", r"seven modules", r"eight modules"):
         assert not re.search(stale, readme), f"stale claim survived: {stale}"
 
 

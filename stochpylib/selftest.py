@@ -356,7 +356,18 @@ def run(verbose=False):
         tc_data)
     st.check("XMOD: t-copula df recovery", 3.0 < tfit.df_ < 6.5)
 
-
+    # CLI helpers: pure offline logic behind spl --version / spl update
+    from stochpylib.cli_pypi import install_mode, update_available, version_key
+    st.check("CLI: version_key numeric ordering",
+             version_key("0.10.2") > version_key("0.9.9")
+             and version_key("0.6.3") == (0, 6, 3))
+    st.check("CLI: update_available statuses",
+             update_available("0.6.3", {"latest": "0.7.0", "releases": []}) == "update"
+             and update_available("0.7.0", {"latest": "0.7.0", "releases": []}) == "current"
+             and update_available("0.8.0", {"latest": "0.7.0", "releases": []}) == "newer"
+             and update_available("0.6.3", None) == "unknown")
+    st.check("CLI: install_mode classifies", install_mode() in
+             ("editable", "local", "wheel", "source"))
 
     if verbose:
         status = "OK" if not st.failures else f"FAILED ({len(st.failures)})"

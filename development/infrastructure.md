@@ -20,7 +20,7 @@ cd Stochpylib
 pip install -e ".[dev]"     # runtime deps + pytest
 pytest tests/ -v            # full suite must be green before you change anything
 spl --version               # verify the editable install
-spl --test                  # embedded self-check (136 checks), no pytest needed
+spl --test                  # embedded self-check (139 checks), no pytest needed
 ```
 
 The full suite is heavy (statistical convergence tests; tens of minutes on a
@@ -34,9 +34,15 @@ Registered by every install (PyPI wheel or `pip install -e .`) via
 
 | Command | What it does |
 |---|---|
-| `spl` / `spl --help` | Full library inventory: modules, public functions, all distribution classes (generated dynamically from the package, never stale), the common interface, quick-start snippet |
-| `spl --version` | Installed version (pip metadata, falling back to the in-code `__version__`) |
-| `spl --test` | The embedded self-check suite (`stochpylib/selftest.py`, 136 checks): package sanity, per-module spec conformance, one closed-form spot check per distribution family, MC convergence sanity, cross-module workflows. Exits non-zero on any failure; works after any plain `pip install` |
+| `spl` / `spl --help` | Full library inventory: modules with public-name counts, public functions, all distribution classes (generated dynamically from the package's `__all__`, never stale), the common interface, quick-start snippet |
+| `spl --version` | Installed version (pip metadata, falling back to the in-code `__version__`) plus the latest version on PyPI — 4 s timeout, 24 h on-disk cache, offline-safe, `STOCHPYLIB_SKIP_UPDATE_CHECK=1` disables all PyPI traffic |
+| `spl --version --list` | Lists every version ever published on PyPI in release order; installed marked `* installed`, newest marked `latest`. Always fetches fresh (never from the cache) |
+| `spl --test` | The embedded self-check suite (`stochpylib/selftest.py`, 139 checks): package sanity, per-module spec conformance, one closed-form spot check per distribution family, MC convergence sanity, cross-module workflows, offline CLI-helper logic. Exits non-zero on any failure; works after any plain `pip install` |
+| `spl update [--vers X] [--yes] [--dry-run] [--force]` | Switches the pip-installed package to any published version (default: latest). Validates the target against PyPI's release list, refuses editable/source installs without `--force`, prints the exact pip command, prompts unless `--yes`; `--dry-run` executes nothing |
+| `spl info` | Environment report: install mode, python/platform, numpy/scipy versions, module inventory with public-name counts |
+| `spl show <Name>` | Qualified path + signature + docstring of any public name; close-match suggestions and non-zero exit on a miss |
+| `spl demo [module]` | Runs a live deterministic mini-example per implemented module (bare: lists demos) — `stochpylib/cli_demo.py` |
+| `spl cite` | Plain-text + BibTeX citation, versioned with the installed release |
 
 ## GitHub Actions
 

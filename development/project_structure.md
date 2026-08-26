@@ -19,8 +19,11 @@ Stochpylib/
 │   └── PULL_REQUEST_TEMPLATE.md # checklist mirroring the wrap-up rules
 ├── stochpylib/                  # the installable package (guide: stochpylib/README.md)
 │   ├── __init__.py              # re-exports all nine subpackages; __version__
-│   ├── cli.py                   # the spl console command (--help inventory / --version / --test)
-│   ├── selftest.py              # embedded 136-check self-check suite shipped in the wheel
+│   ├── cli.py                   # the spl console command: --help inventory, --version [--list],
+│   │                            #   --test, and the update/info/show/demo/cite subcommands
+│   ├── cli_pypi.py              # PyPI metadata access behind spl --version/update (cache, offline-safe)
+│   ├── cli_demo.py              # the nine live mini-examples behind spl demo
+│   ├── selftest.py              # embedded 139-check self-check suite shipped in the wheel
 │   ├── probability/             # sample spaces, Bayes, exact combinatorics, independence
 │   ├── distributions/           # 47 classes behind the common interface (_base.py fallbacks)
 │   ├── montecarlo/              # QMC sequences, estimators, variance reduction, applications
@@ -32,9 +35,11 @@ Stochpylib/
 │   └── information_theory/      # entropy, divergences, mutual info, channels, coding
 ├── tests/                       # test suite OUTSIDE the package on purpose (guide: tests/README.md)
 │   ├── <module>/tests.py        # one deterministic suite per implemented module (nine)
-│   └── library/                 # cross-module suite: spec conformance, pinned extras, workflows
-│       ├── _extract_spec_names.py   # generates conformance lists from the checklist
-│       └── _spec_names.json         # cached spec-name lists
+│   ├── library/                 # cross-module suite: spec conformance, pinned extras, workflows
+│   │   ├── _extract_spec_names.py   # generates conformance lists from the checklist
+│   │   └── _spec_names.json         # cached spec-name lists
+│   ├── docs/tests.py            # doc-consistency suite: every doc claim recomputed from reality
+│   └── cli/tests.py             # spl CLI suite (PyPI/update/info/show/demo/cite; mocked, offline)
 ├── development/                 # build history & process docs (guide: development/README.md)
 │   ├── architecture.md          # system architecture: contracts, conventions, module map
 │   ├── infrastructure.md        # packaging/CLI/CI/release runbook

@@ -448,11 +448,15 @@ def test_stable_alpha_one_quantile_accuracy():
 
 # ---------------------------------------------------------------- CLI & selftest
 
-def test_cli_version_flag(capsys):
+def test_cli_version_flag(capsys, monkeypatch):
+    import stochpylib.cli as cli
+
+    monkeypatch.setattr(cli, "fetch_pypi_meta", lambda **kw: None)  # no network
     rc = cli_mod.main(["--version"])
-    out = capsys.readouterr().out.strip()
+    out = capsys.readouterr().out.strip().splitlines()
     assert rc == 0
-    assert out == stochpylib.__version__
+    assert out[0] == stochpylib.__version__
+    assert "PyPI check unavailable" in out[1]
 
 
 def test_cli_help_shows_library_overview(capsys):

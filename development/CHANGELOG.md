@@ -444,3 +444,62 @@ Hotfix follow-up to the V0.6.2 documentation overhaul:
   sub-links to the individual command sections (spl --help, spl --version,
   spl --test), anchor-checked by the docs suite.
 - Version bumped to 0.6.3 (test-infra fix + docs only; no API changes).
+
+## Phase 22 - V0.6.4 CLI expansion: PyPI-aware versioning, spl update, info/show/demo/cite
+
+The spl CLI grew from three flags to a full command surface (no library-API
+changes; new package modules cli_pypi.py and cli_demo.py):
+
+- **PyPI awareness (spl --version):** prints the installed version plus the
+  latest version published on PyPI with the relationship stated (update
+  available / up to date / installed newer-unreleased). Non-blocking and
+  offline-safe by construction: 4 s timeout, 24 h on-disk cache, clear
+  "PyPI check unavailable" degradation, STOCHPYLIB_SKIP_UPDATE_CHECK=1 kills
+  all PyPI traffic. New cli_pypi.py keeps the logic pure and injectable
+  (fetch/cache/parse/install-mode detection via direct_url.json).
+- **spl --version --list:** lists every version ever published on PyPI in
+  release order, marking the installed one (* installed) and the newest
+  (latest); always fetches fresh.
+- **spl update [--vers X] [--yes] [--dry-run] [--force]:** switches the pip
+  package to any published version (upgrade, downgrade, pin). Validates the
+  target against PyPI's real release list, refuses unknown versions, refuses
+  editable/source installs without --force, prints the exact pip command, and
+  asks for confirmation unless --yes; --dry-run executes nothing.
+- **spl info:** environment report (install mode, python/platform, numpy/scipy
+  versions, module inventory with per-module public-name counts).
+- **spl show <Name>:** qualified path + signature + docstring of any public
+  name across all modules, with difflib suggestions and non-zero exit on a
+  miss (case-insensitive fallback first).
+- **spl demo [module]:** nine fast deterministic mini-examples, one per
+  implemented module, run live against the installation (Bayes screening,
+  Weibull fit + KS, Sobol + antithetic call vs Black-Scholes, AR(1) fit +
+  forecast, GP regression with uncertainty, copula AIC selection,
+  Kaplan-Meier, M/M/1 closed form, entropy + Huffman); bare spl demo lists
+  them. New cli_demo.py.
+- **spl cite:** plain-text + BibTeX citation, versioned with the installed
+  release.
+- **spl --help:** module inventory now generated from each module's __all__
+  (per-module public-name counts, total, 9-of-23 header) so it cannot go
+  stale; the distributions block keeps the full dynamic class-name listing;
+  subcommand epilog added.
+- **selftest extended 136 -> 139 checks:** version_key numeric ordering,
+  update_available status matrix, install_mode classification (all offline).
+- **Tests: new tests/cli/tests.py (50 cases)** - PyPI parsing/cache-TTL/
+  offline/skip-env paths with urlopen mocked to raise on any call; --list
+  rendering; update validation/dry-run/prompt/editable/pip-failure paths with
+  subprocess and input mocked; info/show/demo/cite output contracts; a
+  sweep asserting every public name of every module resolves through
+  spl show; --help regression. No test touches the network or pip.
+  Probleme [40] records the sentinel-injection flaw caught during
+  development (_meta=None briefly allowed a real pip call in a test).
+- **Docs synced:** README CLI Reference rewritten (all seven sections + TOC
+  sub-links), badge/test counts (572 passed / 2 skipped of 574), infrastructure.md
+  CLI table, tests/README.md suite layout, CONTRIBUTING/selftest counts,
+  stochpylib/README. Version bumped to 0.6.4.
+- **Manual session (all pass, live):** spl --version --list against real PyPI
+  (latest published 0.1.1; 2 releases), update dry-run/unknown-version/
+  editable-refusal paths, info, show (hit, case-fallback, suggestions), demo
+  runs (M/M/1 exact, MC call 10.41+-0.05 vs BS 10.45, Huffman optimal), cite,
+  help inventory.
+
+Suite: 574 collected - 572 passed / 2 skipped. Version 0.6.4.

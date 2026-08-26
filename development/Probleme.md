@@ -818,3 +818,30 @@ pyproject.toml/__init__.py, which the tests/docs suite already cross-checks.
 **Verification:**
 - tests/library + tests/docs green locally after refreshing the editable
   install; CI run on the V0.6.3 commit green across the full matrix.
+
+---
+
+### 40. Test-injection parameter where None meant "do the real thing" let a unit test run live pip
+
+**Severity:** 5/10 - **Status:** fixed (unreleased; ships with V0.6.4)
+
+**Problem:** The first draft of `spl update`'s tests passed `_meta=None` to
+simulate an unreachable PyPI, but `cmd_update` interpreted `None` as "not
+provided" and performed a real forced PyPI fetch - then executed a **real**
+`pip install stochpylib==0.1.1` subprocess inside the test run. The
+development environment survived only because the pip invocation failed
+against the editable install; the design flaw itself is the finding: a unit
+test mutated (or tried to mutate) the machine's package state.
+
+**Fix:** Sentinel-based injection: `_meta` now defaults to `_UNSET`
+("perform the real fetch"); an explicitly passed `None` means "simulate
+offline". The shipped test suite passes `_meta`/`_run`/`_input`/`_mode`
+on every path, so no test can reach the network or pip. Rule recorded: an
+injection parameter whose default triggers real side effects must use a
+sentinel, never `None`.
+
+**Verification:**
+- Full tests/cli suite green with zero network access (urlopen monkeypatched
+  to raise AssertionError on any call in the fetch tests); manual session
+  confirms the real paths still work (dry-run, unknown-version rejection,
+  editable refusal).

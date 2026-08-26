@@ -11,7 +11,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10%2B-FF8C00?style=flat-square&labelColor=1A1A1A&logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/%F0%9F%93%84%20license-MIT-8B5CF6?style=flat-square&labelColor=1A1A1A" alt="License: MIT">
-  <img src="https://img.shields.io/badge/tests-522%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="522 of 524 tests passing">
+  <img src="https://img.shields.io/badge/tests-572%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="572 of 574 tests passing">
   <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&style=flat-square&labelColor=1A1A1A&label=CI&logo=githubactions&logoColor=white" alt="CI status"></a>
   <a href="https://pypi.org/project/stochpylib/"><img src="https://img.shields.io/pypi/v/stochpylib?style=flat-square&labelColor=1A1A1A&color=FF8C00&logo=pypi&logoColor=white" alt="PyPI version"></a>
   <img src="https://img.shields.io/badge/public%20names-317%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="317 of 794 spec names implemented">
@@ -93,6 +93,11 @@ goes deeper still.
   - [`spl --help`](#spl---help)
   - [`spl --version`](#spl---version)
   - [`spl --test`](#spl---test)
+  - [`spl update`](#spl-update)
+  - [`spl info`](#spl-info)
+  - [`spl show`](#spl-show)
+  - [`spl demo`](#spl-demo)
+  - [`spl cite`](#spl-cite)
 - [Release Process](#release-process)
 - [Roadmap](#roadmap)
 
@@ -162,7 +167,7 @@ For local development (this repo cloned, a virtual environment active):
 pip install -e ".[dev]"     # runtime deps + pytest
 pytest tests/ -v            # full test suite must be green before you start changing things
 spl --version               # verify your editable install
-spl --test                  # embedded self-check (136 checks), no pytest needed
+spl --test                  # embedded self-check (139 checks), no pytest needed
 ```
 
 Then implement or improve one module at a time and run the wrap-up procedure described in
@@ -218,7 +223,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (136 checks)"]
+    C --> C3["spl --test embedded self-check (139 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -307,14 +312,16 @@ conventions and its documented limitations — this table is the index:
 pytest tests/ -v
 ```
 
-**522 passed / 2 skipped** as of the V0.6.2 documentation overhaul (the 2 permanent skips
+**572 passed / 2 skipped** as of the V0.6.4 CLI expansion (the 2 permanent skips
 are the VonMises/Kumaraswamy scipy cross-checks — no direct scipy mapping, covered by
 dedicated checks instead). Tests are deterministic (fixed seeds everywhere), live outside
 the installed package, and use `scipy.stats`, `statsmodels` and brute-force references as
 independent oracles. Statistical assertions are set at ≥ 3 standard errors so results are
 stable while staying meaningful. A dedicated documentation-consistency suite
 (`tests/docs/`) keeps every number on this page in sync with reality — if a doc claim
-drifts from the package (test counts, versions, module tables, links), the suite fails.
+drifts from the package (test counts, versions, module tables, links), the suite fails,
+and a CLI suite (`tests/cli/`) covers the `spl` surface with mocked PyPI responses so no
+test ever touches the network.
 Additionally, `spl --test` re-verifies any installation in seconds.
 
 ## CLI Reference
@@ -323,28 +330,100 @@ Every install (PyPI wheel or `pip install -e .`) registers one console command, 
 
 ### `spl --help`
 
-Prints a full inventory of the installed library: which modules are available, all public
-functions per module, every distribution class (generated dynamically from the package, so it
-never goes stale), the common distribution interface, and a runnable quick-start snippet.
-Running bare `spl` shows the same thing.
+Prints a full inventory of the installed library: which modules are available (with public
+name counts), all public functions per module, every distribution class (generated
+dynamically from the package's `__all__`, so it never goes stale), the common distribution
+interface, and a runnable quick-start snippet. Running bare `spl` shows the same thing.
 
 ### `spl --version`
 
 ```bash
 $ spl --version
-0.6.3
+0.6.4
+latest on PyPI: 0.1.1  (installed version is newer / unreleased)
 ```
 
 Prints the installed version — reads pip package metadata, falling back to the in-code version
-when not installed through pip.
+when not installed through pip — then compares it against the **latest version published on
+PyPI** and states the relationship (update available / up to date / installed is newer). The
+check is non-blocking and offline-safe: it uses a 4-second timeout, caches the PyPI answer
+for 24 h, degrades to a clear "PyPI check unavailable" message when offline, and is disabled
+entirely by setting `STOCHPYLIB_SKIP_UPDATE_CHECK=1`.
+
+### `spl --version --list`
+
+```bash
+$ spl --version --list
+0.6.4
+latest on PyPI: 0.1.1  (installed version is newer / unreleased)
+2 published versions:
+  0.1.0
+  0.1.1         latest
+```
+
+Additionally lists **every version ever published on PyPI** in release order — the installed
+version is marked `* installed`, the newest `latest`. Always fetches fresh metadata (never
+served from the 24 h cache).
 
 ### `spl --test`
 
-Runs the embedded self-check suite shipped inside the wheel (**136 checks**): package sanity and per-module spec
+Runs the embedded self-check suite shipped inside the wheel (**139 checks**): package sanity and per-module spec
 conformance, one closed-form spot check per distribution family, Monte Carlo
-convergence sanity, cross-module workflows. This works
+convergence sanity, cross-module workflows, and the offline CLI-helper logic. This works
 after any `pip install` — no pytest, no source checkout — making it the quickest way to verify
 an installation. Exits non-zero on any failure.
+
+### `spl update`
+
+```text
+spl update [--vers VERSION] [--yes] [--dry-run] [--force]
+```
+
+**Switches the installed PyPI package to any published version** — upgrade, downgrade, or
+pin (`spl update --vers 0.6.1`); without `--vers` it updates to the latest release. The
+safety rails, in order:
+
+- Validates the target against PyPI's actual release list and refuses unknown versions
+  (printing the most recent published ones).
+- Detects editable/source installs (`spl update` manages the *pip* package, not a source
+  checkout) and refuses them without `--force`.
+- Prints the exact plan — installed, target, and the precise `python -m pip install
+  stochpylib==X.Y.Z` command — then asks for confirmation unless `--yes` is given.
+- `--dry-run` prints the plan and executes nothing.
+
+### `spl info`
+
+Environment report: stochpylib version and install mode (editable/wheel/source), Python and
+platform, NumPy/SciPy versions, and the module inventory with per-module public-name counts.
+The quickest answer to "what exactly is installed here?"
+
+### `spl show`
+
+```text
+spl show <Name>
+```
+
+Prints the qualified path, constructor signature, and docstring of any public name —
+`spl show Normal`, `spl show GARCH`, `spl show bayes_theorem`. Searches every implemented
+module's exports; unknown names get `did you mean:` suggestions from close matches and a
+non-zero exit.
+
+### `spl demo`
+
+```text
+spl demo [module]
+```
+
+Runs a **live mini-example** for one implemented module against the real installation —
+deterministic, fixed seeds, a few seconds each (Bayes screening, distribution fit + KS,
+Sobol + option pricing vs Black-Scholes, AR fit + forecast, GP regression with
+uncertainty, copula AIC selection, Kaplan-Meier, M/M/1 closed form, entropy + Huffman).
+Bare `spl demo` lists the available demos.
+
+### `spl cite`
+
+Prints citation text for research use: a plain-text citation plus a ready-to-paste BibTeX
+entry, versioned with the installed release.
 
 ## Release Process
 

@@ -20,9 +20,14 @@ shared result object. Nine subpackages live today (317/794 spec names):
 Package-level files:
 
 - `__init__.py` — re-exports every subpackage; `__version__` lives here.
-- `cli.py` — the `spl` console command (`--help` library inventory,
-  `--version`, `--test` embedded self-check).
-- `selftest.py` — the 136-check self-check suite shipped inside the wheel,
+- `cli.py` — the `spl` console command: `--help` library inventory (generated
+  from each module's `__all__`), `--version [--list]` with PyPI awareness,
+  `--test` embedded self-check, and the `update` / `info` / `show` / `demo` /
+  `cite` subcommands.
+- `cli_pypi.py` — offline-safe PyPI metadata access (fetch, 24 h cache,
+  version parsing, install-mode detection) behind `--version` and `update`.
+- `cli_demo.py` — the nine live mini-examples behind `spl demo <module>`.
+- `selftest.py` — the 139-check self-check suite shipped inside the wheel,
   runnable from any pip install without pytest or a source checkout.
 
 Target API for every planned module lives in the private Obsidian vault

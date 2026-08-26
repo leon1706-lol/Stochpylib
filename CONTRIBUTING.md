@@ -17,7 +17,7 @@ Verify your installation any time with the shipped CLI:
 
 ```bash
 spl --version   # prints the installed version
-spl --test      # embedded self-check suite (136 checks, no pytest needed)
+spl --test      # embedded self-check suite (139 checks, no pytest needed)
 ```
 
 Python >= 3.10 required. NumPy/SciPy are the only runtime dependencies.
