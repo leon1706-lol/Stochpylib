@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="development/logo.png" width="120" alt="stochpylib logo">
+  <img src="development/logo.png" width="150" alt="stochpylib logo">
 </p>
 
 <h1 align="center">stochpylib</h1>
@@ -90,6 +90,9 @@ goes deeper still.
 - [Open Source Files](#open-source-files)
 - [Test Suite](#test-suite)
 - [CLI Reference](#cli-reference)
+  - [`spl --help`](#spl---help)
+  - [`spl --version`](#spl---version)
+  - [`spl --test`](#spl---test)
 - [Release Process](#release-process)
 - [Roadmap](#roadmap)
 
@@ -329,7 +332,7 @@ Running bare `spl` shows the same thing.
 
 ```bash
 $ spl --version
-0.6.2
+0.6.3
 ```
 
 Prints the installed version — reads pip package metadata, falling back to the in-code version

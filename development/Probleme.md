@@ -796,3 +796,25 @@ the same hasattr pattern as the other seven).
 - New tests/docs/tests.py::test_spl_help_invents_every_module asserts every
   implemented module name appears in spl --help output; manual session
   confirmed all nine blocks render.
+
+---
+
+### 39. test_top_level_package_wiring hardcoded the version literal, breaking CI on every bump
+
+**Severity:** 3/10 - **Status:** fixed (V0.6.3)
+
+**Problem:** The library wiring test asserted stochpylib.__version__ == "0.6.1"
+as a string literal. The V0.6.2 version bump (docs-only phase) left the test
+green on the dev machine only because the editable install's stale metadata
+still reported 0.6.1; on CI's fresh install the metadata read 0.6.2, the test
+failed ~80 s into pytest, and GitHub Actions' default fail-fast cancelled the
+other seven matrix jobs (one real failure, seven "Cancelled" entries).
+
+**Fix:** The test now asserts consistency instead of a literal: pip metadata
+version must equal the in-code __version__ (skipped gracefully when running
+from source without an install). Version literals belong only in
+pyproject.toml/__init__.py, which the tests/docs suite already cross-checks.
+
+**Verification:**
+- tests/library + tests/docs green locally after refreshing the editable
+  install; CI run on the V0.6.3 commit green across the full matrix.

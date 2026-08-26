@@ -123,7 +123,14 @@ def test_top_level_package_wiring():
         "copulas", "distributions", "gaussian_processes",
         "information_theory", "montecarlo",
         "probability", "queueing", "survival", "timeseries"}
-    assert stochpylib.__version__ == "0.6.1"
+    # version consistency, never a literal: the installed metadata and the
+    # in-code __version__ must agree (a hardcoded literal here broke CI on
+    # every version bump — development/Probleme.md [39])
+    from importlib.metadata import version, PackageNotFoundError
+    try:
+        assert version("stochpylib") == stochpylib.__version__
+    except PackageNotFoundError:  # running from source without install
+        pass
 
 
 # ---------------------------------------------------------------- integration

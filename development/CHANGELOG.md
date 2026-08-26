@@ -428,3 +428,19 @@ change is the spl --help inventory fix, Probleme [38]). Outcome:
 Suite: 524 collected - 522 passed / 2 skipped (the 2 permanent skips are the
 VonMises/Kumaraswamy scipy cross-checks with no direct oracle mapping). Docs
 only; no API changes; version stays 0.6.1.
+
+## Phase 21 - V0.6.3 CI fix: version-literal test made bump-proof, README CLI TOC sub-links
+
+Hotfix follow-up to the V0.6.2 documentation overhaul:
+
+- **CI failure fixed (Probleme [39]):** test_top_level_package_wiring asserted
+  the version as the literal "0.6.1"; the V0.6.2 bump broke it on CI's fresh
+  install (metadata 0.6.2 != literal), failing one matrix job ~80 s in and
+  fail-fast-cancelling the other seven. The test now asserts pip-metadata ==
+  __version__ consistency instead of any literal. Lesson recorded: run the
+  library suite AFTER refreshing the editable install when the version changed,
+  not before.
+- **README:** CLI Reference gained Aether-Quant-style Table-of-Contents
+  sub-links to the individual command sections (spl --help, spl --version,
+  spl --test), anchor-checked by the docs suite.
+- Version bumped to 0.6.3 (test-infra fix + docs only; no API changes).
