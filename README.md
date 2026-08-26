@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="development/logo.png" width="150" alt="stochpylib logo">
+  <img src="development/logo.png" width="140" alt="stochpylib logo">
 </p>
 
 <h1 align="center">stochpylib</h1>
