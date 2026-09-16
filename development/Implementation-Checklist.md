@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 317 / 794 public names implemented.**
+**Progress: 350 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -407,47 +407,47 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [ ] `BulkSpectrum`
     - [ ] `SpectralEdge`
 
-## [levy_processes](../Stochpylib-Obsidian-Vault/Modules/levy_processes.md) — Levy & advanced stochastic processes (0/33)
+## [levy_processes](../Stochpylib-Obsidian-Vault/Modules/levy_processes.md) — Levy & advanced stochastic processes (33/33)
 
-- [ ] **stochpylib.levy_processes** module overall
-  - [ ] `levy_processes.levy`
-    - [ ] `LevyProcess`
-    - [ ] `StableProcess`
-    - [ ] `AlphaStableDistribution`
-    - [ ] `SpectrallPositive`
-    - [ ] `SubordinatedProcess`
-    - [ ] `LevyKhintchine`
-  - [ ] `levy_processes.jump_diffusion`
-    - [ ] `JumpDiffusion`
-    - [ ] `MertonJumpDiffusion`
-    - [ ] `KouJumpDiffusion`
-    - [ ] `BatesModel`
-    - [ ] `VarianceGammaProcess`
-    - [ ] `CGMYProcess`
-    - [ ] `NormalInverseGaussianProcess`
-  - [ ] `levy_processes.subordinators`
-    - [ ] `Subordinator`
-    - [ ] `GammaSubordinator`
-    - [ ] `InverseGaussianSubordinator`
-    - [ ] `StableSubordinator`
-    - [ ] `TemperingSubordinator`
-  - [ ] `levy_processes.advanced`
-    - [ ] `SemiMarkovProcess`
-    - [ ] `RenewalProcess`
-    - [ ] `BranchingProcess`
-    - [ ] `HawkesProcess`
-    - [ ] `MultivariateHawkes`
-    - [ ] `CoxProcess`
-    - [ ] `GaussianRandomField`
-    - [ ] `RandomMeasure`
-  - [ ] `levy_processes.sde`
-    - [ ] `SDE()`
-    - [ ] `Euler_Maruyama()`
-    - [ ] `Milstein()`
-    - [ ] `Runge_Kutta_SDE()`
-    - [ ] `StochasticTaylor()`
-    - [ ] `WeakApproximation()`
-    - [ ] `StrongApproximation()`
+- [x] **stochpylib.levy_processes** module overall
+  - [x] `levy_processes.levy`
+    - [x] `LevyProcess`
+    - [x] `StableProcess`
+    - [x] `AlphaStableDistribution`
+    - [x] `SpectrallyPositive`
+    - [x] `SubordinatedProcess`
+    - [x] `LevyKhintchine`
+  - [x] `levy_processes.jump_diffusion`
+    - [x] `JumpDiffusion`
+    - [x] `MertonJumpDiffusion`
+    - [x] `KouJumpDiffusion`
+    - [x] `BatesModel`
+    - [x] `VarianceGammaProcess`
+    - [x] `CGMYProcess`
+    - [x] `NormalInverseGaussianProcess`
+  - [x] `levy_processes.subordinators`
+    - [x] `Subordinator`
+    - [x] `GammaSubordinator`
+    - [x] `InverseGaussianSubordinator`
+    - [x] `StableSubordinator`
+    - [x] `TemperingSubordinator`
+  - [x] `levy_processes.advanced`
+    - [x] `SemiMarkovProcess`
+    - [x] `RenewalProcess`
+    - [x] `BranchingProcess`
+    - [x] `HawkesProcess`
+    - [x] `MultivariateHawkes`
+    - [x] `CoxProcess`
+    - [x] `GaussianRandomField`
+    - [x] `RandomMeasure`
+  - [x] `levy_processes.sde`
+    - [x] `SDE()`
+    - [x] `Euler_Maruyama()`
+    - [x] `Milstein()`
+    - [x] `Runge_Kutta_SDE()`
+    - [x] `StochasticTaylor()`
+    - [x] `WeakApproximation()`
+    - [x] `StrongApproximation()`
 
 ## [spatial_statistics](../Stochpylib-Obsidian-Vault/Modules/spatial_statistics.md) — Geostatistics & spatial modeling (0/32)
 

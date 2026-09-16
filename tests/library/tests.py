@@ -88,9 +88,9 @@ def test_documented_extras_present(name):
 def test_total_spec_name_count():
     implemented = ("probability", "montecarlo", "timeseries",
                    "gaussian_processes", "copulas", "survival", "queueing",
-                   "information_theory")
+                   "information_theory", "levy_processes")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 317  # 317/794 across the nine implemented modules
+    assert total == 350  # 350/794 across the ten implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -121,7 +121,7 @@ def test_every_distribution_class_exposes_common_interface():
 def test_top_level_package_wiring():
     assert set(stochpylib.__all__) == {
         "copulas", "distributions", "gaussian_processes",
-        "information_theory", "montecarlo",
+        "information_theory", "levy_processes", "montecarlo",
         "probability", "queueing", "survival", "timeseries"}
     # version consistency, never a literal: the installed metadata and the
     # in-code __version__ must agree (a hardcoded literal here broke CI on

@@ -18,12 +18,12 @@ Stochpylib/
 │   ├── ISSUE_TEMPLATE/          # bug report + feature request YAML forms (spl --version pre-flight)
 │   └── PULL_REQUEST_TEMPLATE.md # checklist mirroring the wrap-up rules
 ├── stochpylib/                  # the installable package (guide: stochpylib/README.md)
-│   ├── __init__.py              # re-exports all nine subpackages; __version__
+│   ├── __init__.py              # re-exports all ten subpackages; __version__
 │   ├── cli.py                   # the spl console command: --help inventory, --version [--list],
 │   │                            #   --test, and the update/info/show/demo/cite subcommands
 │   ├── cli_pypi.py              # PyPI metadata access behind spl --version/update (cache, offline-safe)
-│   ├── cli_demo.py              # the nine live mini-examples behind spl demo
-│   ├── selftest.py              # embedded 139-check self-check suite shipped in the wheel
+│   ├── cli_demo.py              # the ten live mini-examples behind spl demo
+│   ├── selftest.py              # embedded 145-check self-check suite shipped in the wheel
 │   ├── probability/             # sample spaces, Bayes, exact combinatorics, independence
 │   ├── distributions/           # 47 classes behind the common interface (_base.py fallbacks)
 │   ├── montecarlo/              # QMC sequences, estimators, variance reduction, applications
@@ -32,9 +32,10 @@ Stochpylib/
 │   ├── copulas/                 # elliptical/Archimedean/empirical, vines, methods dispatcher
 │   ├── survival/                # KM/NA, parametric fits, Cox/AFT/additive/FineGray, competing risks
 │   ├── queueing/                # single queues, birth-death, networks, discrete-event simulation
-│   └── information_theory/      # entropy, divergences, mutual info, channels, coding
+│   ├── information_theory/      # entropy, divergences, mutual info, channels, coding
+│   └── levy_processes/          # Levy-Khintchine core, jump-diffusion pricing, subordinators, SDE solvers
 ├── tests/                       # test suite OUTSIDE the package on purpose (guide: tests/README.md)
-│   ├── <module>/tests.py        # one deterministic suite per implemented module (nine)
+│   ├── <module>/tests.py        # one deterministic suite per implemented module (ten)
 │   ├── library/                 # cross-module suite: spec conformance, pinned extras, workflows
 │   │   ├── _extract_spec_names.py   # generates conformance lists from the checklist
 │   │   └── _spec_names.json         # cached spec-name lists
@@ -47,7 +48,7 @@ Stochpylib/
 │   ├── Development.md           # layout decisions & workflow notes
 │   ├── CHANGELOG.md             # append-only per-phase build history
 │   ├── Probleme.md              # bug audit log (Problem → Fix → Verification, severity, status)
-│   ├── Implementation-Checklist.md  # every planned public name as a checkbox (317/794 done)
+│   ├── Implementation-Checklist.md  # every planned public name as a checkbox (350/794 done)
 │   └── logo.png                 # project logo, referenced by the README banner
 ├── build/  dist/  *.egg-info/   # local build artifacts (gitignored, never edited by hand)
 └── Stochpylib-Obsidian-Vault/   # the full design-spec vault (private, not part of the repo)

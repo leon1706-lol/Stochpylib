@@ -343,7 +343,7 @@
   "Runge_Kutta_SDE",
   "SDE",
   "SemiMarkovProcess",
-  "SpectrallPositive",
+  "SpectrallyPositive",
   "StableProcess",
   "StableSubordinator",
   "StochasticTaylor",

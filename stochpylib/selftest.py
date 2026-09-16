@@ -326,6 +326,8 @@ def run(verbose=False):
                                     "optimize_hyperparams"]),
         "copulas": (26, ["GaussianCopula", "ClaytonCopula", "VineCopula",
                          "CopulaFit"]),
+        "levy_processes": (33, ["LevyProcess", "TemperingSubordinator",
+                                "KouJumpDiffusion", "StochasticTaylor"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -355,6 +357,35 @@ def run(verbose=False):
                       fromlist=["StudentTCopula"]).StudentTCopula().fit(
         tc_data)
     st.check("XMOD: t-copula df recovery", 3.0 < tfit.df_ < 6.5)
+
+    # levy_processes quick checks
+    from stochpylib.levy_processes import (
+        GammaSubordinator,
+        HawkesProcess,
+        KouJumpDiffusion,
+        TemperingSubordinator,
+    )
+    from stochpylib.levy_processes.jump_diffusion import _black_scholes_call
+    from stochpylib.levy_processes.sde import SDE, Euler_Maruyama
+
+    rng_lp = np.random.default_rng(101)
+    ts_lp = TemperingSubordinator(C=1.0, lam=5.0, alpha=0.5)
+    ts_inc = np.array([ts_lp._increment(0.1, rng_lp) for _ in range(20000)])
+    st.check("LEVY: TemperingSubordinator mean matches analytic",
+             abs(ts_inc.mean() - ts_lp.mean_rate() * 0.1) < 0.05 * ts_lp.mean_rate() * 0.1)
+    gs_lp = GammaSubordinator(rate=2.0, scale=0.5)
+    gs_inc = np.array([gs_lp._increment(1.0, rng_lp) for _ in range(20000)])
+    st.check("LEVY: GammaSubordinator mean", abs(gs_inc.mean() - 1.0) < 0.05)
+    kou0 = KouJumpDiffusion(mu=0.05, sigma=0.2, jump_rate=0.0)
+    st.check("LEVY: Kou zero-jump call_price == Black-Scholes",
+             abs(kou0.call_price(100.0, 100.0, 1.0, 0.05)
+                 - _black_scholes_call(100.0, 100.0, 1.0, 0.05, 0.2)) < 0.01)
+    hp_lp = HawkesProcess(mu=0.5, alpha=0.3, beta=1.0)
+    st.check("LEVY: Hawkes branching_ratio", abs(hp_lp.branching_ratio() - 0.3) < _TOL)
+    sde_lp = SDE(drift=lambda t, x: 0.05 * x, diffusion=lambda t, x: 0.2 * x, x0=100.0)
+    em_paths = Euler_Maruyama(sde_lp, T=1.0, n_steps=100, n_paths=20000, random_state=102)
+    st.check("LEVY: Euler-Maruyama GBM terminal mean",
+             abs(em_paths[:, -1].mean() - 100.0 * np.exp(0.05)) < 3.0)
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

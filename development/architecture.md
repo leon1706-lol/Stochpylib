@@ -1,6 +1,6 @@
 # stochpylib Architecture
 
-**Status:** nine of 23 planned modules are implemented and tested (317/794
+**Status:** ten of 23 planned modules are implemented and tested (350/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state). Everything else in the module map below
 remains design spec, not shipped code.
@@ -37,11 +37,13 @@ flowchart LR
     C --> H["stochpylib.survival<br/>KM, Cox, competing risks"]
     B --> I["stochpylib.queueing<br/>closed forms + discrete-event simulation"]
     C --> J["stochpylib.information_theory<br/>entropy, divergences, channels, coding"]
+    C --> M["stochpylib.levy_processes<br/>jump-diffusion pricing, subordinators, SDE solvers"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
     K --> L["tests/<br/>scipy.stats + statsmodels + lifelines as independent oracles"]
     I --> L
+    M --> L
 ```
 
 ## Tech Stack
@@ -56,7 +58,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (139 checks)"]
+    C --> C3["spl --test embedded self-check (145 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -91,11 +93,18 @@ README per module):
   (Erlang B/C, Engset), Jackson/closed/BCMP networks, `DiscreteEventSim`.
 - `information_theory/` — entropy families, divergences, mutual-information
   quantities, channel capacities, transfer entropy, Huffman coding, AEP.
+- `levy_processes/` — Lévy-Khintchine core (stable processes, subordination),
+  jump-diffusion pricing (Merton/Kou/Bates/Variance-Gamma/CGMY/NIG via
+  Carr-Madan Fourier inversion), subordinators (gamma/inverse-Gaussian/
+  stable/tempered-stable), Hawkes (exact recursive MLE + time-rescaling KS
+  residuals)/Cox/renewal/branching/semi-Markov processes, Gaussian random
+  fields, SDE solvers (Euler-Maruyama through strong order 1.5 Taylor, weak
+  order 2 Talay-Tubaro).
 
-Planned modules (14, in rough implementation order): levy_processes,
-financial_stochastics, advanced_mcmc, bayesian, statistics, nonparametric,
-robust_statistics, numerical_methods, random_matrix, spatial_statistics,
-optimization, experimental_design, viz, utils — each lands with the same bar:
+Planned modules (13, in rough implementation order): financial_stochastics,
+advanced_mcmc, bayesian, statistics, nonparametric, robust_statistics,
+numerical_methods, random_matrix, spatial_statistics, optimization,
+experimental_design, viz, utils — each lands with the same bar:
 native implementations, the shared conventions, full tests against independent
 oracles, honest documentation of deviations.
 

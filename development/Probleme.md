@@ -845,3 +845,304 @@ sentinel, never `None`.
   to raise AssertionError on any call in the fetch tests); manual session
   confirms the real paths still work (dry-run, unknown-version rejection,
   editable refusal).
+
+---
+
+### 41. `KouJumpDiffusion.call_price` used log-moneyness where the Carr-Madan formula needs the absolute log-strike
+
+**Severity:** 9/10 · **Status:** 🟢 `fixed` (V0.7.0)
+
+**Problem:** `carr_madan_call()` set `k = math.log(K / S0)`, but `cf_log_price(u)`
+is the characteristic function of the *absolute* log-price `ln S_T` (it embeds
+`ln S0` in its own drift term). Feeding the formula a relative log-moneyness
+while the CF already carries `S0` left an uncancelled `S0` factor inside the
+Fourier phase, producing wildly wrong prices (a Kou call priced at 99.05
+against a Black-Scholes-adjacent Monte Carlo value of ~9-12, and the same
+failure reproduced with a plain GBM characteristic function, proving the bug
+lived in `carr_madan_call` itself, not the Kou-specific CF).
+
+**Fix:** `k = math.log(K)` (the absolute log-strike, matching the absolute
+log-price CF), with a docstring note spelling out the convention so it can't
+regress silently.
+
+**Verification:**
+- Reproduced with a bare GBM CF against the library's own Black-Scholes
+  closed form (`carr_madan_call` returned 99.05 vs the exact 10.45); after the
+  fix it returns 10.450583... matching to 1e-6.
+- `tests/levy_processes/tests.py` pins `KouJumpDiffusion.call_price` against
+  Black-Scholes in the zero-jump limit and against `call_price_mc` at
+  `mu=r` (matching risk-neutral measures) within a few Monte-Carlo standard
+  errors.
+
+---
+
+### 42. `TemperingSubordinator`/`CGMYProcess` truncated-jump sampler used a linear grid, biasing the mean ~50%
+
+**Severity:** 9/10 · **Status:** 🟢 `fixed` (V0.7.0)
+
+**Problem:** `_jump_quantile_grid()` (and CGMY's `_jump_grid()`) built the
+truncated Lévy-density quantile grid on `np.linspace(jump_floor, x_max, 8192)`
+and integrated it with a plain `cumsum` (an implicit left-Riemann sum). The
+density `x**(-1-alpha)` is singular at `jump_floor`, and the linear grid's
+spacing (~2.4e-4 for `jump_floor=1e-4`) is *coarser* than the singularity
+scale itself, so the Riemann sum massively overweighted the near-floor region
+for the 0th moment (measured: 366.4 vs the true 192.2, almost 2x) while barely
+moving the 1st moment (0.787 vs 0.773) — the ratio of the two (the sampled
+mean jump size) came out ~47% too small, and the retained-jump Poisson count
+(computed separately via the exact `upper_gamma_negative` analytic formula)
+stayed correct, so only the sampled jump *sizes* were biased low. This is
+exactly the "TemperingSubordinator mean off by ~48%" issue left open in the
+prior session.
+
+**Fix:** Log-spaced grid (`np.logspace`) plus `scipy.integrate.cumulative_trapezoid`
+for the CDF — verified against `scipy.integrate.quad` to within 0.01% at 1024
+points, vs. the old scheme's ~2x error at 8192. Applied identically to both
+`TemperingSubordinator._jump_quantile_grid` and `CGMYProcess._jump_grid`
+(same bug, same fix). Also removed unreachable dead code left after the
+`upper_gamma_negative` two-step lift (an `if s > -1.0: return ...` followed
+by unconditional-but-unreachable duplicate statements).
+
+**Verification:**
+- `TemperingSubordinator(C=1, lam=5, alpha=0.5)`: simulated mean now 0.0790
+  vs analytic `mean_rate()*dt` 0.0793 (0.3% off, was 47% off).
+- `tests/levy_processes/tests.py` asserts the simulated mean against
+  `mean_rate()` for both classes at several standard errors.
+
+---
+
+### 43. `CoxProcess.simulate` crashed on numpy >= 2.x (`np.trapz` removed)
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.7.0)
+
+**Problem:** `np.trapz` was deprecated in numpy 2.0 and is gone entirely by
+2.5 (`AttributeError: module 'numpy' has no attribute 'trapz'`); every call
+to `CoxProcess.simulate` crashed on a current numpy install.
+`jump_diffusion.carr_madan_call` already guarded this exact case with
+`np.trapezoid(...) if hasattr(np, "trapezoid") else np.trapz(...)`, but
+`advanced.py`'s `CoxProcess.simulate` used the bare, unguarded call.
+
+**Fix:** Same `hasattr` fallback as `carr_madan_call`.
+
+**Verification:** `CoxProcess(lambda t: 3.0).simulate(2.0, random_state=0)`
+now runs; `tests/levy_processes/tests.py` exercises `CoxProcess` directly
+(the whole test file would otherwise fail to collect on this numpy version).
+
+---
+
+### 44. `StableSubordinator` and `RandomMeasure(kind="stable")` didn't match their documented Laplace transform
+
+**Severity:** 8/10 · **Status:** 🟢 `fixed` (V0.7.0)
+
+**Problem:** Both sampled `StableDistribution(alpha, beta=1.0, scale=dt**(1/alpha))`
+and claimed `E[exp(-lam*T_t)] = exp(-t*lam**alpha)`. The library's stable
+sampler uses the S1 (Nolan) parameterization, whose actual one-sided Laplace
+transform at `scale=1` is `exp(-lam**alpha / cos(pi*alpha/2))` — an extra
+multiplicative constant the docstring's formula doesn't have. Measured at
+`alpha=0.6`: Monte-Carlo `E[exp(-1.5*T_1)]` came out 0.2185 against the
+documented 0.4095 (off by roughly a factor of 2, worse at smaller alpha).
+
+**Fix:** Rescale by `cos(pi*alpha/2)**(1/alpha)` before applying the
+`dt**(1/alpha)` (or `length**(1/alpha)`) self-similarity scaling — this
+constant exactly cancels the S1 parameterization's extra factor, derived from
+`E[exp(-lam*(c*X))] = exp(-(lam*c)**alpha / cos(pi*alpha/2))` and solving
+`c**alpha / cos(pi*alpha/2) = 1`. Applied to both `StableSubordinator._increment`
+and `RandomMeasure.sample` (kind="stable") — same underlying sampler, same
+bug, same fix. (`StableProcess`/`SpectrallyPositive` were checked and are
+*not* affected: their `characteristic_function` is self-consistent with the
+S1 sampler by construction, and self-similarity under the `dt**(1/alpha)`
+scaling holds for any fixed constant, so nothing there claims the "clean"
+`exp(-t*lam**alpha)` normalization.)
+
+**Fix verification:** `alpha=0.6`, `lam=1.5`, `t=0.7`: Monte-Carlo Laplace
+transform now 0.4091 vs analytic 0.4095 (was 0.2185).
+
+**Verification:**
+- `tests/levy_processes/tests.py` checks the Monte-Carlo Laplace transform of
+  both `StableSubordinator` and `RandomMeasure(kind="stable")` against the
+  documented closed form.
+
+---
+
+### 45. `Runge_Kutta_SDE` was a stochastic-Heun scheme mislabeled "strong order 1.0" — actually order 0.5
+
+**Severity:** 8/10 · **Status:** 🟢 `fixed` (V0.7.0)
+
+**Problem:** The scheme averaged drift and diffusion at a predictor stage
+(`0.5*(a1+a2)*dt + 0.5*(b1+b2)*dW`) — a stochastic-Heun / trapezoidal update.
+This is a *weak*-order-2 construction; it has no Itô correction term
+(`b*b'*(dW^2-dt)`-shaped) and so cannot exceed strong order 0.5. A
+strong-error convergence study (same driving Brownian path at each step
+count — see #47) measured its empirical order at ~0.49 on a GBM test SDE,
+statistically indistinguishable from Euler-Maruyama's ~0.50, and its absolute
+error was consistently *larger* than EM's at every step size tested.
+
+**Fix:** Replaced with the derivative-free Milstein (Platen) scheme —
+`H = x + a*dt + b*sqrt(dt)`; `x_new = x + a*dt + b*dW + 0.5/sqrt(dt) * (b(H)-b(x)) * (dW**2-dt)`
+(Kloeden-Platen 1992, eq. 11.1.4) — which approximates the Milstein
+correction term by a finite difference of `b` alone (no explicit derivative
+needed) and genuinely reaches strong order 1.0.
+
+**Verification:** Convergence study on GBM (`n_steps` in
+16..256, 40k paths, shared Brownian path against the exact solution):
+empirical order 0.996 (was ~0.49). `tests/levy_processes/tests.py` asserts
+the fitted log-log order is > 0.85 and that RK's error is well below EM's at
+matched step counts.
+
+---
+
+### 46. `StochasticTaylor`'s multiple stochastic integrals were wrong — order 1.0 instead of documented 1.5
+
+**Severity:** 8/10 · **Status:** 🟢 `fixed` (V0.7.0)
+
+**Problem:** The prior session's rewrite of this scheme (Probleme #1) fixed
+the grossest errors but still had incorrect formulas for two of the multiple
+Itô integrals: `J01` (meant to be the double integral
+`I_(1,0) = int_0^dt int_0^s dW(u) ds`, jointly Gaussian with `dW` — mean 0,
+`Var = dt**3/3`, `Cov(dW, ·) = dt**2/2`) was coded as `dt**1.5 * z / sqrt(3)`,
+dropping the `0.5*dt*dW` correlated component and the leading `0.5` on the
+independent-noise term entirely; and `J111` (the triple same-integrand
+integral, `(dW**3 - 3*dt*dW)/6`, a *deterministic* function of `dW` and `dt`
+with no independent randomness) had a spurious extra `+ dt**1.5*z/sqrt(3)`
+term appended, and the coefficient it was multiplied by in the update also
+didn't match the Kloeden-Platen formula's grouping. Net effect: a
+convergence study (shared Brownian path, see #47) measured empirical strong
+order ~1.00, not the documented 1.5.
+
+**Fix:** Rewrote to match Kloeden-Platen (1992, eq. 10.4.3) term-by-term:
+`dZ = 0.5*dt*dW + 0.5/sqrt(3)*dt**1.5*z` for `I_(1,0)`; `(dW*dt - dZ)` for its
+complement `I_(0,1)`; `((1/3)*dW**2 - dt)*dW` (undivided, multiplied by its
+own correctly-grouped coefficient `0.5*b*(b*b''+b'**2)`) for the triple
+integral's contribution — no independent randomness in that last term.
+
+**Verification:** Same GBM convergence study as #45: empirical order 1.501
+(was ~1.00), and absolute error roughly 100x smaller than Milstein's at the
+finest step size tested. `tests/levy_processes/tests.py` asserts the fitted
+order is > 1.2.
+
+---
+
+### 47. `StrongApproximation` shared one already-advanced RNG between the exact and approximate solvers
+
+**Severity:** 9/10 · **Status:** 🟢 `fixed` (V0.7.0)
+
+**Problem:** `rng = np.random.default_rng(random_state)` was created once per
+step size and passed to *both* `exact_solver(..., rng)` and
+`solver(..., rng)` in sequence. `np.random.default_rng` returns an existing
+`Generator` unchanged, so the exact solver consumed the stream first and the
+approximate solver then drew a *different, independent* set of Brownian
+increments — the two paths being "compared" never shared a driving path at
+all. The measured "strong error" was therefore just the statistical
+difference between two unrelated GBM paths (~30 in absolute terms on a
+Wiener a jumps~100-scale process) and did not shrink as the step count
+increased — this is the root cause behind #45 and #46 initially reporting
+order ~0 (no trend at all) before the RNG-sharing bug was found and fixed
+first.
+
+**Fix:** Reseed a *fresh* generator from the same `random_state` value before
+each of the exact and approximate calls (`np.random.default_rng(random_state)`
+called twice), so both see the identical driving Brownian path at every step
+size. Documented that `random_state` must therefore be a reusable seed
+(int/array/`None`), not a live `Generator`, for the convergence study to be
+meaningful.
+
+**Verification:** Same GBM study: Euler-Maruyama's fitted order became 0.50
+(previously the "error" did not decrease with step size at all — see the
+raw numbers in #45/#46 above, ~30 and flat/increasing). `tests/levy_processes/tests.py`
+uses `StrongApproximation` for the EM/Milstein/RK/Taylor order checks.
+
+---
+
+### 48. `WeakApproximation`'s three-point increment distribution had the wrong weights, doubling `E[dW**2]`
+
+**Severity:** 9/10 · **Status:** 🟢 `fixed` (V0.7.0)
+
+**Problem:** The weak-order-2 scheme requires the discrete increment
+`dW in {-sqrt(3*dt), 0, +sqrt(3*dt)}` with probabilities `{1/6, 2/3, 1/6}` (so
+its first four moments match `N(0, dt)` exactly). The code drew
+`r = rng.integers(0, 3, n_paths)` and mapped each of the three outcomes with
+**equal** probability 1/3, giving `E[dW] = 0` (fine, symmetric) but
+`E[dW**2] = 2*dt` — twice the required variance. On a GBM test SDE this
+produced an `E[X_T]` bias of ~2.14 (against a value of ~105, so ~2%) that did
+**not** shrink as `n_steps` increased from 10 to 50 — a flat, non-vanishing
+bias is the signature of a moment-matching error, not ordinary discretization
+error, and is exactly what CONTINUATION.md's "expected at this coarse
+resolution; converges with refinement" note got wrong: it does not converge,
+because the per-step second moment is wrong at every resolution.
+
+**Fix:** Sample via `u = rng.random(n_paths)` thresholded at `1/6` and `5/6`
+so the three outcomes get probabilities `1/6, 2/3, 1/6` as required.
+
+**Verification:** GBM check (`mu=0.05`, `sigma=0.2`, `T=1`, 100k paths):
+bias now 0.025-0.14 across `n_steps` in 5..50 (was a flat ~2.14, ~1-2 Monte
+Carlo standard errors instead of ~30). `tests/levy_processes/tests.py`
+asserts `E[X_T]` against the exact GBM mean within a small multiple of the
+Monte-Carlo standard error.
+
+---
+
+### 49. `stochpylib/cli_demo.py` declared `DEMO_MODULES` in `__all__` without defining it
+
+**Severity:** 2/10 · **Status:** 🟢 `fixed` (V0.7.0)
+
+**Problem:** `__all__ = ["DEMO_MODULES", "run_demo", "list_demos"]` but the
+module only ever defined `DEMOS` (the dict); `from stochpylib.cli_demo import
+DEMO_MODULES` would have raised `ImportError` for any caller that actually
+used the declared public name. Nothing in the shipped test suite imported it
+by name, so it went unnoticed.
+
+**Fix:** Added `DEMO_MODULES = tuple(DEMOS)` alongside the existing `DEMOS`
+dict, and added the `levy_processes` demo entry to `DEMOS` at the same time
+(Probleme.md entries here are for the V0.7.0 `levy_processes` module wrap-up;
+this one was found while touching the same file to add that demo).
+
+**Verification:** `from stochpylib.cli_demo import DEMO_MODULES` now succeeds
+and includes all ten implemented modules; `spl demo levy_processes` runs.
+
+---
+
+### 50. `HawkesProcess.ks_residuals()` always raised when called after `.fit()` with no arguments
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.7.0)
+
+**Problem:** The documented usage is `HawkesProcess().fit(events).ks_residuals()`
+— call the time-rescaling KS test on the same data just fitted, without
+re-passing it. The `events is None` branch read `mu, alpha, beta` and `T`
+back from the fitted model but never recovered `events` itself, leaving it
+`None`; the very next line (`if events is None or events.size < 2: raise
+ValueError(...)`) then always fired. The zero-argument call path documented
+in the class docstring (`ks_residuals()` "applies the time-rescaling
+theorem... returns the KS (statistic, p_value)") never worked.
+
+**Fix:** `fit()` now also stores `self._events = events`; `ks_residuals()`
+recovers it (`events = self._events`) in the `events is None` branch instead
+of leaving it unset.
+
+**Verification:** `HawkesProcess(mu=0.5, alpha=0.3, beta=1.0).simulate(2000.0,
+random_state=42)` then `.fit(...).ks_residuals()` now returns `(0.018, 0.77)`
+— a high p-value, as expected for a well-specified model — instead of
+raising. `tests/levy_processes/tests.py` calls `ks_residuals()` with no
+arguments immediately after `.fit()`.
+
+---
+
+### 51. `TemperingSubordinator.truncation_mass()` docstring described the opposite of what it computes
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.7.0)
+
+**Problem:** Docstring said "Expected Levy mass excluded below `jump_floor`",
+but the formula (`C * lam**alpha * upper_gamma_negative(-alpha, lam*floor)`)
+is exactly `_retained_intensity(1)` — the upper incomplete gamma integrates
+the Lévy density from `lam*floor` to infinity, i.e. the intensity of jumps
+*above* the floor (what `_increment` actually draws its Poisson count from),
+not the excluded mass below it. Purely a documentation defect — no code path
+used the wrong value numerically — but a user reading the docstring would
+draw the wrong conclusion about what the method reports.
+
+**Fix:** Reworded both the class and method docstrings to describe the
+retained-intensity semantics accurately, and pointed to
+`mean_rate() - _retained_mean_rate()` (the actual excluded-mass-in-mean-terms
+quantity, since the excluded jump *count* diverges as `jump_floor -> 0` and
+so has no finite "mass" of its own to report).
+
+**Verification:** Docstring-only change; `tests/levy_processes/tests.py`
+still asserts `truncation_mass() > 0.0`.

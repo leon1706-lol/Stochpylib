@@ -11,10 +11,10 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10%2B-FF8C00?style=flat-square&labelColor=1A1A1A&logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/%F0%9F%93%84%20license-MIT-8B5CF6?style=flat-square&labelColor=1A1A1A" alt="License: MIT">
-  <img src="https://img.shields.io/badge/tests-572%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="572 of 574 tests passing">
+  <img src="https://img.shields.io/badge/tests-612%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="612 of 614 tests passing">
   <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&style=flat-square&labelColor=1A1A1A&label=CI&logo=githubactions&logoColor=white" alt="CI status"></a>
   <a href="https://pypi.org/project/stochpylib/"><img src="https://img.shields.io/pypi/v/stochpylib?style=flat-square&labelColor=1A1A1A&color=FF8C00&logo=pypi&logoColor=white" alt="PyPI version"></a>
-  <img src="https://img.shields.io/badge/public%20names-317%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="317 of 794 spec names implemented">
+  <img src="https://img.shields.io/badge/public%20names-350%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="350 of 794 spec names implemented">
 </p>
 
 <p align="center">
@@ -36,7 +36,7 @@ exposes the same method set
 (`.pdf()/.cdf()/.ppf()/.rvs()/.mean()/.var()/.skewness()/.kurtosis()/.entropy()/.mgf()/.cf()/.fit()/.ks_test()`),
 every stochastic method takes a `random_state=` seed, and every Monte Carlo estimator returns a
 shared result object carrying its point estimate together with an honest standard error and
-confidence interval. Around that contract, nine modules are live today: a **probability
+confidence interval. Around that contract, ten modules are live today: a **probability
 engine** (sample spaces, Bayes' theorem, exact-integer combinatorics, independence
 testing), **47 distributions** across discrete/continuous/multivariate/heavy-tailed
 families — including stable laws with Chambers–Mallows–Leckie sampling and numerically
@@ -50,19 +50,21 @@ Kalman/particle filters, HMMs, changepoints, spectral analysis), **Gaussian proc
 **survival analysis** (Kaplan-Meier, Cox regression, parametric censored fits, competing
 risks), **queueing theory** (M/M/1 to Jackson networks with discrete-event simulation),
 **copulas** (elliptical, Archimedean and empirical families plus C-/D-/R-vine dependence
-models) and **information theory** (entropy families, divergences, mutual information,
-channel capacity, coding). The roadmap takes it onward through Lévy processes, MCMC and
-beyond (23 modules, ~794 public names planned). The [Architecture](#architecture) section
+models), **information theory** (entropy families, divergences, mutual information,
+channel capacity, coding) and **Lévy processes** (jump-diffusion pricing models, tempered
+and stable subordinators, Hawkes/Cox/branching processes, SDE solvers from Euler-Maruyama
+through strong order 1.5). The roadmap takes it onward through financial stochastics, MCMC
+and beyond (23 modules, ~794 public names planned). The [Architecture](#architecture) section
 below has the structural picture; [`development/architecture.md`](development/architecture.md)
 goes deeper still.
 
 ## Known Limitations
 
 - **PyPI lags the repository.** The latest published release is `0.1.1`; the code here is at
-  `0.6.1`. Releases are tag-triggered (see [Release Process](#release-process)) and no tag has
+  `0.7.0`. Releases are tag-triggered (see [Release Process](#release-process)) and no tag has
   been pushed since the early modules — `pip install stochpylib` gets 0.1.1, so for the
   current state of the library, install from source (`pip install -e .`).
-- **14 of 23 planned modules remain.** The implemented nine are complete and tested against
+- **13 of 23 planned modules remain.** The implemented ten are complete and tested against
   their spec; everything else in the roadmap is design spec, not shipped code. Exact
   per-name state: [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md).
 - **The multivariate distributions deviate from the common interface by design** — the 7
@@ -167,7 +169,7 @@ For local development (this repo cloned, a virtual environment active):
 pip install -e ".[dev]"     # runtime deps + pytest
 pytest tests/ -v            # full test suite must be green before you start changing things
 spl --version               # verify your editable install
-spl --test                  # embedded self-check (139 checks), no pytest needed
+spl --test                  # embedded self-check (145 checks), no pytest needed
 ```
 
 Then implement or improve one module at a time and run the wrap-up procedure described in
@@ -204,11 +206,13 @@ flowchart LR
     C --> H["stochpylib.survival<br/>KM, Cox, competing risks"]
     B --> I["stochpylib.queueing<br/>closed forms + discrete-event simulation"]
     C --> J["stochpylib.information_theory<br/>entropy, divergences, channels, coding"]
+    C --> M["stochpylib.levy_processes<br/>jump-diffusion pricing, subordinators, SDE solvers"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
     K --> L["tests/<br/>scipy.stats + statsmodels + lifelines as independent oracles"]
     I --> L
+    M --> L
 ```
 
 #### Tech Stack
@@ -223,7 +227,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (139 checks)"]
+    C --> C3["spl --test embedded self-check (145 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -235,7 +239,7 @@ module must follow — see
 
 ## Current Status
 
-Nine modules implemented and tested — **317 / 794 spec names**:
+Ten modules implemented and tested — **350 / 794 spec names**:
 
 | Module | Public names | What's inside |
 |---|---|---|
@@ -248,10 +252,11 @@ Nine modules implemented and tested — **317 / 794 spec names**:
 | `stochpylib.survival` | 28 | Kaplan-Meier/Nelson-Aalen/life tables, parametric censored fits (Weibull/Exponential/LogNormal/LogLogistic/Gompertz), Cox PH (Breslow/Efron), stratified Cox, Weibull AFT, Aalen additive, Fine-Gray competing risks, log-rank family, Aalen-Johansen CIF |
 | `stochpylib.queueing` | 29 | M/M/1 through M/G/1 priority queues (closed-form), Jackson/closed/BCMP networks with product-form and MVA, Erlang B/C/Engset blocking formulas, discrete-event simulation engine |
 | `stochpylib.information_theory` | 31 | entropy families (Shannon/Rényi/Tsallis/differential/max-entropy), divergences (KL/JS/Wasserstein/Hellinger/TV/chi²/alpha), mutual-information quantities, channel capacity, transfer entropy, Huffman coding, AEP |
+| `stochpylib.levy_processes` | 33 | Lévy-Khintchine core (stable processes, subordination), jump-diffusion pricing (Merton/Kou/Bates/VG/CGMY/NIG via Carr-Madan Fourier inversion), subordinators (gamma/IG/stable/tempered-stable), Hawkes/Cox/renewal/branching/semi-Markov processes, Gaussian random fields, SDE solvers (Euler-Maruyama through strong order 1.5, weak order 2) |
 
 Exact progress against the full design spec lives in
 [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md)
-(currently **317 / 794 public names**).
+(currently **350 / 794 public names**).
 
 ## Project Layout
 
@@ -261,7 +266,7 @@ as an entry-point guide:
 
 | Folder | Guide | What lives there |
 |---|---|---|
-| `stochpylib/` | [package guide](stochpylib/README.md) | the installable package: nine module subpackages, `cli.py`, `selftest.py` |
+| `stochpylib/` | [package guide](stochpylib/README.md) | the installable package: ten module subpackages, `cli.py`, `selftest.py` |
 | `tests/` | [suite guide](tests/README.md) | one deterministic test file per module + the cross-module library suite, outside the installed package |
 | `development/` | [dev-docs guide](development/README.md) | architecture, infrastructure runbook, build history, bug audit log, progress checklist |
 | `.github/` | — | CI / PyPI-publish / GitHub-Release workflows, issue & PR templates |
@@ -283,6 +288,7 @@ conventions and its documented limitations — this table is the index:
 | `stochpylib/survival/` | Kaplan-Meier, parametric fits, Cox/AFT/FineGray regression, competing risks | [README](stochpylib/survival/README.md) |
 | `stochpylib/queueing/` | Single queues, birth-death formulas, networks, discrete-event simulation | [README](stochpylib/queueing/README.md) |
 | `stochpylib/information_theory/` | Entropy, divergences, mutual information, channels, coding | [README](stochpylib/information_theory/README.md) |
+| `stochpylib/levy_processes/` | Lévy-Khintchine core, jump-diffusion pricing, subordinators, advanced point/branching/field processes, SDE solvers | [README](stochpylib/levy_processes/README.md) |
 
 ## Development Documentation
 
@@ -296,6 +302,7 @@ conventions and its documented limitations — this table is the index:
 | [`development/CHANGELOG.md`](development/CHANGELOG.md) | Append-only log, one entry per build phase |
 | [`development/Probleme.md`](development/Probleme.md) | Bug audit log in Problem → Fix → Verification format with a status legend |
 | [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md) | Every planned public name as a checkbox |
+| [`todo.md`](todo.md) | **Owner's planning canvas** — the current objective(s) and personal notes for the next AI agent to pick up; not a generated backlog, expect it to be rewritten as priorities change |
 
 ## Open Source Files
 
@@ -305,6 +312,7 @@ conventions and its documented limitations — this table is the index:
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Dev setup, ground rules, **semver & deprecation policy**, PR checklist |
 | [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Contributor Covenant 2.1 |
 | [`SECURITY.md`](SECURITY.md) | Private vulnerability reporting (72 h acknowledgment) |
+| [`AGENTS.md`](AGENTS.md) | Agent/contributor guide: project conventions, verification workflow, file sync checklist |
 
 ## Test Suite
 
@@ -312,7 +320,7 @@ conventions and its documented limitations — this table is the index:
 pytest tests/ -v
 ```
 
-**572 passed / 2 skipped** as of the V0.6.4 CLI expansion (the 2 permanent skips
+**612 passed / 2 skipped** as of the V0.7.0 `levy_processes` implementation (the 2 permanent skips
 are the VonMises/Kumaraswamy scipy cross-checks — no direct scipy mapping, covered by
 dedicated checks instead). Tests are deterministic (fixed seeds everywhere), live outside
 the installed package, and use `scipy.stats`, `statsmodels` and brute-force references as
@@ -339,7 +347,7 @@ interface, and a runnable quick-start snippet. Running bare `spl` shows the same
 
 ```bash
 $ spl --version
-0.6.4
+0.7.0
 latest on PyPI: 0.1.1  (installed version is newer / unreleased)
 ```
 
@@ -354,7 +362,7 @@ entirely by setting `STOCHPYLIB_SKIP_UPDATE_CHECK=1`.
 
 ```bash
 $ spl --version --list
-0.6.4
+0.7.0
 latest on PyPI: 0.1.1  (installed version is newer / unreleased)
 2 published versions:
   0.1.0
@@ -367,7 +375,7 @@ served from the 24 h cache).
 
 ### `spl --test`
 
-Runs the embedded self-check suite shipped inside the wheel (**139 checks**): package sanity and per-module spec
+Runs the embedded self-check suite shipped inside the wheel (**145 checks**): package sanity and per-module spec
 conformance, one closed-form spot check per distribution family, Monte Carlo
 convergence sanity, cross-module workflows, and the offline CLI-helper logic. This works
 after any `pip install` — no pytest, no source checkout — making it the quickest way to verify
@@ -417,8 +425,9 @@ spl demo [module]
 Runs a **live mini-example** for one implemented module against the real installation —
 deterministic, fixed seeds, a few seconds each (Bayes screening, distribution fit + KS,
 Sobol + option pricing vs Black-Scholes, AR fit + forecast, GP regression with
-uncertainty, copula AIC selection, Kaplan-Meier, M/M/1 closed form, entropy + Huffman).
-Bare `spl demo` lists the available demos.
+uncertainty, copula AIC selection, Kaplan-Meier, M/M/1 closed form, entropy + Huffman,
+Kou jump-diffusion pricing + a tempered-stable subordinator path). Bare `spl demo` lists
+the available demos.
 
 ### `spl cite`
 
@@ -445,8 +454,8 @@ Publishing.
 
 ## Roadmap
 
-Fourteen modules remain on the spec (in rough implementation order):
-Lévy processes, financial stochastics, advanced MCMC, Bayesian inference, statistics,
+Thirteen modules remain on the spec (in rough implementation order):
+financial stochastics, advanced MCMC, Bayesian inference, statistics,
 nonparametric methods, robust statistics, numerical methods, random matrix theory,
 spatial statistics, optimization, experimental design, visualization, and utilities.
 Each lands with the same bar: native implementations, the shared

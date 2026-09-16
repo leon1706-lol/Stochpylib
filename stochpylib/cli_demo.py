@@ -139,6 +139,25 @@ def _demo_information_theory():
     print(f"  code table: {hc.code_table_}")
 
 
+def _demo_levy_processes():
+    from stochpylib.levy_processes import KouJumpDiffusion, TemperingSubordinator
+    from stochpylib.levy_processes.jump_diffusion import _black_scholes_call
+
+    print("Levy processes - jump-diffusion option pricing and a tempered-stable clock:")
+    S0, K, T, r = 100.0, 100.0, 1.0, 0.05
+    kou = KouJumpDiffusion(mu=r, sigma=0.2, jump_rate=1.0, eta_up=10.0,
+                           eta_down=10.0, p_up=0.4)
+    price = kou.call_price(S0, K, T, r)
+    mc = kou.call_price_mc(S0, K, T, r, n_paths=100_000, random_state=0)
+    print(f"  Kou double-exponential jump-diffusion call (S=K=100, T=1, r=5%):")
+    print(f"    Carr-Madan  = {price:.4f}")
+    print(f"    Monte Carlo = {mc.estimate:.4f} +- {mc.std_error:.4f}")
+    ts = TemperingSubordinator(C=1.0, lam=5.0, alpha=0.5)
+    path = ts.sample([0.25, 0.5, 0.75, 1.0], random_state=1)
+    print(f"  TemperingSubordinator path at t=0.25,0.5,0.75,1.0: {np.round(path, 4)}")
+    print(f"    analytic mean rate = {ts.mean_rate():.4f} per unit time")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -149,7 +168,9 @@ DEMOS = {
     "survival": _demo_survival,
     "queueing": _demo_queueing,
     "information_theory": _demo_information_theory,
+    "levy_processes": _demo_levy_processes,
 }
+DEMO_MODULES = tuple(DEMOS)
 
 
 def list_demos():

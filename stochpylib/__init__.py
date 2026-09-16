@@ -3,6 +3,7 @@ from stochpylib import (
     distributions,
     gaussian_processes,
     information_theory,
+    levy_processes,
     montecarlo,
     probability,
     queueing,
@@ -15,6 +16,7 @@ __all__ = [
     "distributions",
     "gaussian_processes",
     "information_theory",
+    "levy_processes",
     "montecarlo",
     "probability",
     "queueing",
@@ -22,4 +24,4 @@ __all__ = [
     "timeseries",
 ]
 
-__version__ = "0.6.4"
+__version__ = "0.7.0"

@@ -18,11 +18,11 @@ ship inside the wheel — `development/Probleme.md` [3]).
 
 ## Layout
 
-- `tests/<module>/tests.py` — one suite per implemented module (nine today:
+- `tests/<module>/tests.py` — one suite per implemented module (ten today:
   probability, distributions, montecarlo, timeseries, gaussian_processes,
-  copulas, survival, queueing, information_theory).
+  copulas, survival, queueing, information_theory, levy_processes).
 - `tests/library/tests.py` — the cross-module suite: spec-name conformance for
-  all 317 implemented public names (generated from
+  all 350 implemented public names (generated from
   `development/Implementation-Checklist.md` via `_extract_spec_names.py`, cached
   in `_spec_names.json`), pinned documented extras (`MCResult`,
   `DigitalNetBase2`, timeseries result objects, GP kernel base/ops,
@@ -45,6 +45,6 @@ pytest tests/ -v
 ```
 
 The package also ships an embedded smoke suite runnable from any pip install:
-`spl --test` (139 checks), which includes the per-module conformance and
+`spl --test` (145 checks), which includes the per-module conformance and
 cross-module spot checks. The live pass count lives only in the root README
 badge — deliberately no second copy here to go stale.

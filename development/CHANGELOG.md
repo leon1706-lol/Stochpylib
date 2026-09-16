@@ -503,3 +503,89 @@ changes; new package modules cli_pypi.py and cli_demo.py):
   help inventory.
 
 Suite: 574 collected - 572 passed / 2 skipped. Version 0.6.4.
+
+## Phase 23 - V0.7.0 levy_processes: Lévy-Khintchine core, jump-diffusion pricing, subordinators, advanced point processes, SDE solvers (33 names)
+
+The tenth module: `stochpylib.levy_processes`, five submodules, 33 public
+names, no new runtime dependencies.
+
+- **`levy.py`:** `LevyProcess` (Brownian + compound-Poisson base with a
+  Lévy-Khintchine characteristic function), `StableProcess` (alpha-stable
+  Lévy motion via the library's validated Chambers-Mallows-Stuck sampler),
+  `AlphaStableDistribution` (adapter over `distributions.AlphaStable`),
+  `SpectrallyPositive` (nondecreasing alpha-stable), `SubordinatedProcess`
+  (`X_t = B_{T_t}` for any base process + subordinator), `LevyKhintchine`
+  (the `(b, sigma^2, nu)` triplet, both compound-Poisson and pure-subordinator
+  jump forms).
+- **`subordinators.py`:** `Subordinator` base (path simulation machinery),
+  `GammaSubordinator` (Variance-Gamma time change), `InverseGaussianSubordinator`
+  (NIG time change, `E[T_t]=t`), `StableSubordinator` (positive
+  1/alpha-stable, `E[exp(-lam T_t)] = exp(-t lam**alpha)`), `TemperingSubordinator`
+  (CGMY/tempered-stable time change via truncated compound-Poisson with
+  analytic mean compensation).
+- **`jump_diffusion.py`:** `JumpDiffusion` base, `MertonJumpDiffusion`
+  (lognormal jumps, closed-form call series), `KouJumpDiffusion`
+  (double-exponential jumps, Carr-Madan Fourier call price), `BatesModel`
+  (Heston stochastic volatility + lognormal jumps, MC pricing),
+  `VarianceGammaProcess`, `CGMYProcess`, `NormalInverseGaussianProcess`.
+- **`advanced.py`:** `HawkesProcess` (exponential-kernel self-exciting
+  process: Ogata thinning, exact recursive MLE, `branching_ratio()`,
+  time-rescaling `ks_residuals()`), `MultivariateHawkes`, `CoxProcess`,
+  `RenewalProcess`, `BranchingProcess` (Galton-Watson), `SemiMarkovProcess`,
+  `GaussianRandomField` (FFT spectral synthesis), `RandomMeasure` (gamma or
+  spectrally-positive stable mass on intervals).
+- **`sde.py`:** `SDE` definition (finite-difference derivatives for the
+  higher-order schemes), `Euler_Maruyama` (strong order 0.5), `Milstein`
+  (strong order 1.0), `Runge_Kutta_SDE` (derivative-free Milstein/Platen,
+  strong order 1.0), `StochasticTaylor` (Kloeden-Platen strong order 1.5),
+  `WeakApproximation` (Talay-Tubaro weak order 2), `StrongApproximation`
+  (strong-error convergence studies across step sizes).
+- **Eleven bugs found and fixed while writing `tests/levy_processes/tests.py`**
+  (Probleme.md #41-51), on top of the ten already fixed during initial
+  implementation: the Carr-Madan pricer's log-strike convention (`log(K/S0)`
+  vs the required absolute `log(K)`, which had made every `KouJumpDiffusion.call_price`
+  wrong by an order of magnitude); the truncated-jump quantile sampler's
+  linear grid (biased `TemperingSubordinator`/`CGMYProcess` simulated means
+  by up to ~50% — replaced with a log-spaced grid + cumulative-trapezoid
+  quadrature); `CoxProcess.simulate` crashing on numpy >= 2.x (`np.trapz`
+  removed); `StableSubordinator`/`RandomMeasure(kind="stable")` not matching
+  their documented Laplace transform (an uncancelled S1-parameterization
+  constant); `Runge_Kutta_SDE` actually being a weak-order stochastic-Heun
+  scheme (empirical strong order ~0.5, not the documented 1.0) — replaced
+  with the derivative-free Milstein/Platen scheme; `StochasticTaylor`'s
+  multiple stochastic integrals not matching Kloeden-Platen (empirical order
+  ~1.0, not 1.5); `StrongApproximation` sharing one already-advanced RNG
+  between the "exact" and "approximate" solvers, so the two paths were never
+  driven by the same Brownian path and the measured "error" never shrank
+  with step size; `WeakApproximation`'s three-point increment distribution
+  using uniform 1/3 weights instead of the required 1/6-2/3-1/6, doubling
+  `E[dW**2]` and biasing `E[X_T]` by an amount that did not shrink with
+  refinement; and `HawkesProcess.ks_residuals()` always raising when called
+  with no arguments right after `.fit()` (the fitted events were never
+  stored). All ten are independently reproduced and regression-tested.
+- **`tests/levy_processes/tests.py` (40 new tests):** subordinator
+  monotonicity/mean/Laplace-transform checks, Lévy-Khintchine
+  characteristic-function consistency (manual-formula and empirical-CF
+  cross-checks), jump-diffusion pricing vs Black-Scholes in the no-jump
+  limit plus Monte Carlo cross-checks at matched risk-neutral drift, Hawkes
+  simulate/fit/branching-ratio/KS-residuals, Cox/renewal/branching/
+  semi-Markov moment checks, Gaussian random fields and random measures, and
+  SDE strong/weak convergence-order studies (EM=0.5, Milstein=1.0, RK=1.0,
+  Taylor=1.5, weak-2 vs the exact GBM mean).
+- **`selftest.py` extended 139 -> 145 checks:** `levy_processes` CONFORM spot
+  check plus `TemperingSubordinator` mean, `GammaSubordinator` mean, Kou
+  zero-jump vs Black-Scholes, Hawkes `branching_ratio`, and an
+  Euler-Maruyama GBM terminal-mean check.
+- **`spl demo levy_processes`** added to `cli_demo.py` (Kou call price via
+  Carr-Madan vs Monte Carlo, plus a `TemperingSubordinator` sample path); also
+  fixed `cli_demo.DEMO_MODULES` being declared in `__all__` without ever
+  being defined (Probleme.md #49).
+- **Docs synced:** README badges/status table/architecture diagrams/roadmap,
+  `stochpylib/README.md` module table, `development/architecture.md` module
+  map + diagrams, `development/infrastructure.md` and `tests/README.md`
+  selftest-count mentions, `stochpylib/levy_processes/README.md` (new),
+  `development/Implementation-Checklist.md` (33/33, progress line to
+  350/794), `development/Probleme.md` (#41-50). Version bumped to 0.7.0 in
+  both `pyproject.toml` and `stochpylib/__init__.py`.
+
+Suite: 614 collected - 612 passed / 2 skipped. Version 0.7.0.
