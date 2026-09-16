@@ -103,7 +103,7 @@ def test_ar_recovery_and_statsmodels_exact():
     ar = ts.AR(2).fit(y)
     assert np.allclose(ar.ar_coefs_, [0.7, -0.25], atol=0.06)
     assert abs(ar.intercept_ - 1.0) < 0.15
-    ref = sm.tsa.ar_model.AutoReg(y, lags=2, old_names=False).fit()
+    ref = sm.tsa.ar_model.AutoReg(y, lags=2).fit()
     assert np.allclose(ref.params[1:], ar.ar_coefs_, rtol=1e-8)
 
 

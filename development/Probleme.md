@@ -1146,3 +1146,27 @@ so has no finite "mass" of its own to report).
 
 **Verification:** Docstring-only change; `tests/levy_processes/tests.py`
 still asserts `truncation_mass() > 0.0`.
+
+---
+
+### 52. CI failed: `AutoReg(..., old_names=False)` broke against statsmodels 0.15.0
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.7.0)
+
+**Problem:** `test_ar_recovery_and_statsmodels_exact` passed `old_names=False`
+to `statsmodels.tsa.ar_model.AutoReg` — a long-deprecated legacy-compat flag
+that statsmodels 0.15.0 (released after this repo's last CI run) removed
+entirely, raising `TypeError: unexpected keyword argument 'old_names'`. All 8
+CI matrix jobs showed red: one (3.11, windows-latest) failed for real, the
+other 7 were cancelled by the default `fail-fast` matrix strategy once it did.
+
+**Fix:** Dropped the kwarg — `old_names` already defaulted to `False` in
+0.14.x, so the call is unchanged for the supported floor (`statsmodels>=0.14`)
+and now works on 0.15.0 too, where the parameter is gone.
+
+**Verification:** Passes locally (statsmodels 0.14.6). Cross-checked in an
+isolated venv against statsmodels 0.15.0: full `tests/timeseries/` suite
+(52 tests) green, confirming no other 0.15.0 incompatibility in that module —
+`adfuller`'s new `result_object=` return-shape opt-in raises only a
+`FutureWarning` on 0.15.0 (no `result_object` kwarg exists yet on the 0.14
+floor, so it's intentionally left unset rather than pinned either way).

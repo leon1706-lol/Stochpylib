@@ -585,7 +585,19 @@ names, no new runtime dependencies.
   map + diagrams, `development/infrastructure.md` and `tests/README.md`
   selftest-count mentions, `stochpylib/levy_processes/README.md` (new),
   `development/Implementation-Checklist.md` (33/33, progress line to
-  350/794), `development/Probleme.md` (#41-50). Version bumped to 0.7.0 in
+  350/794), `development/Probleme.md` (#41-51). Version bumped to 0.7.0 in
   both `pyproject.toml` and `stochpylib/__init__.py`.
+
+Suite: 614 collected - 612 passed / 2 skipped. Version 0.7.0.
+
+## Phase 24 — CI hotfix: statsmodels 0.15.0 dropped `AutoReg`'s `old_names`
+
+- **Fixed `test_ar_recovery_and_statsmodels_exact`:** dropped the
+  `old_names=False` kwarg from the `statsmodels.tsa.ar_model.AutoReg` oracle
+  call — statsmodels 0.15.0 removed the long-deprecated parameter, breaking
+  all 8 CI matrix jobs on push (1 real failure, 7 cancelled by fail-fast).
+  The default was already `False` on the `statsmodels>=0.14` floor, so
+  dropping it is a no-op there and fixes 0.15.0. Verified against both
+  versions (Probleme.md #52).
 
 Suite: 614 collected - 612 passed / 2 skipped. Version 0.7.0.
