@@ -154,6 +154,13 @@ def _implemented_overview():
             "                   risk (VaR/ES/stress/scenario), credit (CDS, Merton, rating\n"
             "                   migration, copula portfolio loss), portfolio construction\n"
             "                   (mean-variance, Black-Litterman, risk parity)",
+        "statistics":
+            "classical statistics: descriptive stats, MLE/MOM/Bayesian\n"
+            "                   conjugate/bootstrap/jackknife/delta-method/profile-likelihood\n"
+            "                   estimation, z/t/chi2/F/ANOVA/MANOVA/rank/normality/multiple-\n"
+            "                   comparison tests, OLS/GLM/ridge/lasso/elastic-net/quantile\n"
+            "                   regression, PCA/factor analysis/canonical correlation/\n"
+            "                   discriminant analysis/clustering/MDS",
     }
 
     blocks = []
@@ -387,8 +394,8 @@ Try a live mini-example:  spl demo <module>   (bare 'spl demo' lists them)
         epilog=(
             "subcommands: update, info, show, demo, cite - run 'spl <command> --help'\n"
             "for details.\n\n"
-            "roadmap: twelve more modules are planned (advanced_mcmc,\n"
-            "bayesian, statistics, random_matrix, spatial_statistics, ...) -\n"
+            "roadmap: eleven more modules are planned (advanced_mcmc,\n"
+            "bayesian, random_matrix, spatial_statistics, robust_statistics, ...) -\n"
             "see the repository README and development/Implementation-Checklist.md.\n\n"
             "docs: README.md - contributing: CONTRIBUTING.md - security: SECURITY.md"
         ),

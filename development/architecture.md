@@ -1,6 +1,6 @@
 # stochpylib Architecture
 
-**Status:** eleven of 23 planned modules are implemented and tested (400/794
+**Status:** twelve of 23 planned modules are implemented and tested (448/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state). Everything else in the module map below
 remains design spec, not shipped code.
@@ -39,6 +39,7 @@ flowchart LR
     C --> J["stochpylib.information_theory<br/>entropy, divergences, channels, coding"]
     C --> M["stochpylib.levy_processes<br/>jump-diffusion pricing, subordinators, SDE solvers"]
     C --> N["stochpylib.financial_stochastics<br/>option pricing, Heston/SABR, rate models, risk, credit, portfolio"]
+    B --> O["stochpylib.statistics<br/>descriptive · estimation · hypothesis tests · regression · multivariate"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -46,6 +47,7 @@ flowchart LR
     I --> L
     M --> L
     N --> L
+    O --> L
 ```
 
 ## Tech Stack
@@ -60,7 +62,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (152 checks)"]
+    C --> C3["spl --test embedded self-check (160 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -114,9 +116,17 @@ README per module):
   Merton structural PD, rating-migration generator, independent and
   copula-dependent portfolio loss), portfolio construction (Ledoit-Wolf
   shrinkage, mean-variance, Black-Litterman, Spinu risk parity).
+- `statistics/` — descriptive stats, MLE/MOM/Bayesian-conjugate/bootstrap
+  (BCa)/jackknife/delta-method/profile-likelihood estimation, z/t/chi2/F
+  tests, one-way and Welch/Type-II-two-way ANOVA, MANOVA (Wilks/Pillai/
+  Hotelling-Lawley/Roy), exact-DP Mann-Whitney/Wilcoxon, a from-scratch
+  studentized-range CDF (Tukey HSD), Shapiro-Wilk (AS R94), OLS/WLS (HC0-HC3)
+  and IRLS GLM (6 families x 8 links) regression, ridge/lasso/elastic-net,
+  exact-LP quantile regression, PCA, ML/PA factor analysis, canonical
+  correlation, LDA/QDA, k-means/hierarchical clustering, classical/SMACOF MDS.
 
-Planned modules (12, in rough implementation order): advanced_mcmc,
-bayesian, statistics, nonparametric, robust_statistics,
+Planned modules (11, in rough implementation order): advanced_mcmc,
+bayesian, nonparametric, robust_statistics,
 numerical_methods, random_matrix, spatial_statistics, optimization,
 experimental_design, viz, utils — each lands with the same bar:
 native implementations, the shared conventions, full tests against independent

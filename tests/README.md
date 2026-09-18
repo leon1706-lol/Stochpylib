@@ -8,8 +8,11 @@ ship inside the wheel — `development/Probleme.md` [3]).
 
 - One file per module, mirroring the layout: `tests/<module>/tests.py` (e.g.
   `probability/tests.py`). Files are named `tests.py` so pytest picks them up
-  via `python_files = ["tests.py"]` in `pyproject.toml`; each folder carries an
-  `__init__.py` so same-named files import as distinct modules.
+  via `python_files = ["tests.py"]` in `pyproject.toml`; each folder — and
+  `tests/` itself — carries an `__init__.py`, so every suite imports as
+  `tests.<module>.tests`, rooted at the repo (not just at directory name,
+  which would let a module named after a stdlib package, e.g. `statistics`,
+  shadow it — `development/Probleme.md` #63).
 - Deterministic everywhere: fixed seeds on every stochastic path.
 - Independent oracles: `scipy.stats`, `statsmodels` and `lifelines` are used
   *only* in tests — never in library code. Statistical assertions are set at
@@ -18,12 +21,12 @@ ship inside the wheel — `development/Probleme.md` [3]).
 
 ## Layout
 
-- `tests/<module>/tests.py` — one suite per implemented module (eleven today:
+- `tests/<module>/tests.py` — one suite per implemented module (twelve today:
   probability, distributions, montecarlo, timeseries, gaussian_processes,
   copulas, survival, queueing, information_theory, levy_processes,
-  financial_stochastics).
+  financial_stochastics, statistics).
 - `tests/library/tests.py` — the cross-module suite: spec-name conformance for
-  all 400 implemented public names (generated from
+  all 448 implemented public names (generated from
   `development/Implementation-Checklist.md` via `_extract_spec_names.py`, cached
   in `_spec_names.json`), pinned documented extras (`MCResult`,
   `DigitalNetBase2`, timeseries result objects, GP kernel base/ops,
@@ -46,6 +49,6 @@ pytest tests/ -v
 ```
 
 The package also ships an embedded smoke suite runnable from any pip install:
-`spl --test` (152 checks), which includes the per-module conformance and
+`spl --test` (160 checks), which includes the per-module conformance and
 cross-module spot checks. The live pass count lives only in the root README
 badge — deliberately no second copy here to go stale.

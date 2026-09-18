@@ -3,7 +3,7 @@
 The installable package: one subpackage per library module behind a single
 load-bearing contract — every distribution exposes the same method set, every
 stochastic method takes `random_state=`, every Monte Carlo estimator returns a
-shared result object. Eleven subpackages live today (400/794 spec names):
+shared result object. Twelve subpackages live today (448/794 spec names):
 
 | Subpackage | Spec names | What it owns | Guide |
 |---|---|---|---|
@@ -18,6 +18,7 @@ shared result object. Eleven subpackages live today (400/794 spec names):
 | `information_theory/` | 31 | entropy, divergences, mutual information, channels, coding | [README](information_theory/README.md) |
 | `levy_processes/` | 33 | Lévy-Khintchine core, jump-diffusion pricing, subordinators, advanced point/branching/field processes, SDE solvers | [README](levy_processes/README.md) |
 | `financial_stochastics/` | 50 | option pricing & Greeks, stochastic/local vol, short-rate models, risk, credit, portfolio construction | [README](financial_stochastics/README.md) |
+| `statistics/` | 48 | descriptive stats, MLE/MOM/Bayesian/bootstrap estimation, hypothesis tests, OLS/GLM/penalized/quantile regression, multivariate methods | [README](statistics/README.md) |
 
 Package-level files:
 
@@ -28,8 +29,8 @@ Package-level files:
   `cite` subcommands.
 - `cli_pypi.py` — offline-safe PyPI metadata access (fetch, 24 h cache,
   version parsing, install-mode detection) behind `--version` and `update`.
-- `cli_demo.py` — the eleven live mini-examples behind `spl demo <module>`.
-- `selftest.py` — the 152-check self-check suite shipped inside the wheel,
+- `cli_demo.py` — the twelve live mini-examples behind `spl demo <module>`.
+- `selftest.py` — the 160-check self-check suite shipped inside the wheel,
   runnable from any pip install without pytest or a source checkout.
 
 Target API for every planned module lives in the private Obsidian vault

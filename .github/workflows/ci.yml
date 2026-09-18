@@ -37,6 +37,21 @@ jobs:
           spl demo financial_stochastics
           spl show BlackScholes
 
+  stats-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest tests/statistics tests/library tests/docs tests/cli -v
+      - name: Exercise the statistics CLI surface
+        run: |
+          spl demo statistics
+          spl show linear_regression
+
   install-smoke:
     runs-on: ubuntu-latest
     steps:
@@ -50,4 +65,5 @@ jobs:
       - name: Verify the wheel ships every subpackage
         run: |
           python -c "import stochpylib.financial_stochastics as m; assert len(m.__all__) == 50"
+          python -c "import stochpylib.statistics as m, statistics as s; assert len(m.__all__) == 58 and s is not m"
           spl --test

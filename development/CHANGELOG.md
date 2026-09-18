@@ -734,3 +734,105 @@ The eleventh module: `stochpylib.financial_stochastics`, seven submodules,
   both `pyproject.toml` and `stochpylib/__init__.py`.
 
 Suite: 729 collected - 727 passed / 2 skipped. Version 0.8.0.
+
+## Phase 26 — V0.9.0 statistics: descriptive, estimation, hypothesis tests, regression, multivariate (48 names)
+
+The twelfth module: `stochpylib.statistics`, five submodules, 48 public
+names, no new runtime dependencies.
+
+- **`descriptive.py`:** `mean`/`median`/`mode`/`variance`/`std` (weighted and
+  trimmed variants), `quantile` (all nine Hyndman-Fan interpolation types),
+  `iqr`, `skewness`/`kurtosis` (biased and bias-adjusted), `covariance`,
+  `correlation` (Pearson/Spearman/Kendall tau-b, tie-corrected, with a
+  significance test), `describe`.
+- **`estimation.py`:** `MLE` (any `Distribution` subclass or a
+  `loglik(params, data)` callable, Hessian-based standard errors), `MOM`
+  (closed forms for 8 named distributions plus a least-squares fallback),
+  `bayesian_estimator` (normal-normal/beta-binomial/gamma-Poisson/
+  gamma-exponential conjugate families, or a generic grid posterior),
+  `confidence_interval` (mean/proportion — wald/wilson/agresti-coull/
+  clopper-pearson/variance/median/mean-difference/correlation),
+  `bootstrap_ci` (percentile/basic/normal/BCa with jackknife acceleration),
+  `jackknife`, `delta_method`, `profile_likelihood` (Wilks' theorem).
+- **`hypothesis.py`:** `z_test`/`t_test`/`chi2_test`/`f_test` (variance-ratio
+  or nested-model), `ANOVA` (one-way, Welch, or two-way Type-II sums of
+  squares via nested-model comparison — coding-independent), `MANOVA`
+  (Wilks/Pillai/Hotelling-Lawley/Roy with their SAS-style F-approximations),
+  `mann_whitney`/`wilcoxon` (exact null distributions via dynamic
+  programming over Python big integers, or tie-corrected asymptotic
+  normal), `ks_test`, `shapiro_wilk` (a from-scratch reimplementation of
+  Royston 1992's Algorithm AS R94), `levene`/`bartlett`, `tukey_hsd` (a
+  from-scratch studentized-range CDF/quantile via log-space Gauss-Legendre
+  double quadrature), `bonferroni` (bonferroni/holm/sidak/holm-sidak/
+  fdr_bh).
+- **`regression.py`:** `linear_regression` (OLS/WLS, nonrobust or HC0-HC3
+  sandwich standard errors), `glm` (IRLS; gaussian/binomial/poisson/gamma/
+  inverse_gaussian/negative_binomial families x 8 links), `logistic_regression`/
+  `poisson_regression` (GLM facades), `ridge` (closed-form SVD, optional
+  GCV grid search), `lasso`/`elastic_net` (cyclic coordinate descent,
+  warm-started regularization paths), `quantile_regression` (exact linear
+  program + Koenker-Bassett kernel-sandwich standard errors).
+- **`multivariate.py`:** `PCA`, `factor_analysis` (maximum likelihood via
+  profiled Jöreskog concentration, or iterated principal axis; varimax/
+  quartimax rotation), `canonical_correlation` (with Wilks
+  sequential-dimensionality tests), `discriminant_analysis` (LDA/QDA by
+  direct Gaussian Bayes classification), `cluster_analysis` (k-means++ +
+  Lloyd, or agglomerative Lance-Williams linkage), `MDS` (classical
+  Torgerson eigendecomposition, or SMACOF stress majorization — metric or
+  non-metric via isotonic regression).
+- **Seven bugs found and fixed while writing `tests/statistics/tests.py`
+  and the manual debug session (Probleme.md #64-#69, plus infrastructure
+  bug #63):** `tests/` lacked an `__init__.py`, so pytest named
+  `tests/statistics/tests.py`'s package after its bare directory name,
+  clobbering the stdlib `statistics` module for the whole session; `glm`'s
+  IRLS took the reciprocal of an already-correct link derivative, silently
+  converging to the wrong coefficients past one iteration; `_mu_bounds`
+  clipped the Gaussian family's fitted mean to be positive, breaking
+  identity-link IRLS; family bounds and link-domain bounds were conflated,
+  breaking Gaussian-with-log-link; OLS/GLM AIC/BIC over-counted parameters
+  by one relative to `statsmodels`' convention; the Gaussian+identity GLM
+  log-likelihood used the SE-purpose Pearson dispersion instead of
+  `statsmodels`' concentrated (n-denominator) variance; the ML
+  factor-analysis discrepancy function included a spurious term for the
+  already-exactly-absorbed top eigenvalues. All seven are independently
+  reproduced and regression-tested.
+- **`tests/statistics/tests.py` (118 tests, 15s):** closed-form and
+  independent-oracle cross-checks against `scipy.stats` (descriptive
+  stats, all rank tests, Shapiro-Wilk, Levene/Bartlett, Tukey HSD,
+  KS) and `statsmodels` (z/proportion tests, Welch ANOVA, two-way
+  Type-II ANOVA, MANOVA, OLS/WLS/robust-SE/logistic/Poisson/GLM
+  family-link grid/quantile regression, factor analysis, canonical
+  correlation) and `scipy.cluster` (hierarchical linkage, k-means); a
+  from-scratch studentized-range CDF verified against
+  `scipy.stats.studentized_range` to ~1e-11; bootstrap/median confidence
+  interval coverage checked over 150-200 seeded replicates against the
+  binomial standard error; a full wiring/quickstart/reproducibility/
+  stdlib-non-shadowing section. Manual debug session (AGENTS.md §5.2) ran
+  a realistic treatment/control analysis end to end — normality check to
+  pick a test, ANOVA + Tukey + Holm, HC3-robust OLS, logistic regression,
+  a lasso path, PCA + k-means, a BCa bootstrap ratio CI, Gamma MLE, and
+  Bayesian conjugate updating — before the automated suite was finalized.
+- **`selftest.py` extended 152 -> 160 checks:** `statistics` CONFORM spot
+  check plus seven `STAT:` checks (t-test type-I control, OLS slope
+  recovery, ANOVA power, PCA variance ordering, bootstrap CI coverage,
+  Holm monotonicity, studentized-range boundary value).
+- **`spl demo statistics`** added to `cli_demo.py`; `cli.py` gained a
+  module-overview blurb and its roadmap epilog dropped `statistics` from
+  the planned list.
+- **CI (`ci.yml`):** added `stats-smoke` (fast-feedback subset run,
+  mirroring `finance-smoke`) and extended `install-smoke`'s wheel
+  assertion to cover `statistics.__all__` and the stdlib-non-shadowing
+  guarantee. `publish.yml`'s wheel smoke step now also runs
+  `spl demo statistics`.
+- **Docs synced:** README badges/status table/architecture diagrams/
+  roadmap, `stochpylib/README.md` module table, `development/
+  architecture.md` module map + diagrams, `development/infrastructure.md`,
+  `development/project_structure.md`, `development/Development.md`,
+  `development/README.md` (also corrected a pre-existing stale 350/794
+  count), `CONTRIBUTING.md`, `AGENTS.md`, `tests/README.md`,
+  `stochpylib/statistics/README.md` (new), `development/
+  Implementation-Checklist.md` (48/48, progress line to 448/794),
+  `development/Probleme.md` (#63-#69). Version bumped to 0.9.0 in both
+  `pyproject.toml` and `stochpylib/__init__.py`.
+
+Suite: 850 collected - 848 passed / 2 skipped. Version 0.9.0.

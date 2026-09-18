@@ -34,4 +34,5 @@ jobs:
       - run: spl --version
       - run: spl --test
       - run: spl demo financial_stochastics
+      - run: spl demo statistics
       - uses: pypa/gh-action-pypi-publish@release/v1

@@ -1395,3 +1395,143 @@ coverage since the matrix was added; it was never real.
 `windows-latest` job instances actually executing on their named runners
 (visible in the Actions UI's runner labels), not just in the matrix
 definition.
+
+---
+
+### 63. `tests/` had no `__init__.py`, so `tests/statistics/tests.py` shadowed the stdlib `statistics` module
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.9.0)
+
+**Problem:** With no `tests/__init__.py`, pytest's default (and its
+`importlib`) import mode both name `tests/statistics/tests.py`'s package
+after its directory alone (`statistics`), registering `tests/statistics/
+__init__.py` in `sys.modules["statistics"]` — clobbering the stdlib
+`statistics` module for the rest of the interpreter session the moment the
+new module's tests were added.
+
+**Fix:** Added an empty `tests/__init__.py`, anchoring every suite's import
+name at the repo root (`tests.<module>.tests`) so no subpackage name can
+collide with a stdlib module again.
+
+**Verification:** `pytest --collect-only -q tests/` collects the same count
+before/after; `tests/statistics/tests.py::test_stdlib_statistics_module_not_shadowed`
+asserts `import statistics` still resolves to the stdlib module inside a
+test run.
+
+---
+
+### 64. New `statistics.glm()`'s IRLS used the reciprocal of the link derivative
+
+**Severity:** 8/10 · **Status:** 🟢 `fixed` (V0.9.0)
+
+**Problem:** Each link's `d(eta)/d(mu)` was correctly authored in
+`_LINKS`, but the IRLS loop then computed `deta_dmu = 1.0 / that_value` —
+inverting it a second time into `d(mu)/d(eta)`. Every non-trivial GLM fit
+(anything beyond one lucky iteration) converged to the wrong coefficients
+silently, with no error raised.
+
+**Fix:** Removed the spurious reciprocal; the tuple element is used
+directly as `d(eta)/d(mu)`.
+
+**Verification:** `test_glm_family_link_vs_statsmodels` (9 family/link
+pairs) and `test_glm_negative_binomial_vs_statsmodels` now match
+`statsmodels.GLM` coefficients to 1e-4 after full convergence (previously
+diverged by whole units after more than one iteration).
+
+---
+
+### 65. `statistics.glm()` clipped Gaussian-family fitted means to be positive
+
+**Severity:** 7/10 · **Status:** 🟢 `fixed` (V0.9.0)
+
+**Problem:** `_mu_bounds()` defaulted every family except binomial to
+`(1e-10, inf)`, including `"gaussian"` — whose response mean is legitimately
+unbounded. Every Gaussian/identity IRLS iteration silently clipped negative
+fitted values to `1e-10`, corrupting the working response and preventing
+convergence to the OLS-equivalent solution.
+
+**Fix:** `_mu_bounds()` returns `(-inf, inf)` for `"gaussian"`.
+
+**Verification:** `test_glm_family_link_vs_statsmodels[gaussian-identity]`
+matches `statsmodels.GLM(family=Gaussian())` to 1e-8 (previously off by
+whole units after convergence).
+
+---
+
+### 66. `statistics.glm()` conflated family bounds with link-domain bounds
+
+**Severity:** 5/10 · **Status:** 🟢 `fixed` (V0.9.0)
+
+**Problem:** Fixing #65 by unbounding the Gaussian family broke
+Gaussian-with-log-link (`log(mu)` needs `mu > 0` regardless of family,
+gaussian included) — `_mu_bounds()` had conflated the family's natural
+response range with the link function's domain into one lookup.
+
+**Fix:** Split into `_LINK_BOUNDS` (per-link domain) and `_mu_bounds(family,
+link)` (their intersection), so a log link always forces positivity even
+under an otherwise-unrestricted family.
+
+**Verification:** `test_glm_family_link_vs_statsmodels[gaussian-log]`
+converges and matches `statsmodels` to 1e-7 (previously raised `SVD did not
+converge`).
+
+---
+
+### 67. `statistics` OLS/GLM AIC and BIC over-counted parameters by one
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.9.0)
+
+**Problem:** `linear_regression`'s and `glm`'s AIC/BIC added `+1` to the
+parameter count for the estimated noise variance/dispersion, following the
+textbook `-2*llf + 2*(k+1)` form. `statsmodels.OLS`/`statsmodels.GLM` do not
+add that `+1` (dispersion is not counted as a free AIC parameter in their
+convention), so results differed by exactly `2` (AIC) or `log(n)` (BIC).
+
+**Fix:** Dropped the `+1`; `aic_ = -2*loglik_ + 2*p`, matching
+`statsmodels` exactly.
+
+**Verification:** `test_linear_regression_ols_vs_statsmodels` and
+`test_glm_family_link_vs_statsmodels` assert `aic_`/`bic_` equal
+`statsmodels`' to within numerical tolerance (previously off by exactly 2.0
+in every case).
+
+---
+
+### 68. `statistics.glm()`'s Gaussian+identity log-likelihood used the wrong dispersion
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.9.0)
+
+**Problem:** `loglik_` was always evaluated at the Pearson dispersion
+(`SSR/df_resid`, the unbiased estimator used for standard errors). For
+Gaussian family with the identity link specifically, `statsmodels.GLM`
+reports the *concentrated* log-likelihood, using the MLE (biased,
+`SSR/n`) variance instead — a documented statsmodels-specific convention,
+not shared by any other family/link combination.
+
+**Fix:** `glm()` now uses `SSR/n` for `loglik_` only in the
+Gaussian-and-identity case, keeping the Pearson dispersion for standard
+errors and every other family/link.
+
+**Verification:** `test_glm_family_link_vs_statsmodels[gaussian-identity]`
+matches `statsmodels`' `llf` to 1e-6 (previously off by ~0.013 nats).
+
+---
+
+### 69. `statistics.factor_analysis(method="ml")`'s discrepancy function had a spurious term
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.9.0)
+
+**Problem:** The concentrated ML objective should sum
+`(w_i - log(w_i) - 1)` over only the `p - n_factors` *smallest* eigenvalues
+of `Psi^-1/2 R Psi^-1/2` (the top `n_factors` are absorbed by the loadings
+with zero residual by construction). The implementation added an extra,
+mathematically invalid term for the top eigenvalues as well, biasing every
+fitted uniqueness and loadings matrix.
+
+**Fix:** Removed the spurious top-eigenvalue term; the objective now sums
+only over the discarded (smallest) eigenvalues.
+
+**Verification:** `test_factor_analysis_ml_matches_statsmodels_covariance`
+reconstructs `L @ L.T + diag(Psi)` within 1e-3 of `statsmodels.Factor
+(method="ml")`'s fitted covariance (previously off by up to 0.67 on a unit
+correlation matrix).

@@ -179,6 +179,28 @@ def _demo_financial_stochastics():
           f"  ES = {res.expected_shortfall:.4f}")
 
 
+def _demo_statistics():
+    from stochpylib.statistics import ANOVA, PCA, describe, linear_regression, t_test
+
+    print("Statistics - describe, t-test, OLS regression, and PCA:")
+    rng = np.random.default_rng(3)
+    x = rng.normal(5.0, 1.5, 200)
+    d = describe(x)
+    print(f"  describe(n=200 samples): mean={d.mean:.4f}  std={d.std:.4f}  skew={d.skewness:.4f}")
+
+    y = rng.normal(5.3, 1.5, 180)
+    t = t_test(x, y, equal_var=False)
+    print(f"  Welch t-test: t={t.statistic:.4f}  p={t.pvalue:.4f}  diff={t.estimate:.4f}")
+
+    X = rng.normal(size=(300, 2))
+    yl = 1.0 + X @ np.array([2.0, -1.5]) + rng.normal(0, 0.5, 300)
+    ols = linear_regression(X, yl)
+    print(f"  OLS: coef={np.round(ols.coef_, 4)}  R2={ols.r2_:.4f}")
+
+    pca = PCA(X, n_components=2)
+    print(f"  PCA explained variance ratio = {np.round(pca.explained_variance_ratio_, 4)}")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -191,6 +213,7 @@ DEMOS = {
     "information_theory": _demo_information_theory,
     "levy_processes": _demo_levy_processes,
     "financial_stochastics": _demo_financial_stochastics,
+    "statistics": _demo_statistics,
 }
 DEMO_MODULES = tuple(DEMOS)
 

@@ -330,6 +330,7 @@ def run(verbose=False):
                                 "KouJumpDiffusion", "StochasticTaylor"]),
         "financial_stochastics": (50, ["BlackScholes", "HestonModel",
                                        "ValueAtRisk", "RiskParity"]),
+        "statistics": (48, ["t_test", "linear_regression", "PCA", "bootstrap_ci"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -418,6 +419,49 @@ def run(verbose=False):
     rc_fs = rp_fs.risk_contributions(w_fs)
     st.check("FIN: RiskParity equal risk contributions",
              np.allclose(rc_fs, rc_fs[0], atol=1e-6))
+
+    # statistics quick checks
+    from stochpylib.statistics import (
+        PCA as _StatPCA,
+        ANOVA as _StatANOVA,
+        bonferroni as _stat_bonferroni,
+        bootstrap_ci as _stat_bootstrap_ci,
+        linear_regression as _stat_linear_regression,
+        t_test as _stat_t_test,
+    )
+    from stochpylib.statistics._common import _ptukey as _stat_ptukey
+
+    rng_st = np.random.default_rng(103)
+    x_st = rng_st.normal(5.0, 2.0, 200)
+    t_st = _stat_t_test(x_st, mu0=5.0)
+    st.check("STAT: t_test null-true type-I not rejected", t_st.pvalue > 0.001)
+
+    Xr = rng_st.normal(size=(200, 2))
+    yr = 1.0 + Xr @ np.array([2.0, -1.0]) + rng_st.normal(0, 0.5, 200)
+    ols_st = _stat_linear_regression(Xr, yr)
+    st.check("STAT: OLS recovers known slope",
+             abs(ols_st.coef_[1] - 2.0) < 5 * ols_st.std_errors_[1])
+
+    g1_st, g2_st, g3_st = (rng_st.normal(0, 1, 40), rng_st.normal(1.5, 1, 40),
+                            rng_st.normal(3.0, 1, 40))
+    aov_st = _StatANOVA(g1_st, g2_st, g3_st)
+    st.check("STAT: ANOVA detects group differences", aov_st.pvalue < 1e-6)
+
+    pca_st = _StatPCA(rng_st.normal(size=(100, 4)) @ np.diag([4.0, 1.0, 0.1, 0.01]))
+    st.check("STAT: PCA explained variance is decreasing",
+             np.all(np.diff(pca_st.explained_variance_) <= 0))
+
+    boot_st = _stat_bootstrap_ci(x_st, lambda a: np.mean(a, axis=-1), n_boot=500,
+                                  method="percentile", random_state=1)
+    lo_st, hi_st = boot_st.extras["conf_int"]
+    st.check("STAT: bootstrap CI covers the sample mean", lo_st < np.mean(x_st) < hi_st)
+
+    adj_st = _stat_bonferroni([0.001, 0.2, 0.5], method="holm")
+    st.check("STAT: Holm adjustment is monotone non-decreasing with rank",
+             adj_st.table[0]["adjusted_pvalue"] <= adj_st.table[1]["adjusted_pvalue"])
+
+    st.check("STAT: studentized range CDF at q=0 is 0",
+             abs(_stat_ptukey(0.0, 3, 20)) < 1e-8)
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

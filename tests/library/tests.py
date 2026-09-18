@@ -30,6 +30,7 @@ from stochpylib import (
     levy_processes,
     montecarlo,
     probability,
+    statistics,
     survival,
     timeseries,
 )
@@ -47,6 +48,7 @@ _MODULES = {
     "survival": survival,
     "levy_processes": levy_processes,
     "financial_stochastics": financial_stochastics,
+    "statistics": statistics,
 }
 
 # Documented public extras beyond the 229 spec names (utilities & result
@@ -65,6 +67,9 @@ _EXTRAS = {
     "probability": set(),
     "levy_processes": set(),
     "financial_stochastics": set(),
+    "statistics": {"TestResult", "EstimateResult", "DescribeResult", "RegressionResult",
+                   "PCAResult", "FactorResult", "CanonicalCorrelationResult",
+                   "DiscriminantResult", "ClusterResult", "MDSResult"},
 }
 
 DISTRIBUTION_METHODS_DOC = (".pdf()/.pmf()", ".cdf()", ".ppf()", ".rvs()",
@@ -95,9 +100,9 @@ def test_total_spec_name_count():
     implemented = ("probability", "montecarlo", "timeseries",
                    "gaussian_processes", "copulas", "survival", "queueing",
                    "information_theory", "levy_processes",
-                   "financial_stochastics")
+                   "financial_stochastics", "statistics")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 400  # 400/794 across the eleven implemented modules
+    assert total == 448  # 448/794 across the twelve implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -129,7 +134,8 @@ def test_top_level_package_wiring():
     assert set(stochpylib.__all__) == {
         "copulas", "distributions", "financial_stochastics",
         "gaussian_processes", "information_theory", "levy_processes",
-        "montecarlo", "probability", "queueing", "survival", "timeseries"}
+        "montecarlo", "probability", "queueing", "statistics", "survival",
+        "timeseries"}
     # version consistency, never a literal: the installed metadata and the
     # in-code __version__ must agree (a hardcoded literal here broke CI on
     # every version bump — development/Probleme.md [39])

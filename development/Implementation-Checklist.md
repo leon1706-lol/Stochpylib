@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 400 / 794 public names implemented.**
+**Progress: 448 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -866,62 +866,62 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [ ] `SensitivityIndex`
     - [ ] `SobolIndex`
 
-## [statistics](../Stochpylib-Obsidian-Vault/Modules/statistics.md) — Classical statistical toolkit (0/48)
+## [statistics](../Stochpylib-Obsidian-Vault/Modules/statistics.md) — Classical statistical toolkit (48/48)
 
-- [ ] **stochpylib.statistics** module overall
-  - [ ] `statistics.descriptive`
-    - [ ] `mean()`
-    - [ ] `median()`
-    - [ ] `mode()`
-    - [ ] `variance()`
-    - [ ] `std()`
-    - [ ] `quantile()`
-    - [ ] `iqr()`
-    - [ ] `skewness()`
-    - [ ] `kurtosis()`
-    - [ ] `covariance()`
-    - [ ] `correlation()`
-    - [ ] `describe()`
-  - [ ] `statistics.estimation`
-    - [ ] `MLE()`
-    - [ ] `MOM()`
-    - [ ] `bayesian_estimator()`
-    - [ ] `confidence_interval()`
-    - [ ] `bootstrap_ci()`
-    - [ ] `jackknife()`
-    - [ ] `delta_method()`
-    - [ ] `profile_likelihood()`
-  - [ ] `statistics.hypothesis`
-    - [ ] `z_test()`
-    - [ ] `t_test()`
-    - [ ] `chi2_test()`
-    - [ ] `f_test()`
-    - [ ] `ANOVA()`
-    - [ ] `MANOVA()`
-    - [ ] `mann_whitney()`
-    - [ ] `wilcoxon()`
-    - [ ] `ks_test()`
-    - [ ] `shapiro_wilk()`
-    - [ ] `levene()`
-    - [ ] `bartlett()`
-    - [ ] `tukey_hsd()`
-    - [ ] `bonferroni()`
-  - [ ] `statistics.regression`
-    - [ ] `linear_regression()`
-    - [ ] `logistic_regression()`
-    - [ ] `poisson_regression()`
-    - [ ] `ridge()`
-    - [ ] `lasso()`
-    - [ ] `elastic_net()`
-    - [ ] `quantile_regression()`
-    - [ ] `glm()`
-  - [ ] `statistics.multivariate`
-    - [ ] `PCA()`
-    - [ ] `factor_analysis()`
-    - [ ] `canonical_correlation()`
-    - [ ] `discriminant_analysis()`
-    - [ ] `cluster_analysis()`
-    - [ ] `MDS()`
+- [x] **stochpylib.statistics** module overall
+  - [x] `statistics.descriptive`
+    - [x] `mean()`
+    - [x] `median()`
+    - [x] `mode()`
+    - [x] `variance()`
+    - [x] `std()`
+    - [x] `quantile()`
+    - [x] `iqr()`
+    - [x] `skewness()`
+    - [x] `kurtosis()`
+    - [x] `covariance()`
+    - [x] `correlation()`
+    - [x] `describe()`
+  - [x] `statistics.estimation`
+    - [x] `MLE()`
+    - [x] `MOM()`
+    - [x] `bayesian_estimator()`
+    - [x] `confidence_interval()`
+    - [x] `bootstrap_ci()`
+    - [x] `jackknife()`
+    - [x] `delta_method()`
+    - [x] `profile_likelihood()`
+  - [x] `statistics.hypothesis`
+    - [x] `z_test()`
+    - [x] `t_test()`
+    - [x] `chi2_test()`
+    - [x] `f_test()`
+    - [x] `ANOVA()`
+    - [x] `MANOVA()`
+    - [x] `mann_whitney()`
+    - [x] `wilcoxon()`
+    - [x] `ks_test()`
+    - [x] `shapiro_wilk()`
+    - [x] `levene()`
+    - [x] `bartlett()`
+    - [x] `tukey_hsd()`
+    - [x] `bonferroni()`
+  - [x] `statistics.regression`
+    - [x] `linear_regression()`
+    - [x] `logistic_regression()`
+    - [x] `poisson_regression()`
+    - [x] `ridge()`
+    - [x] `lasso()`
+    - [x] `elastic_net()`
+    - [x] `quantile_regression()`
+    - [x] `glm()`
+  - [x] `statistics.multivariate`
+    - [x] `PCA()`
+    - [x] `factor_analysis()`
+    - [x] `canonical_correlation()`
+    - [x] `discriminant_analysis()`
+    - [x] `cluster_analysis()`
+    - [x] `MDS()`
 
 ## [viz](../Stochpylib-Obsidian-Vault/Modules/viz.md) — Statistical visualization (0/35)
 
