@@ -6,7 +6,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
@@ -21,4 +21,33 @@ jobs:
       - name: Verify installed package
         run: |
           spl --version
+          spl --test
+
+  finance-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest tests/financial_stochastics tests/library tests/docs tests/cli -v
+      - name: Exercise the financial_stochastics CLI surface
+        run: |
+          spl demo financial_stochastics
+          spl show BlackScholes
+
+  install-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build
+      - run: python -m build
+      - run: pip install dist/*.whl
+      - name: Verify the wheel ships every subpackage
+        run: |
+          python -c "import stochpylib.financial_stochastics as m; assert len(m.__all__) == 50"
           spl --test

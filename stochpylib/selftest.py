@@ -328,6 +328,8 @@ def run(verbose=False):
                          "CopulaFit"]),
         "levy_processes": (33, ["LevyProcess", "TemperingSubordinator",
                                 "KouJumpDiffusion", "StochasticTaylor"]),
+        "financial_stochastics": (50, ["BlackScholes", "HestonModel",
+                                       "ValueAtRisk", "RiskParity"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -386,6 +388,36 @@ def run(verbose=False):
     em_paths = Euler_Maruyama(sde_lp, T=1.0, n_steps=100, n_paths=20000, random_state=102)
     st.check("LEVY: Euler-Maruyama GBM terminal mean",
              abs(em_paths[:, -1].mean() - 100.0 * np.exp(0.05)) < 3.0)
+
+    # financial_stochastics quick checks
+    from stochpylib.financial_stochastics import BlackScholes, HestonModel, RiskParity, VasicekModel
+    from stochpylib.financial_stochastics.option_pricing import BinomialTree as _FinBinomialTree
+
+    bs_fs = BlackScholes(S=100, K=100, T=1, r=0.05, sigma=0.2)
+    st.check("FIN: BlackScholes reference value",
+             abs(bs_fs.call_price() - 10.4506) < 1e-3)
+    st.check("FIN: BlackScholes put-call parity",
+             abs((bs_fs.call_price() - bs_fs.put_price())
+                 - (100.0 - 100.0 * np.exp(-0.05))) < 1e-9)
+    bt_fs = _FinBinomialTree(100, 100, 1, 0.05, 0.2, n_steps=500)
+    st.check("FIN: Binomial converges toward Black-Scholes",
+             abs(bt_fs.call_price() - bs_fs.call_price()) < 0.05)
+    heston_fs = HestonModel(S0=100, v0=0.04, kappa=2, theta=0.04, xi=1e-4, rho=-0.7, r=0.05)
+    bs_match_fs = BlackScholes(S=100, K=100, T=1, r=0.05, sigma=0.2)
+    st.check("FIN: Heston xi->0 matches Black-Scholes",
+             abs(heston_fs.call_price(100, 1) - bs_match_fs.call_price()) < 5e-3)
+    vas_fs = VasicekModel(r0=0.03, kappa=0.5, theta=0.04, sigma=0.01)
+    hw_fs = __import__("stochpylib.financial_stochastics.rate_models",
+                       fromlist=["HullWhiteModel"]).HullWhiteModel(
+        kappa=0.5, sigma=0.01, r0=0.03, theta=0.02)
+    vas_match_fs = VasicekModel(0.03, 0.5, 0.02 / 0.5, 0.01)
+    st.check("FIN: HullWhite const-theta matches Vasicek ZCB",
+             abs(hw_fs.zcb_price(5) - vas_match_fs.zcb_price(5)) < 1e-9)
+    rp_fs = RiskParity(np.array([[0.04, 0.015, 0.0], [0.015, 0.03, 0.005], [0.0, 0.005, 0.02]]))
+    w_fs = rp_fs.optimize()
+    rc_fs = rp_fs.risk_contributions(w_fs)
+    st.check("FIN: RiskParity equal risk contributions",
+             np.allclose(rc_fs, rc_fs[0], atol=1e-6))
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

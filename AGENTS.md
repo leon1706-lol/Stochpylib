@@ -8,10 +8,11 @@ file defers to — part of the contract, not optional.
 
 Complete stochastic-computing library — probability, distributions, Monte
 Carlo, time series, GPs, copulas, survival, queueing, information theory,
-Lévy processes — native on NumPy/SciPy, no wrapper deps. Thesis: one coherent
-package replaces scipy.stats + statsmodels + lifelines + copulas.
+Lévy processes, financial stochastics — native on NumPy/SciPy, no wrapper
+deps. Thesis: one coherent package replaces scipy.stats + statsmodels +
+lifelines + copulas.
 
-- **State:** 10 modules implemented (350 / 794 spec names), 13 remaining as spec.
+- **State:** 11 modules implemented (400 / 794 spec names), 12 remaining as spec.
 - **Runtime deps:** NumPy, SciPy (`special`/`optimize`/`integrate` only).
   **Test deps:** pytest. Nothing else, ever.
 - **Docs move with code:** a change not reflected in the relevant docs in the

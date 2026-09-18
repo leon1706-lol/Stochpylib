@@ -601,3 +601,136 @@ Suite: 614 collected - 612 passed / 2 skipped. Version 0.7.0.
   versions (Probleme.md #52).
 
 Suite: 614 collected - 612 passed / 2 skipped. Version 0.7.0.
+
+## Phase 25 — V0.8.0 financial_stochastics: option pricing, Greeks, stochastic/local vol, rate models, risk, credit, portfolio (50 names)
+
+The eleventh module: `stochpylib.financial_stochastics`, seven submodules,
+50 public names, no new runtime dependencies.
+
+- **`option_pricing.py`:** `BlackScholes` (closed form + Greeks properties
+  matching the vault quickstart), `BlackScholes_American` (Barone-Adesi-
+  Whaley quadratic approximation, falling back to a 1000-step `BinomialTree`
+  on request), `BinomialTree`/`TrinomialTree` (CRR / Kamrad-Ritchken
+  lattices, European or American), `MonteCarloOptionPricing` (plain,
+  antithetic, control-variate, and Sobol-QMC estimators; path-dependent and
+  arithmetic/geometric Asian payoffs), `LongstaffSchwartz` (American
+  least-squares Monte Carlo, Laguerre or monomial basis, ITM-only
+  regression), `FourierOptionPricing` (Carr-Madan or Fang-Oosterlee COS
+  inversion of any characteristic function, reusing `levy_processes`'s
+  `carr_madan_call`).
+- **`greeks.py`:** closed-form `Delta`/`Gamma`/`Vega`/`Theta`/`Rho`/`Vanna`/
+  `Volga`; `Greeks_FD` (central finite differences around any pricer, not
+  just closed-form ones — works on `BinomialTree`, MC point estimates, etc.);
+  `Greeks_MC` (pathwise, likelihood-ratio/score-function, and common-random-
+  number bump estimators, each returning `MCResult`s).
+- **`stochastic_vol.py`:** `HestonModel` (Albrecher "little trap"
+  characteristic function with an analytic `xi->0` fallback, QE or
+  full-truncation-Euler simulation, Carr-Madan pricing, bounded
+  least-squares calibration), `SABRModel` (Hagan 2002 implied vol),
+  `RoughHeston` (El Euch-Rosenbaum fractional Riccati equation via a
+  fractional Adams predictor-corrector scheme), `RoughBergomi` (exact joint-
+  Gaussian Cholesky simulation of the Riemann-Liouville fBM), `LocalVol`
+  (Crank-Nicolson PDE or Monte Carlo), `Dupire` (Gatheral's total-implied-
+  variance local-vol formula), `LVSV` (local-stochastic vol with a
+  histogram-binned leverage-function particle calibration), `VarianceSwap`
+  (Heston closed form, static-replication from a vol surface, or realized
+  Monte Carlo).
+- **`rate_models.py`:** `VasicekModel`, `CIRProcess` (exact noncentral-
+  chi-square transition simulation, Feller-condition check), `HullWhiteModel`
+  and `HoLeeModel` (constant-theta mode delegating to closed forms, or a
+  curve-fitted mode reproducing an arbitrary input discount curve exactly),
+  `G2ppModel` (Brigo-Mercurio two-factor Gaussian, exact bivariate-OU
+  simulation), `BlackKarasinski` (log-OU short rate, Monte Carlo-only
+  pricing — no closed form), `LMM` (spot-measure log-Euler LIBOR Market
+  Model with a proper reset-timing convention: forward `F_j` stays
+  stochastic until its own fixing, then freezes), `HJM` (Gaussian one-factor
+  Musiela-parametrization simulation, exactly reproducing the input forward
+  curve by no-arbitrage construction).
+- **`risk.py`:** `HistoricalVaR` (optional age-weighting, overlapping-sum
+  multi-period horizons, KDE-based standard error), `ParametricVaR`
+  (normal/Student-t/Cornish-Fisher/EWMA/GARCH — the GARCH path reuses
+  `timeseries.GARCH`), `ValueAtRisk` (facade + Kupiec POF backtest),
+  `ExpectedShortfall`, `ConditionalVaR` (+ Rockafellar-Uryasev CVaR
+  portfolio optimization via `scipy.optimize.linprog`), `StressTest`,
+  `ScenarioAnalysis` (historical, multivariate-normal Monte Carlo, or a
+  custom sampler).
+- **`credit.py`:** `DefaultIntensity` (piecewise-constant hazard curve),
+  `CDSPricing` (premium/protection legs with accrual, par-spread solving,
+  sequential bootstrapping), `MertonCreditModel` (structural PD,
+  distance-to-default, equity-implied calibration via `scipy.optimize.fsolve`),
+  `CreditMigration` (cohort-MLE transition-matrix fit, generator via a
+  numpy-only eigendecomposition matrix logarithm with IRW regularization),
+  `CreditRiskModel` (independent-default portfolio loss, Vasicek
+  single-factor quantile), `CopulaCreditModel` (Gaussian/Student-t
+  copula-dependent defaults, reusing `copulas.elliptical` by setting
+  `correlation_`/`df_` directly — those classes have no constructor path for
+  a fixed correlation matrix).
+- **`portfolio.py`:** `CovarianceEstimation` (sample/EWMA/Ledoit-Wolf 2004
+  shrinkage), `MeanVariance` (closed-form unconstrained, SLSQP long-only),
+  `PortfolioOptimization` (fluent `.fit()`/`.optimize()` over
+  max-Sharpe/min-variance/target-return/max-utility objectives),
+  `BlackLitterman` (He-Litterman posterior), `RiskParity` (Spinu 2013 convex
+  cyclical coordinate descent).
+- **Ten bugs found and fixed while writing `tests/financial_stochastics/tests.py`
+  (Probleme.md #53-#62 — nine library bugs plus the pre-existing `ci.yml`
+  `runs-on` hardcoding that silently skipped real Windows coverage):** the
+  COS Fourier method's truncation range used the raw second moment instead
+  of the variance, pricing a K=100 call at `2.7e19` instead of `10.45`;
+  `RoughHeston`'s characteristic function integrated the Riccati equation's
+  *derivative* instead of its solution, so `H=0.5` never converged to exact
+  Heston; `SABRModel`'s `z/x(z)` skew factor was inverted, flipping the
+  smile's skew direction for any nonzero `rho`; `HullWhiteModel`'s
+  constant-theta zero-coupon-bond price fed the raw Hull-White drift
+  constant into the Vasicek delegation instead of dividing by `kappa`;
+  `CreditMigration.generator()`'s regularization clipped the diagonal along
+  with the negative off-diagonals it was meant to fix, corrupting every
+  generator; `RiskParity.optimize()` renormalized weights every
+  coordinate-descent sweep, preventing convergence to equal risk
+  contributions; the Ledoit-Wolf shrinkage estimator was missing a factor of
+  `n` (verified against `sklearn.covariance.ledoit_wolf`), saturating
+  shrinkage at 1.0 almost regardless of sample size; Cornish-Fisher expected
+  shortfall integrated the wrong tail, returning a negative ES;
+  `ScenarioAnalysis` crashed on any pricer taking a non-stochastic parameter
+  alongside a stochastic one. All ten are independently reproduced and
+  regression-tested.
+- **`tests/financial_stochastics/tests.py` (110 tests, collected via
+  parametrization):** closed-form cross-checks (Black-Scholes, put-call
+  parity, Cornish-Fisher, Merton PD) against hand-derived formulas and
+  `scipy.stats`/`scipy.linalg`; lattice-to-closed-form convergence; Monte
+  Carlo within a stated number of standard errors of its closed-form or
+  semi-analytic counterpart throughout (antithetic/control-variate/QMC
+  variance-reduction ordering checked directly); limiting-case reductions
+  (Heston `xi->0` to Black-Scholes, rough Heston `H=0.5` to classical
+  Heston, G2++ `eta->0` to Hull-White, Hull-White constant-theta to
+  Vasicek, LVSV `xi=0` to LocalVol); an exact CDS bootstrap round-trip; a
+  full wiring/quickstart/reproducibility section. Manual debug session
+  (AGENTS.md 5.2) priced a call three ways, compared Heston semi-analytic
+  vs QE Monte Carlo, printed a SABR smile, compared three rate-curve
+  parametrizations, computed VaR/ES on synthetic Student-t returns,
+  bootstrapped a CDS curve, and compared Longstaff-Schwartz against a
+  binomial American put — all before the automated suite was finalized.
+- **`selftest.py` extended 145 -> 152 checks:** `financial_stochastics`
+  CONFORM spot check plus six `FIN:` checks (Black-Scholes reference value
+  and put-call parity, binomial-to-Black-Scholes convergence, Heston
+  `xi->0` vs Black-Scholes, Hull-White-vs-Vasicek ZCB agreement, RiskParity
+  equal risk contributions).
+- **`spl demo financial_stochastics`** added to `cli_demo.py`; `cli.py`
+  gained module-overview blurbs for both `financial_stochastics` and the
+  previously-undocumented `levy_processes`, and its stale roadmap epilog
+  (still listing both as "planned") was corrected.
+- **CI (`ci.yml`):** fixed the `runs-on: ubuntu-latest` hardcoding that made
+  the `windows-latest` matrix cell run on Ubuntu the whole time
+  (Probleme.md #62); added `finance-smoke` (fast-feedback subset run) and
+  `install-smoke` (wheel-build verification that the new subpackage actually
+  ships) jobs. `publish.yml`'s wheel smoke step now also runs
+  `spl demo financial_stochastics`.
+- **Docs synced:** README badges/status table/architecture diagrams/roadmap,
+  `stochpylib/README.md` module table, `development/architecture.md` module
+  map + diagrams, `development/infrastructure.md`, `development/
+  project_structure.md`, `development/Development.md`, `CONTRIBUTING.md`,
+  `AGENTS.md`, `tests/README.md`, `stochpylib/financial_stochastics/README.md`
+  (new), `development/Implementation-Checklist.md` (50/50, progress line to
+  400/794), `development/Probleme.md` (#53-#62). Version bumped to 0.8.0 in
+  both `pyproject.toml` and `stochpylib/__init__.py`.
+
+Suite: 729 collected - 727 passed / 2 skipped. Version 0.8.0.

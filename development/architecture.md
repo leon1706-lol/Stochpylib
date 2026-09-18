@@ -1,6 +1,6 @@
 # stochpylib Architecture
 
-**Status:** ten of 23 planned modules are implemented and tested (350/794
+**Status:** eleven of 23 planned modules are implemented and tested (400/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state). Everything else in the module map below
 remains design spec, not shipped code.
@@ -38,12 +38,14 @@ flowchart LR
     B --> I["stochpylib.queueing<br/>closed forms + discrete-event simulation"]
     C --> J["stochpylib.information_theory<br/>entropy, divergences, channels, coding"]
     C --> M["stochpylib.levy_processes<br/>jump-diffusion pricing, subordinators, SDE solvers"]
+    C --> N["stochpylib.financial_stochastics<br/>option pricing, Heston/SABR, rate models, risk, credit, portfolio"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
     K --> L["tests/<br/>scipy.stats + statsmodels + lifelines as independent oracles"]
     I --> L
     M --> L
+    N --> L
 ```
 
 ## Tech Stack
@@ -58,7 +60,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (145 checks)"]
+    C --> C3["spl --test embedded self-check (152 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -100,9 +102,21 @@ README per module):
   residuals)/Cox/renewal/branching/semi-Markov processes, Gaussian random
   fields, SDE solvers (Euler-Maruyama through strong order 1.5 Taylor, weak
   order 2 Talay-Tubaro).
+- `financial_stochastics/` — option pricing (Black-Scholes/trees/Monte
+  Carlo/Longstaff-Schwartz/Carr-Madan & COS Fourier inversion) & Greeks
+  (closed-form + finite-difference + pathwise/likelihood-ratio Monte Carlo),
+  stochastic/local volatility (Heston "little trap" cf with QE simulation,
+  SABR, fractional-Adams rough Heston, exact-Cholesky rough Bergomi, Dupire
+  local vol, histogram-calibrated LVSV, variance swaps), short-rate models
+  (Vasicek/CIR/Hull-White/Ho-Lee/G2++/Black-Karasinski/LMM/HJM), risk
+  (historical/parametric/Cornish-Fisher VaR, ES, Rockafellar-Uryasev CVaR
+  optimization, stress/scenario analysis), credit (hazard-curve CDS pricing,
+  Merton structural PD, rating-migration generator, independent and
+  copula-dependent portfolio loss), portfolio construction (Ledoit-Wolf
+  shrinkage, mean-variance, Black-Litterman, Spinu risk parity).
 
-Planned modules (13, in rough implementation order): financial_stochastics,
-advanced_mcmc, bayesian, statistics, nonparametric, robust_statistics,
+Planned modules (12, in rough implementation order): advanced_mcmc,
+bayesian, statistics, nonparametric, robust_statistics,
 numerical_methods, random_matrix, spatial_statistics, optimization,
 experimental_design, viz, utils — each lands with the same bar:
 native implementations, the shared conventions, full tests against independent

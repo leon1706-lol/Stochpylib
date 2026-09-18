@@ -24,8 +24,10 @@ import stochpylib
 from stochpylib import (
     copulas,
     distributions,
+    financial_stochastics,
     gaussian_processes,
     information_theory,
+    levy_processes,
     montecarlo,
     probability,
     survival,
@@ -43,6 +45,8 @@ _MODULES = {
     "gaussian_processes": gaussian_processes,
     "copulas": copulas,
     "survival": survival,
+    "levy_processes": levy_processes,
+    "financial_stochastics": financial_stochastics,
 }
 
 # Documented public extras beyond the 229 spec names (utilities & result
@@ -59,6 +63,8 @@ _EXTRAS = {
     "copulas": {"BaseCopula"},
     "survival": set(),
     "probability": set(),
+    "levy_processes": set(),
+    "financial_stochastics": set(),
 }
 
 DISTRIBUTION_METHODS_DOC = (".pdf()/.pmf()", ".cdf()", ".ppf()", ".rvs()",
@@ -88,9 +94,10 @@ def test_documented_extras_present(name):
 def test_total_spec_name_count():
     implemented = ("probability", "montecarlo", "timeseries",
                    "gaussian_processes", "copulas", "survival", "queueing",
-                   "information_theory", "levy_processes")
+                   "information_theory", "levy_processes",
+                   "financial_stochastics")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 350  # 350/794 across the ten implemented modules
+    assert total == 400  # 400/794 across the eleven implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -120,9 +127,9 @@ def test_every_distribution_class_exposes_common_interface():
 
 def test_top_level_package_wiring():
     assert set(stochpylib.__all__) == {
-        "copulas", "distributions", "gaussian_processes",
-        "information_theory", "levy_processes", "montecarlo",
-        "probability", "queueing", "survival", "timeseries"}
+        "copulas", "distributions", "financial_stochastics",
+        "gaussian_processes", "information_theory", "levy_processes",
+        "montecarlo", "probability", "queueing", "survival", "timeseries"}
     # version consistency, never a literal: the installed metadata and the
     # in-code __version__ must agree (a hardcoded literal here broke CI on
     # every version bump — development/Probleme.md [39])

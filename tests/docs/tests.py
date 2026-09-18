@@ -30,7 +30,7 @@ KNOWN_CONDITIONAL_SKIPS = 2
 IMPLEMENTED = (
     "probability", "distributions", "montecarlo", "timeseries",
     "gaussian_processes", "copulas", "survival", "queueing",
-    "information_theory", "levy_processes",
+    "information_theory", "levy_processes", "financial_stochastics",
 )
 
 
@@ -175,7 +175,9 @@ def test_no_stale_claims_in_readme():
                   r"spl --version\n0\.1\.0\b", r"\b136 checks\b",
                   r"\b136-check\b", r"seven modules", r"eight modules",
                   r"\bnine modules\b", r"\b317\b", r"\b572 passing\b",
-                  r"\b572 passed\b", r"\b139 checks\b"):
+                  r"\b572 passed\b", r"\b139 checks\b", r"\b350\b",
+                  r"\bten modules\b", r"\b145 checks\b", r"\b145-check\b",
+                  r"\b612 passed\b", r"\b612 passing\b"):
         assert not re.search(stale, readme), f"stale claim survived: {stale}"
 
 
@@ -204,7 +206,7 @@ def test_implementation_checklist_progress_line_matches_reality():
     expected_total = sum(
         len(spec[n]) + (13 if n == "distributions" else 0) for n in IMPLEMENTED
     )
-    assert total_done == expected_total == 350, (
+    assert total_done == expected_total == 400, (
         f"checklist progress {total_done} != true spec total {expected_total}"
     )
 

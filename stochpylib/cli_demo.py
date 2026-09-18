@@ -158,6 +158,27 @@ def _demo_levy_processes():
     print(f"    analytic mean rate = {ts.mean_rate():.4f} per unit time")
 
 
+def _demo_financial_stochastics():
+    from stochpylib.financial_stochastics import BlackScholes, HestonModel, ValueAtRisk
+
+    print("Financial stochastics - Black-Scholes, Heston, and historical VaR/ES:")
+    bs = BlackScholes(S=100, K=105, T=1, r=0.05, sigma=0.2)
+    print(f"  BlackScholes(S=100,K=105,T=1,r=5%,sigma=20%) call = {bs.call_price():.4f}"
+          f"  Delta={bs.Delta:.4f}  Gamma={bs.Gamma:.4f}")
+
+    heston = HestonModel(S0=100, v0=0.04, kappa=2, theta=0.04, xi=0.3, rho=-0.7, r=0.05)
+    cm_price = heston.call_price(100, 1)
+    mc = heston.call_price_mc(100, 1, n_paths=100_000, N=100, scheme="qe", random_state=0)
+    print(f"  Heston call (Carr-Madan) = {cm_price:.4f}  vs QE Monte Carlo = {mc.estimate:.4f} +- {mc.std_error:.4f}")
+
+    rng = np.random.default_rng(2)
+    returns = rng.normal(0.0004, 0.012, 1000)
+    var = ValueAtRisk(confidence=0.99)
+    res = var.historical(returns)
+    print(f"  Historical 99% VaR on 1000 synthetic daily returns = {res.estimate:.4f}"
+          f"  ES = {res.expected_shortfall:.4f}")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -169,6 +190,7 @@ DEMOS = {
     "queueing": _demo_queueing,
     "information_theory": _demo_information_theory,
     "levy_processes": _demo_levy_processes,
+    "financial_stochastics": _demo_financial_stochastics,
 }
 DEMO_MODULES = tuple(DEMOS)
 

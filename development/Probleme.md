@@ -1170,3 +1170,228 @@ isolated venv against statsmodels 0.15.0: full `tests/timeseries/` suite
 `adfuller`'s new `result_object=` return-shape opt-in raises only a
 `FutureWarning` on 0.15.0 (no `result_object` kwarg exists yet on the 0.14
 floor, so it's intentionally left unset rather than pinned either way).
+
+---
+
+### 53. `FourierOptionPricing`'s COS method priced wildly wrong (off by ~1e19)
+
+**Severity:** 8/10 · **Status:** 🟢 `fixed` (V0.8.0)
+
+**Problem:** The Fang-Oosterlee COS implementation computed the truncation
+range's variance as the raw second moment of `ln S_T` (`E[z^2]`) instead of
+the true variance (`E[z^2] - E[z]^2`) — for `S0=100`, `E[z] ~ ln(100) ~ 4.6`,
+so the "variance" came out ~21 instead of the true ~0.04, blowing the
+truncation interval `[a,b]` up by orders of magnitude. Compounding this, the
+call/put payoff integration bounds used `0`/`b` (or `a`/`0`) instead of
+`ln(K)`/`b` (or `a`/`ln(K)`), and a spurious extra `(b-a)/2` scale factor was
+applied on top of the already-included `2/(b-a)` in the coefficients. Net
+result: a K=100 call priced at `2.7e19` instead of `10.45`.
+
+**Fix:** Compute both cumulants (`c1`, `c2`) via finite differences of the
+characteristic function at `u=0` (`c1 = -i*phi'(0)`, `c2 = -phi''(0) - c1^2`),
+use `kappa = ln(K)` as the payoff-support boundary in the `chi`/`psi`
+integrals, and drop the spurious scale factor.
+
+**Verification:** `test_fourier_bs_cf_reproduces_bs` — Carr-Madan and COS
+agree with closed-form Black-Scholes to `1e-4` across `K` in `[80,120]`; both
+methods now agree with each other to `1e-6`.
+
+---
+
+### 54. `RoughHeston.characteristic_function` integrated the Riccati derivative instead of its solution
+
+**Severity:** 8/10 · **Status:** 🟢 `fixed` (V0.8.0)
+
+**Problem:** El Euch-Rosenbaum's formula is
+`log phi = iu(...) + kappa*theta * I^1[h](T) + v0 * I^(1-alpha)[h](T)`, where
+both integral terms integrate the *solution* `h` of the fractional Riccati
+equation. The implementation instead integrated `F(h)` (`h`'s time
+derivative) in both terms, and the `H=0.5` fast path returned `F(h(T))`
+instead of `h(T)`. The characteristic function did not converge to the exact
+classical Heston cf even as `H -> 0.5` with `n_steps -> infinity` — it
+converged to a different, wrong limit (`-0.1243-0.6401j` vs the exact
+`-0.1522-0.6064j` at `u=5, T=1`).
+
+**Fix:** Integrate the `h` array (not `Fh`) for both `I^1` and `I^(1-alpha)`;
+the `H=0.5` special case now returns `h[-1]` (the solution's value at `T`),
+not `F(h(T))`.
+
+**Verification:** `test_rough_heston_h_half_equals_heston` — cf matches
+classical Heston to `1e-5` at `H=0.5` across `u in {1,2,5,10}`, and to `1e-8`
+at `u=0` for `phi(0)=1`; call price matches to `1e-5`.
+
+---
+
+### 55. `SABRModel.implied_vol`'s `z/x(z)` skew factor was inverted (and its small-`z` branch sign-flipped)
+
+**Severity:** 8/10 · **Status:** 🟢 `fixed` (V0.8.0)
+
+**Problem:** Hagan (2002)'s formula multiplies by `z/x(z)`; the
+implementation computed `x(z)/z` (the reciprocal) in the main branch, and the
+small-`z` Taylor expansion used `1 - 0.5*rho*z` instead of the correct
+`1 + 0.5*rho*z`. Both ratios tend to 1 as `z -> 0`, so the `nu -> 0` limit
+test (which only exercises small `z`) passed regardless — but for realistic
+`nu`, the smile's skew direction came out backwards: `rho=-0.6` produced an
+*upward*-sloping smile (0.048 at K=90 rising to 0.074 at K=110) instead of
+downward.
+
+**Fix:** Compute `x(z)` once, then divide `z` by it (not the reverse);
+correct the small-`z` branch to `1 + 0.5*rho*z`.
+
+**Verification:** `test_sabr_smile_shape` — `rho<0` now produces a strictly
+lower vol at higher strikes; `test_sabr_beta1_nu0_is_lognormal` (unaffected
+by the fix, still passes) and `test_sabr_mc_vs_hagan` (Monte Carlo price
+against the corrected Hagan-implied-vol Black price, within 4 SE) both green.
+
+---
+
+### 56. `CreditMigration.generator()`'s IRW regularization corrupted the diagonal
+
+**Severity:** 7/10 · **Status:** 🟢 `fixed` (V0.8.0)
+
+**Problem:** The Israel-Rosenthal-Wei regularization is supposed to zero out
+*negative off-diagonal* entries of the matrix logarithm (an artifact of a
+non-exactly-embeddable transition matrix) and move the removed mass onto the
+diagonal. The implementation instead clipped every entry in each row —
+diagonal included — to `>= 0` via `np.maximum(G[i,:], 0.0)`, destroying the
+(legitimately negative) diagonal entirely. `expm(generator())` no longer
+reproduced the input transition matrix even when regularization should have
+been a no-op (all off-diagonals already non-negative): diagonal entries came
+back `> 1` and rows no longer summed to a valid distribution.
+
+**Fix:** Only zero strictly negative off-diagonal entries, subtracting the
+same (negative) amount from that row's diagonal so the generator's zero-row-
+sum constraint is preserved exactly.
+
+**Verification:** `test_credit_migration_powers_and_generator` —
+`scipy.linalg.expm(generator())` matches the input `P` to `1e-6`, and every
+row of `generator()` sums to `0` to `1e-10`.
+
+---
+
+### 57. `RiskParity.optimize()` renormalized weights every coordinate-descent sweep, preventing convergence to equal risk contributions
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.8.0)
+
+**Problem:** Spinu's (2013) convex risk-parity objective is solved over
+*unnormalized* `w > 0` (the log-barrier term fixes the scale); the simplex
+weights are obtained by normalizing once, after convergence. The
+implementation normalized `w` to sum to 1 inside the loop after every single
+coordinate update, which changes every other coordinate's fixed-point
+equation mid-sweep and prevents the iteration from ever reaching the true
+equal-risk-contribution point — risk contributions differed by up to ~30%
+instead of matching to numerical precision.
+
+**Fix:** Removed the per-sweep renormalization; normalize `w` exactly once,
+after the convergence loop exits.
+
+**Verification:** `test_risk_parity_equal_contributions_and_budgets` — risk
+contributions equal to `1e-6` for equal budgets, proportional to custom
+budgets to `1e-4`, and the diagonal-covariance closed form (`w_i ~ 1/sigma_i`)
+matches to `1e-4`.
+
+---
+
+### 58. Ledoit-Wolf shrinkage estimator's `pi_hat` was missing a factor of `n`, saturating shrinkage at 1.0
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.8.0)
+
+**Problem:** Ledoit-Wolf (2004) section 2 defines
+`b_bar^2 = (1/n^2) sum_t ||x_t x_t' - S||_F^2` — the sum of per-observation
+squared deviations divided by `n^2` (an average-of-`n`-terms estimator of an
+`O(1/n)` asymptotic quantity). The implementation divided by `n` only, making
+the numerator roughly `n` times too large relative to the target-distance
+denominator and pushing the `min(pi_hat, delta2)` clip to `delta2` (full
+shrinkage, `shrinkage_ = 1.0`) for essentially any sample size, defeating the
+whole point of an *adaptive* shrinkage intensity.
+
+**Fix:** Divide `pi_hat` by `n**2`, matching the paper's normalization.
+
+**Verification:** Cross-checked against `sklearn.covariance.ledoit_wolf` as
+an independent oracle on identical data — both now agree on `shrinkage=1.0`
+for a genuinely small, noisy `n=15` draw (confirming that specific case was
+correct all along) and on sensible partial shrinkage (~0.003 at `n=5000`,
+~0.28 at `n=20`) elsewhere. `test_ledoit_wolf_shrinkage_bounds_psd_and_small_n_improvement`
+averages squared Frobenius error over 200 independent small-`n` draws and
+confirms LW beats the sample covariance in expectation (not guaranteed on
+every single draw — a single draw can still legitimately collapse to full
+shrinkage and lose to that draw's sample covariance, which is why the test
+averages rather than comparing one draw).
+
+---
+
+### 59. Cornish-Fisher Expected Shortfall integrated the wrong tail, returning a negative ES
+
+**Severity:** 7/10 · **Status:** 🟢 `fixed` (V0.8.0)
+
+**Problem:** `ES(alpha) = (1/(1-alpha)) * integral_alpha^1 VaR_u du` averages
+the Cornish-Fisher VaR over confidence levels `u` in the *loss* tail
+(`u` near 1). The implementation integrated `u` from `~0` to `1-alpha`
+instead — the opposite (gain) tail — producing a large *negative* expected
+shortfall for a risk measure that should always be `>= VaR > 0` for a
+right-skewed loss distribution.
+
+**Fix:** Integrate over `u in [alpha, 1)` instead of `[0, 1-alpha]`.
+
+**Verification:** `test_cornish_fisher_zero_moments_is_normal_and_nonmonotone_raises` —
+with zero skew/kurtosis the Cornish-Fisher ES now matches the closed-form
+normal ES to `1e-4` (previously it returned a negative number with the wrong
+sign entirely).
+
+---
+
+### 60. `ScenarioAnalysis.from_mc`/`from_historical` crashed when the pricer took non-stochastic parameters
+
+**Severity:** 5/10 · **Status:** 🟢 `fixed` (V0.8.0)
+
+**Problem:** Both methods assumed every key in `base_factors` was a
+stochastic factor shocked 1:1 by a column of the MC draws / historical factor
+returns. Any pricer taking a fixed parameter alongside a stochastic one (e.g.
+`lambda f: f["S"] - f["K"]` with only `S` random) raised `IndexError` the
+moment `base_factors` had more keys than the shock array had columns.
+
+**Fix:** Added an explicit `factors=` argument naming which `base_factors`
+keys are stochastic (defaulting to all of them, preserving the old
+single-factor behavior); every other key stays fixed at its base value.
+
+**Verification:** `test_scenario_analysis_mc_linear_var_and_from_historical`
+exercises a two-key pricer (`S`, `K`) with only `S` stochastic.
+
+---
+
+### 61. `MonteCarloOptionPricing.price()`'s antithetic/control-variate `n_samples` reported half the requested paths
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.8.0)
+
+**Problem:** `montecarlo.applications.option_pricing_mc` (the library's
+existing antithetic MC pricer) reports `n_samples` as the total number of
+paths *requested*, even though the standard-error calculation internally
+uses half that many antithetic pairs. The new `MonteCarloOptionPricing.price`
+deviated from that convention, reporting `n_samples` as the pair count
+(`n_paths // 2`) instead, inconsistent with the rest of the library's MC
+result objects.
+
+**Fix:** Override `n_samples` to the originally requested `n_paths` after
+building the `MCResult`, matching `option_pricing_mc`'s convention.
+
+**Verification:** `test_mc_plain_within_se` asserts `res.n_samples == 200_000`
+for a `n_paths=200_000` antithetic call.
+
+---
+
+### 62. `ci.yml`'s `os` matrix never actually ran on Windows
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.8.0)
+
+**Problem:** `.github/workflows/ci.yml` declared a `strategy.matrix.os:
+[ubuntu-latest, windows-latest]` but the job's `runs-on: ubuntu-latest` was a
+hardcoded literal instead of `${{ matrix.os }}` — every matrix cell, Windows
+included, actually ran on Ubuntu. AGENTS.md §7 has claimed Windows CI
+coverage since the matrix was added; it was never real.
+
+**Fix:** `runs-on: ${{ matrix.os }}`.
+
+**Verification:** Next push's Actions run shows both `ubuntu-latest` and
+`windows-latest` job instances actually executing on their named runners
+(visible in the Actions UI's runner labels), not just in the matrix
+definition.

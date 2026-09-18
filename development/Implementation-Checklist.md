@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 350 / 794 public names implemented.**
+**Progress: 400 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -567,66 +567,66 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [ ] `GPR_Nonparametric`
     - [ ] `QuantileRegression`
 
-## [financial_stochastics](../Stochpylib-Obsidian-Vault/Modules/financial_stochastics.md) — Quantitative finance models (0/50)
+## [financial_stochastics](../Stochpylib-Obsidian-Vault/Modules/financial_stochastics.md) — Quantitative finance models (50/50)
 
-- [ ] **stochpylib.financial_stochastics** module overall
-  - [ ] `financial_stochastics.option_pricing`
-    - [ ] `BlackScholes`
-    - [ ] `BlackScholes_American`
-    - [ ] `BinomialTree`
-    - [ ] `TrinomialTree`
-    - [ ] `MonteCarloOptionPricing`
-    - [ ] `LongstaffSchwartz`
-    - [ ] `FourierOptionPricing`
-  - [ ] `financial_stochastics.stochastic_vol`
-    - [ ] `HestonModel`
-    - [ ] `SABRModel`
-    - [ ] `RoughHeston`
-    - [ ] `RoughBergomi`
-    - [ ] `LVSV`
-    - [ ] `LocalVol`
-    - [ ] `Dupire`
-    - [ ] `VarianceSwap`
-  - [ ] `financial_stochastics.rate_models`
-    - [ ] `HullWhiteModel`
-    - [ ] `CIRProcess`
-    - [ ] `VasicekModel`
-    - [ ] `HoLeeModel`
-    - [ ] `LMM`
-    - [ ] `HJM`
-    - [ ] `G2ppModel`
-    - [ ] `BlackKarasinski`
-  - [ ] `financial_stochastics.risk`
-    - [ ] `ValueAtRisk`
-    - [ ] `ExpectedShortfall`
-    - [ ] `ConditionalVaR`
-    - [ ] `HistoricalVaR`
-    - [ ] `ParametricVaR`
-    - [ ] `StressTest`
-    - [ ] `ScenarioAnalysis`
-  - [ ] `financial_stochastics.credit`
-    - [ ] `CreditRiskModel`
-    - [ ] `DefaultIntensity`
-    - [ ] `CreditMigration`
-    - [ ] `CDSPricing`
-    - [ ] `MertonCreditModel`
-    - [ ] `CopulaCreditModel`
-  - [ ] `financial_stochastics.greeks`
-    - [ ] `Delta`
-    - [ ] `Gamma`
-    - [ ] `Vega`
-    - [ ] `Theta`
-    - [ ] `Rho`
-    - [ ] `Vanna`
-    - [ ] `Volga`
-    - [ ] `Greeks_MC`
-    - [ ] `Greeks_FD`
-  - [ ] `financial_stochastics.portfolio`
-    - [ ] `PortfolioOptimization`
-    - [ ] `MeanVariance`
-    - [ ] `BlackLitterman`
-    - [ ] `RiskParity`
-    - [ ] `CovarianceEstimation`
+- [x] **stochpylib.financial_stochastics** module overall
+  - [x] `financial_stochastics.option_pricing`
+    - [x] `BlackScholes`
+    - [x] `BlackScholes_American`
+    - [x] `BinomialTree`
+    - [x] `TrinomialTree`
+    - [x] `MonteCarloOptionPricing`
+    - [x] `LongstaffSchwartz`
+    - [x] `FourierOptionPricing`
+  - [x] `financial_stochastics.stochastic_vol`
+    - [x] `HestonModel`
+    - [x] `SABRModel`
+    - [x] `RoughHeston`
+    - [x] `RoughBergomi`
+    - [x] `LVSV`
+    - [x] `LocalVol`
+    - [x] `Dupire`
+    - [x] `VarianceSwap`
+  - [x] `financial_stochastics.rate_models`
+    - [x] `HullWhiteModel`
+    - [x] `CIRProcess`
+    - [x] `VasicekModel`
+    - [x] `HoLeeModel`
+    - [x] `LMM`
+    - [x] `HJM`
+    - [x] `G2ppModel`
+    - [x] `BlackKarasinski`
+  - [x] `financial_stochastics.risk`
+    - [x] `ValueAtRisk`
+    - [x] `ExpectedShortfall`
+    - [x] `ConditionalVaR`
+    - [x] `HistoricalVaR`
+    - [x] `ParametricVaR`
+    - [x] `StressTest`
+    - [x] `ScenarioAnalysis`
+  - [x] `financial_stochastics.credit`
+    - [x] `CreditRiskModel`
+    - [x] `DefaultIntensity`
+    - [x] `CreditMigration`
+    - [x] `CDSPricing`
+    - [x] `MertonCreditModel`
+    - [x] `CopulaCreditModel`
+  - [x] `financial_stochastics.greeks`
+    - [x] `Delta`
+    - [x] `Gamma`
+    - [x] `Vega`
+    - [x] `Theta`
+    - [x] `Rho`
+    - [x] `Vanna`
+    - [x] `Volga`
+    - [x] `Greeks_MC`
+    - [x] `Greeks_FD`
+  - [x] `financial_stochastics.portfolio`
+    - [x] `PortfolioOptimization`
+    - [x] `MeanVariance`
+    - [x] `BlackLitterman`
+    - [x] `RiskParity`
+    - [x] `CovarianceEstimation`
 
 ## [advanced_mcmc](../Stochpylib-Obsidian-Vault/Modules/advanced_mcmc.md) — State-of-the-art sampling algorithms (0/35)
 

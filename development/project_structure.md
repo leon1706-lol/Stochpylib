@@ -18,12 +18,12 @@ Stochpylib/
 │   ├── ISSUE_TEMPLATE/          # bug report + feature request YAML forms (spl --version pre-flight)
 │   └── PULL_REQUEST_TEMPLATE.md # checklist mirroring the wrap-up rules
 ├── stochpylib/                  # the installable package (guide: stochpylib/README.md)
-│   ├── __init__.py              # re-exports all ten subpackages; __version__
+│   ├── __init__.py              # re-exports all eleven subpackages; __version__
 │   ├── cli.py                   # the spl console command: --help inventory, --version [--list],
 │   │                            #   --test, and the update/info/show/demo/cite subcommands
 │   ├── cli_pypi.py              # PyPI metadata access behind spl --version/update (cache, offline-safe)
-│   ├── cli_demo.py              # the ten live mini-examples behind spl demo
-│   ├── selftest.py              # embedded 145-check self-check suite shipped in the wheel
+│   ├── cli_demo.py              # the eleven live mini-examples behind spl demo
+│   ├── selftest.py              # embedded 152-check self-check suite shipped in the wheel
 │   ├── probability/             # sample spaces, Bayes, exact combinatorics, independence
 │   ├── distributions/           # 47 classes behind the common interface (_base.py fallbacks)
 │   ├── montecarlo/              # QMC sequences, estimators, variance reduction, applications
@@ -33,9 +33,10 @@ Stochpylib/
 │   ├── survival/                # KM/NA, parametric fits, Cox/AFT/additive/FineGray, competing risks
 │   ├── queueing/                # single queues, birth-death, networks, discrete-event simulation
 │   ├── information_theory/      # entropy, divergences, mutual info, channels, coding
-│   └── levy_processes/          # Levy-Khintchine core, jump-diffusion pricing, subordinators, SDE solvers
+│   ├── levy_processes/          # Levy-Khintchine core, jump-diffusion pricing, subordinators, SDE solvers
+│   └── financial_stochastics/   # option pricing & Greeks, stochastic/local vol, rate models, risk, credit, portfolio
 ├── tests/                       # test suite OUTSIDE the package on purpose (guide: tests/README.md)
-│   ├── <module>/tests.py        # one deterministic suite per implemented module (ten)
+│   ├── <module>/tests.py        # one deterministic suite per implemented module (eleven)
 │   ├── library/                 # cross-module suite: spec conformance, pinned extras, workflows
 │   │   ├── _extract_spec_names.py   # generates conformance lists from the checklist
 │   │   └── _spec_names.json         # cached spec-name lists
@@ -48,7 +49,7 @@ Stochpylib/
 │   ├── Development.md           # layout decisions & workflow notes
 │   ├── CHANGELOG.md             # append-only per-phase build history
 │   ├── Probleme.md              # bug audit log (Problem → Fix → Verification, severity, status)
-│   ├── Implementation-Checklist.md  # every planned public name as a checkbox (350/794 done)
+│   ├── Implementation-Checklist.md  # every planned public name as a checkbox (400/794 done)
 │   └── logo.png                 # project logo, referenced by the README banner
 ├── build/  dist/  *.egg-info/   # local build artifacts (gitignored, never edited by hand)
 └── Stochpylib-Obsidian-Vault/   # the full design-spec vault (private, not part of the repo)

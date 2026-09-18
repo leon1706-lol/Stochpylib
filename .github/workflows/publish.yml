@@ -33,4 +33,5 @@ jobs:
       - run: python -m pip install dist/*.whl
       - run: spl --version
       - run: spl --test
+      - run: spl demo financial_stochastics
       - uses: pypa/gh-action-pypi-publish@release/v1

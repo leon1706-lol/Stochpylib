@@ -1,6 +1,7 @@
 from stochpylib import (
     copulas,
     distributions,
+    financial_stochastics,
     gaussian_processes,
     information_theory,
     levy_processes,
@@ -14,6 +15,7 @@ from stochpylib import (
 __all__ = [
     "copulas",
     "distributions",
+    "financial_stochastics",
     "gaussian_processes",
     "information_theory",
     "levy_processes",
@@ -24,4 +26,4 @@ __all__ = [
     "timeseries",
 ]
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"

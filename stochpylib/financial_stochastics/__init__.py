@@ -1,0 +1,123 @@
+"""Quantitative finance models: option pricing, Greeks, stochastic/local
+volatility, short-rate models, risk (VaR/ES/stress), credit risk, and
+portfolio construction — 50 spec names across seven submodules, natively on
+numpy/scipy.
+"""
+
+from stochpylib.financial_stochastics.credit import (
+    CDSPricing,
+    CopulaCreditModel,
+    CreditMigration,
+    CreditRiskModel,
+    DefaultIntensity,
+    MertonCreditModel,
+)
+from stochpylib.financial_stochastics.greeks import (
+    Delta,
+    Gamma,
+    Greeks_FD,
+    Greeks_MC,
+    Rho,
+    Theta,
+    Vanna,
+    Vega,
+    Volga,
+)
+from stochpylib.financial_stochastics.option_pricing import (
+    BinomialTree,
+    BlackScholes,
+    BlackScholes_American,
+    FourierOptionPricing,
+    LongstaffSchwartz,
+    MonteCarloOptionPricing,
+    TrinomialTree,
+)
+from stochpylib.financial_stochastics.portfolio import (
+    BlackLitterman,
+    CovarianceEstimation,
+    MeanVariance,
+    PortfolioOptimization,
+    RiskParity,
+)
+from stochpylib.financial_stochastics.rate_models import (
+    BlackKarasinski,
+    CIRProcess,
+    G2ppModel,
+    HJM,
+    HoLeeModel,
+    HullWhiteModel,
+    LMM,
+    VasicekModel,
+)
+from stochpylib.financial_stochastics.risk import (
+    ConditionalVaR,
+    ExpectedShortfall,
+    HistoricalVaR,
+    ParametricVaR,
+    ScenarioAnalysis,
+    StressTest,
+    ValueAtRisk,
+)
+from stochpylib.financial_stochastics.stochastic_vol import (
+    Dupire,
+    HestonModel,
+    LocalVol,
+    LVSV,
+    RoughBergomi,
+    RoughHeston,
+    SABRModel,
+    VarianceSwap,
+)
+
+__all__ = [
+    "BinomialTree",
+    "BlackKarasinski",
+    "BlackLitterman",
+    "BlackScholes",
+    "BlackScholes_American",
+    "CDSPricing",
+    "CIRProcess",
+    "ConditionalVaR",
+    "CopulaCreditModel",
+    "CovarianceEstimation",
+    "CreditMigration",
+    "CreditRiskModel",
+    "DefaultIntensity",
+    "Delta",
+    "Dupire",
+    "ExpectedShortfall",
+    "FourierOptionPricing",
+    "G2ppModel",
+    "Gamma",
+    "Greeks_FD",
+    "Greeks_MC",
+    "HJM",
+    "HestonModel",
+    "HistoricalVaR",
+    "HoLeeModel",
+    "HullWhiteModel",
+    "LMM",
+    "LVSV",
+    "LocalVol",
+    "LongstaffSchwartz",
+    "MeanVariance",
+    "MertonCreditModel",
+    "MonteCarloOptionPricing",
+    "ParametricVaR",
+    "PortfolioOptimization",
+    "Rho",
+    "RiskParity",
+    "RoughBergomi",
+    "RoughHeston",
+    "SABRModel",
+    "ScenarioAnalysis",
+    "StressTest",
+    "Theta",
+    "TrinomialTree",
+    "ValueAtRisk",
+    "Vanna",
+    "VarianceSwap",
+    "VasicekModel",
+    "Vega",
+    "Volga",
+]
