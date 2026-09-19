@@ -1823,3 +1823,112 @@ and the `advanced_mcmc.diagnostics` e2e/selftest checks — `Rhat(iid, method="r
 now finite and close to 1 for i.i.d. chains, correctly exceeds 1.05 when one chain has a
 different scale (the property the rank variant exists to catch), and no `NaN` appears in
 `TraceAnalysis.summary()`'s `ess_bulk`/`ess_tail` columns.
+
+---
+
+### 85. `FiniteElement.evaluate()` silently discarded P2 midpoint DOFs, hiding all quadratic accuracy
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.12.0)
+
+**Problem:** `FiniteElement(mesh, degree=2).evaluate()` (and therefore `.l2_error()`)
+did plain linear interpolation on only the corner-node slice of `u_`, ignoring the
+midpoint DOFs the P2 solve actually produces. The solved coefficients were correct, but
+every query point saw P1-level accuracy: a P1/P2 convergence-rate comparison came back
+with **identical** error curves for both degrees (rate ~2.0 for both) instead of P2's
+expected ~3.0, silently erasing the entire point of the higher-order element.
+
+**Fix:** `evaluate()` now looks up the per-element node index set stored by
+`_assemble_1d()` (`self._elem_nodes_idx`) and evaluates the element's own shape
+functions (linear for P1, the three-node quadratic basis for P2) against the full DOF
+vector, not just the corner slice.
+
+**Verification:** `tests/numerical_methods/tests.py::test_fem_p1_and_p2_convergence_rates`
+— P1 now measures ~2.0 and P2 ~3.0 across three mesh refinements, as expected for the
+respective element orders.
+
+---
+
+### 86. Complex Schur QR iteration never updated the coupling block above a deflated trailing part
+
+**Severity:** 7/10 · **Status:** 🟢 `fixed` (V0.12.0)
+
+**Problem:** `Schur(A).compute("complex")`'s single-shift QR step similarity-transformed
+only the active leading `H[:m, :m]` block (`H_new = Q^H H Q`) once earlier eigenvalues had
+deflated (`m < n`), but never applied the matching `Q^H` to the coupling block
+`H[:m, m:]` that a full `diag(Q, I)` similarity requires. `T` came out correctly upper
+triangular with the right eigenvalues (diagonal entries are shift-invariant), but
+`Z T Z^H` no longer reconstructed the original matrix once any deflation had happened —
+reproduced on an 8x8 random matrix with a reconstruction error of ~2.3 (should be ~1e-14).
+
+**Fix:** Added `H[:m, m:] = Q.conj().T @ H[:m, m:]` immediately after each shifted-QR
+step whenever `m < n`. (The real-Schur bulge-chase path already updated this region
+correctly, since its row-update slice `Hk[k:r, lo:]` spans the full column range by
+construction — only the complex single-shift path had the gap.)
+
+**Verification:** `tests/numerical_methods/tests.py::test_complex_schur_is_strictly_triangular_and_reconstructs`
+— a 30-trial stress test over random matrix sizes 3-12 now reconstructs `A` to <1e-5 and
+stays strictly upper triangular, both before and after deflation.
+
+---
+
+### 87. `Chebyshev.integral()` used the wrong closed form for the `T_1` coefficient
+
+**Severity:** 5/10 · **Status:** 🟢 `fixed` (V0.12.0)
+
+**Problem:** The Chebyshev-series antiderivative recurrence `C_k = (c_{k-1} - c_{k+1}) /
+(2k)` holds for every `k >= 2`, but `k = 1` needs the special case `C_1 = c_0 - c_2 / 2`
+(the `T_0` term's antiderivative is exactly `T_1` with no `1/2` split, unlike every
+higher `T_k`, whose antiderivative splits evenly between `T_{k-1}` and `T_{k+1}`). The
+implementation applied the general formula uniformly, giving `C_1 = (c_0 - c_2) / 2` —
+wrong by exactly `c_0 / 2`. Reproduced with `integral(x**2)` over `[-1, 1]`: returned
+0.167 instead of the exact 0.667.
+
+**Fix:** `C_1` is now computed from the special-cased formula; `C_k` for `k >= 2` keeps
+the general recurrence.
+
+**Verification:** `tests/numerical_methods/tests.py::test_chebyshev_series_exp_and_derivative_and_roots`
+— `definite_integral()` of `x**2` over `[-1, 1]` now returns 0.6666... to 1e-10, and
+`sin`/`exp` antiderivatives match their closed forms to machine precision on `[-1, 1]`
+and on a shifted domain `[-0.5, 2]`.
+
+---
+
+### 88. DOLFIN-XML mesh export wrote NumPy's `repr()` instead of a plain float, breaking the reader round-trip
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.12.0)
+
+**Problem:** `FEniCS_Interface.export_mesh(..., format="dolfin_xml")` formatted vertex
+coordinates with `f"{row[0]!r}"`. On NumPy >= 2.0, `repr()` of a `numpy.float64` scalar
+is `"np.float64(0.0)"`, not `"0.0"` — the exact class of NumPy-2.x formatting change this
+project has been bitten by before (see the `np.trapz` removal in Probleme #41-51). The
+written XML's `x="np.float64(0.0)"` attribute is not valid XML-parseable float text, so
+`FEniCS_Interface.read_mesh()` failed immediately on `float(v.get("x"))` for every
+exported mesh.
+
+**Fix:** Format with `f"{float(row[0]):.17g}"` (plain, round-trip-precise decimal text)
+instead of `!r`.
+
+**Verification:** `tests/numerical_methods/tests.py::test_fenics_mesh_export_xml_round_trip`
+— 1-D and 2-D meshes now export and re-read with node coordinates, cell connectivity and
+boundary node lists matching the original exactly.
+
+---
+
+### 89. `spl --help`'s module-summary padding used `>` instead of `>=`, concatenating a 17-char label straight onto its summary with no separator
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.12.0)
+
+**Problem:** `cli._implemented_overview()` computes a column-alignment pad as
+`" " * (17 - len(label))` for labels of 17 characters or fewer, switching to a newline
+for longer ones via `if len(label) > 17`. A label of *exactly* 17 characters falls into
+the space-padding branch with `17 - 17 == 0` spaces — no separator at all. Every prior
+module name happened to avoid exactly 17 characters, so this was never hit; adding
+`numerical_methods` (17 characters) surfaced it immediately as
+`"numerical_methodsnumerical analysis backbone: ..."` in `spl --help`.
+
+**Fix:** Changed the newline-branch condition to `>= 17`, so a 17-character label gets
+the same newline treatment as longer ones.
+
+**Verification:** `spl --help` now prints `numerical_methods` on its own line followed
+by its summary on the next, matching every other module's formatting;
+`tests/cli/tests.py::test_help_inventory_covers_all_modules_with_counts` still passes.

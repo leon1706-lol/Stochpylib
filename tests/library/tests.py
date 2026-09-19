@@ -30,6 +30,7 @@ from stochpylib import (
     information_theory,
     levy_processes,
     montecarlo,
+    numerical_methods,
     probability,
     queueing,
     random_matrix,
@@ -56,6 +57,7 @@ _MODULES = {
     "queueing": queueing,
     "information_theory": information_theory,
     "advanced_mcmc": advanced_mcmc,
+    "numerical_methods": numerical_methods,
 }
 
 # Documented public extras beyond the 229 spec names (utilities & result
@@ -82,6 +84,8 @@ _EXTRAS = {
                    "DiscriminantResult", "ClusterResult", "MDSResult"},
     "random_matrix": {"MatrixEnsemble", "CircularLaw"},
     "advanced_mcmc": {"LogDensity", "MCMCSampler", "RafteryLewisResult"},
+    "numerical_methods": {"QuadratureResult", "RootResult", "ODESolution",
+                          "SDESolution", "Mesh"},
 }
 
 DISTRIBUTION_METHODS_DOC = (".pdf()/.pmf()", ".cdf()", ".ppf()", ".rvs()",
@@ -113,9 +117,9 @@ def test_total_spec_name_count():
                    "gaussian_processes", "copulas", "survival", "queueing",
                    "information_theory", "levy_processes",
                    "financial_stochastics", "statistics", "random_matrix",
-                   "advanced_mcmc")
+                   "advanced_mcmc", "numerical_methods")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 506  # 506/794 across the fourteen implemented modules
+    assert total == 544  # 544/794 across the fifteen implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -147,8 +151,8 @@ def test_top_level_package_wiring():
     assert set(stochpylib.__all__) == {
         "advanced_mcmc", "copulas", "distributions", "financial_stochastics",
         "gaussian_processes", "information_theory", "levy_processes",
-        "montecarlo", "probability", "queueing", "random_matrix", "statistics",
-        "survival", "timeseries"}
+        "montecarlo", "numerical_methods", "probability", "queueing",
+        "random_matrix", "statistics", "survival", "timeseries"}
     # version consistency, never a literal: the installed metadata and the
     # in-code __version__ must agree (a hardcoded literal here broke CI on
     # every version bump — development/Probleme.md [39])
@@ -321,3 +325,23 @@ def test_mcmc_samples_a_library_distribution_and_diagnostics_return_test_result(
     se = g.std() / np.sqrt(advanced_mcmc.ESS(x[None, :, None], method="mean"))
     assert abs(x.mean() - g.mean()) < 5 * se
     assert isinstance(geweke_test(x), TestResult)
+
+
+def test_numerical_methods_pde_and_quadrature_agree_with_black_scholes():
+    """E2E: numerical_methods -> financial_stochastics. A Crank-Nicolson finite-
+    difference solve of the Black-Scholes PDE and a Gauss-Hermite risk-neutral
+    expectation of the discounted payoff both match the closed-form price."""
+    S, K, T, r, sigma = 100.0, 100.0, 1.0, 0.05, 0.2
+    bs = financial_stochastics.BlackScholes(S=S, K=K, T=T, r=r, sigma=sigma)
+    fd = numerical_methods.FiniteDifference()
+    pde_price = fd.black_scholes(K, T, r, sigma, kind="call").price(S)
+    assert abs(pde_price - bs.call_price()) < 1e-2
+
+    gh = numerical_methods.GaussHermite(300, kind="probabilists")
+
+    def discounted_payoff(z):
+        ST = S * np.exp((r - 0.5 * sigma ** 2) * T + sigma * np.sqrt(T) * z)
+        return np.maximum(ST - K, 0.0) * np.exp(-r * T)
+
+    gh_price = gh.expectation(discounted_payoff, vectorized=True).value
+    assert abs(gh_price - bs.call_price()) < 1e-2

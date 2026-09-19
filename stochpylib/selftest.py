@@ -334,6 +334,8 @@ def run(verbose=False):
         "random_matrix": (23, ["GOE", "MarchenkoPastur", "HaarMeasure",
                                "EigenvalueSpacing"]),
         "advanced_mcmc": (35, ["MetropolisHastings", "NoUTurnSampler", "Rhat", "ESS"]),
+        "numerical_methods": (38, ["GaussLegendre", "DormandPrince", "Brent",
+                                   "MatrixExponential", "FiniteDifference"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -548,6 +550,63 @@ def run(verbose=False):
         ar1_rm[t] = 0.5 * ar1_rm[t - 1] + rng_ar1.standard_normal()
     tau_rm = _am_autocorr_time(ar1_rm)
     st.check("MCMC: autocorr_time of AR(1) phi=0.5 ~ 3", 2.0 < tau_rm < 4.5)
+
+    # numerical_methods quick checks
+    from stochpylib.numerical_methods import (
+        BDF as _NmBDF,
+        Brent as _NmBrent,
+        DormandPrince as _NmDP,
+        FiniteDifference as _NmFD,
+        GaussLegendre as _NmGL,
+        MatrixExponential as _NmExpm,
+        SplineInterpolation as _NmSpline,
+    )
+    from stochpylib.numerical_methods.pde import SpectralMethod as _NmSpectral
+
+    gl_nm = _NmGL(5)
+    st.check("NUM: Gauss-Legendre exact for x^8 (n=5)",
+             abs(gl_nm.integrate(lambda x: x ** 8, -1, 1).value - 2 / 9) < 1e-10)
+
+    def _npdf(x):
+        return np.exp(-0.5 * x * x) / np.sqrt(2 * np.pi)
+
+    from stochpylib.numerical_methods import AdaptiveQuadrature as _NmAdaptive
+    aq_nm = _NmAdaptive(_npdf, -np.inf, np.inf).integrate()
+    st.check("NUM: adaptive quadrature of N(0,1) pdf over R = 1", abs(aq_nm.value - 1.0) < 1e-8)
+
+    dp_nm = _NmDP(rtol=1e-8).solve(lambda t, y: y, (0, 1), [1.0])
+    st.check("NUM: Dormand-Prince y'=y gives e", abs(dp_nm.y[-1, 0] - np.e) < 1e-6)
+
+    bdf_nm = _NmBDF(order=2).solve(lambda t, y: np.array([-1000 * y[0]]), (0, 1), [1.0], h=0.01)
+    st.check("NUM: BDF stays bounded on a stiff y'=-1000y",
+             bool(np.all(np.isfinite(bdf_nm.y))))
+
+    brent_nm = _NmBrent(lambda x: np.cos(x) - x, 0, 1)
+    st.check("NUM: Brent solves cos(x)=x", abs(brent_nm.root - 0.7390851332151607) < 1e-10)
+
+    xc_nm = np.linspace(0, 5, 7)
+    yc_nm = 2 * xc_nm ** 3 - xc_nm ** 2 + 3 * xc_nm - 1
+    sp_nm = _NmSpline(xc_nm, yc_nm, bc="not-a-knot")
+    st.check("NUM: not-a-knot spline reproduces a cubic exactly",
+             abs(float(sp_nm(2.5)) - (2 * 2.5 ** 3 - 2.5 ** 2 + 3 * 2.5 - 1)) < 1e-8)
+
+    rot_nm = np.array([[0.0, -1.0], [1.0, 0.0]])
+    expm_nm = _NmExpm(rot_nm).at(np.pi / 2)
+    st.check("NUM: expm of a 2-D rotation generator is a 90-degree rotation",
+             bool(np.allclose(expm_nm, [[0.0, -1.0], [1.0, 0.0]], atol=1e-8)))
+
+    fd_nm = _NmFD()
+    bs_price_nm = fd_nm.black_scholes(100.0, 1.0, 0.05, 0.2, kind="call").price(100.0)
+    from stochpylib.financial_stochastics import BlackScholes as _NmBS
+    bs_ref_nm = _NmBS(S=100.0, K=100.0, T=1.0, r=0.05, sigma=0.2).call_price()
+    st.check("NUM: Crank-Nicolson Black-Scholes PDE matches closed form",
+             abs(bs_price_nm - bs_ref_nm) < 2e-2)
+
+    sm_nm = _NmSpectral()
+    x_nm = np.linspace(0, 2 * np.pi, 64, endpoint=False)
+    du_nm = sm_nm.fourier_derivative(np.sin(2 * x_nm), 2 * np.pi)
+    st.check("NUM: Fourier spectral derivative of sin(2x) matches 2cos(2x)",
+             bool(np.max(np.abs(du_nm - 2 * np.cos(2 * x_nm))) < 1e-10))
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

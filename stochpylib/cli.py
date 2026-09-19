@@ -176,6 +176,18 @@ def _implemented_overview():
             "                   MCMC, reversible-jump & product-space transdimensional\n"
             "                   samplers, R-hat/ESS/Geweke/Raftery-Lewis diagnostics,\n"
             "                   mean-field/ADVI/black-box VI, planar flows, SVGD",
+        "numerical_methods":
+            "numerical analysis backbone: Gauss quadrature (Legendre,\n"
+            "                   Hermite, Chebyshev) via Golub-Welsch, adaptive Gauss-Kronrod/\n"
+            "                   Simpson, Romberg, tensor/Smolyak cubature; ODE solvers Euler\n"
+            "                   .. RK4 .. embedded Dormand-Prince .. Adams-Bashforth-Moulton ..\n"
+            "                   implicit BDF, Euler-Maruyama/Milstein SDE paths; native linear\n"
+            "                   algebra (Pade expm/logm, Cholesky, Jacobi/QR eigendecomposition,\n"
+            "                   one-sided-Jacobi SVD, Householder/Givens QR, Francis-shift real\n"
+            "                   & complex Schur); Bisection/Brent/Secant/Newton/fixed-point root\n"
+            "                   finding; splines/PCHIP/barycentric/Chebyshev/NURBS interpolation;\n"
+            "                   finite-difference/finite-element/boundary-element/spectral PDE\n"
+            "                   solvers plus a FEniCS-style adapter with a native fallback",
     }
 
     blocks = []
@@ -186,7 +198,10 @@ def _implemented_overview():
         names = _module_public_names(module_name)
         total_names += len(names)
         label = module_name
-        pad = "\n                   " if len(label) > 17 else " " * (17 - len(label))
+        # >= not > : a label of exactly 17 chars leaves zero characters for
+        # " " * (17 - len(label)), concatenating the summary directly onto the label
+        # with no separator at all (first hit: "numerical_methods" is exactly 17 chars)
+        pad = "\n                   " if len(label) >= 17 else " " * (17 - len(label))
         summary = summaries.get(module_name, "see the module README")
         block = f"  {label}{pad}{summary}\n                   [{len(names)} public names]"
         if module_name == "distributions":
@@ -409,8 +424,8 @@ Try a live mini-example:  spl demo <module>   (bare 'spl demo' lists them)
         epilog=(
             "subcommands: update, info, show, demo, cite - run 'spl <command> --help'\n"
             "for details.\n\n"
-            "roadmap: nine more modules are planned (bayesian,\n"
-            "nonparametric, spatial_statistics, robust_statistics, numerical_methods, ...) -\n"
+            "roadmap: eight more modules are planned (bayesian,\n"
+            "nonparametric, robust_statistics, spatial_statistics, optimization, ...) -\n"
             "see the repository README and development/Implementation-Checklist.md.\n\n"
             "docs: README.md - contributing: CONTRIBUTING.md - security: SECURITY.md"
         ),

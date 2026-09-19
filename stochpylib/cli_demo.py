@@ -268,6 +268,41 @@ def _demo_advanced_mcmc():
     print(f"  SMC log evidence = {smc.log_evidence_:.4f} (closed form {logZ_true:.4f})")
 
 
+def _demo_numerical_methods():
+    from stochpylib.financial_stochastics import BlackScholes
+    from stochpylib.numerical_methods import Brent, DormandPrince, FiniteDifference, GaussLegendre, MatrixExponential
+
+    print("Numerical methods - Gauss quadrature, Dormand-Prince, Brent, PDE pricing:")
+    gl = GaussLegendre(5)
+    r = gl.integrate(np.sin, 0, np.pi)
+    print(f"  5-point Gauss-Legendre integral of sin over [0,pi] = {r.value:.6f} (exact 2.0)")
+
+    def f(t, y):
+        return np.array([y[1], -y[0]])
+
+    dp = DormandPrince(rtol=1e-8)
+    sol = dp.solve(f, (0, 2 * np.pi), [1.0, 0.0])
+    energy0 = 1.0 ** 2 + 0.0 ** 2
+    energyT = sol.y[-1, 0] ** 2 + sol.y[-1, 1] ** 2
+    print(f"  Dormand-Prince harmonic oscillator: energy drift after one period = "
+          f"{abs(energyT - energy0):.2e}")
+
+    S, K, T, r_rate, true_sigma = 100.0, 100.0, 1.0, 0.05, 0.25
+    target = BlackScholes(S=S, K=K, T=T, r=r_rate, sigma=true_sigma).call_price()
+    root = Brent(lambda sig: BlackScholes(S=S, K=K, T=T, r=r_rate, sigma=sig).call_price() - target,
+                0.01, 2.0)
+    print(f"  Brent implied volatility recovered = {root.root:.4f} (true 0.2500)")
+
+    fd = FiniteDifference()
+    pde_price = fd.black_scholes(K, T, r_rate, true_sigma, kind="call").price(S)
+    bs_price = BlackScholes(S=S, K=K, T=T, r=r_rate, sigma=true_sigma).call_price()
+    print(f"  Crank-Nicolson PDE call price = {pde_price:.4f} vs Black-Scholes = {bs_price:.4f}")
+
+    Q = np.array([[-2.0, 1.0, 1.0], [1.0, -3.0, 2.0], [0.5, 0.5, -1.0]])
+    P = MatrixExponential(Q).at(1.0)
+    print(f"  3-state CTMC transition matrix expm(Q) row sums = {np.round(P.sum(axis=1), 6)}")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -283,6 +318,7 @@ DEMOS = {
     "statistics": _demo_statistics,
     "random_matrix": _demo_random_matrix,
     "advanced_mcmc": _demo_advanced_mcmc,
+    "numerical_methods": _demo_numerical_methods,
 }
 DEMO_MODULES = tuple(DEMOS)
 

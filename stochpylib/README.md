@@ -3,7 +3,7 @@
 The installable package: one subpackage per library module behind a single
 load-bearing contract — every distribution exposes the same method set, every
 stochastic method takes `random_state=`, every Monte Carlo estimator returns a
-shared result object. Fourteen subpackages live today (506/794 spec names):
+shared result object. Fifteen subpackages live today (544/794 spec names):
 
 | Subpackage | Spec names | What it owns | Guide |
 |---|---|---|---|
@@ -21,6 +21,7 @@ shared result object. Fourteen subpackages live today (506/794 spec names):
 | `statistics/` | 48 | descriptive stats, MLE/MOM/Bayesian/bootstrap estimation, hypothesis tests, OLS/GLM/penalized/quantile regression, multivariate methods | [README](statistics/README.md) |
 | `random_matrix/` | 23 | GOE/GUE/GSE, Wigner, Wishart, CUE, Ginibre-type ensembles; semicircle/Marchenko-Pastur/Tracy-Widom laws; Haar rotations; spacing & edge statistics | [README](random_matrix/README.md) |
 | `advanced_mcmc/` | 35 | MCMC samplers (MH, Gibbs, adaptive, HMC/NUTS/MALA/RMHMC/NeuTra, slice, tempering, SMC, particle, transdimensional), diagnostics, variational inference | [README](advanced_mcmc/README.md) |
+| `numerical_methods/` | 38 | Gauss quadrature & adaptive/cubature integration, ODE/SDE solvers, native linear algebra (expm/logm, eigendecomposition, SVD, QR, Schur), root finding, interpolation, PDE tools (FD/FEM/BEM/spectral, FEniCS-style adapter) | [README](numerical_methods/README.md) |
 
 Package-level files:
 
@@ -31,8 +32,8 @@ Package-level files:
   `cite` subcommands.
 - `cli_pypi.py` — offline-safe PyPI metadata access (fetch, 24 h cache,
   version parsing, install-mode detection) behind `--version` and `update`.
-- `cli_demo.py` — the fourteen live mini-examples behind `spl demo <module>`.
-- `selftest.py` — the 177-check self-check suite shipped inside the wheel,
+- `cli_demo.py` — the fifteen live mini-examples behind `spl demo <module>`.
+- `selftest.py` — the 187-check self-check suite shipped inside the wheel,
   runnable from any pip install without pytest or a source checkout.
 
 Target API for every planned module lives in the private Obsidian vault

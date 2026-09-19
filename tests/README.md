@@ -21,10 +21,11 @@ ship inside the wheel — `development/Probleme.md` [3]).
 
 ## Layout
 
-- `tests/<module>/tests.py` — one oracle suite per implemented module (fourteen
+- `tests/<module>/tests.py` — one oracle suite per implemented module (fifteen
   today: probability, distributions, montecarlo, timeseries, gaussian_processes,
   copulas, survival, queueing, information_theory, levy_processes,
-  financial_stochastics, statistics, random_matrix, advanced_mcmc).
+  financial_stochastics, statistics, random_matrix, advanced_mcmc,
+  numerical_methods).
 - `tests/<module>/e2e.py` — the end-to-end API sweep of the same module: an
   `EXERCISES` registry with one realistic exercise per name in the module's
   `__all__`, each run as its own `test_exercise[<name>]` case, plus
@@ -33,11 +34,12 @@ ship inside the wheel — `development/Probleme.md` [3]).
   validation stays in `tests.py`. CI runs each module's pair as its own
   `smoke (<module>)` job.
 - `tests/library/tests.py` — the cross-module suite: spec-name conformance for
-  all 506 implemented public names (generated from
+  all 544 implemented public names (generated from
   `development/Implementation-Checklist.md` via `_extract_spec_names.py`, cached
   in `_spec_names.json`), pinned documented extras (`MCResult`,
   `DigitalNetBase2`, timeseries result objects, GP kernel base/ops,
-  `BaseCopula`), the sanctioned multivariate method-contract deviation, and
+  `BaseCopula`, numerical_methods' `QuadratureResult`/`RootResult`/`ODESolution`/
+  `SDESolution`/`Mesh`), the sanctioned multivariate method-contract deviation, and
   end-to-end workflows spanning modules (reliability MC on library Weibull,
   t-copula margins through the library Student_t, ARIMA vs GP forecasting
   agreement, `CopulaFit` refit round trips, Sobol-QMC vs crude consistency).
@@ -56,6 +58,6 @@ pytest tests/ -v
 ```
 
 The package also ships an embedded smoke suite runnable from any pip install:
-`spl --test` (177 checks), which includes the per-module conformance and
+`spl --test` (187 checks), which includes the per-module conformance and
 cross-module spot checks. The live pass count lives only in the root README
 badge — deliberately no second copy here to go stale.

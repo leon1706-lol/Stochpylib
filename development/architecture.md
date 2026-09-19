@@ -1,6 +1,6 @@
 # stochpylib Architecture
 
-**Status:** fourteen of 23 planned modules are implemented and tested (506/794
+**Status:** fifteen of 23 planned modules are implemented and tested (544/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state). Everything else in the module map below
 remains design spec, not shipped code.
@@ -42,6 +42,7 @@ flowchart LR
     B --> O["stochpylib.statistics<br/>descriptive · estimation · hypothesis tests · regression · multivariate"]
     C --> P["stochpylib.random_matrix<br/>ensembles, limit laws, Haar rotations, spectral statistics"]
     C --> Q["stochpylib.advanced_mcmc<br/>MCMC samplers, HMC/NUTS, SMC, diagnostics, variational inference"]
+    A --> R["stochpylib.numerical_methods<br/>quadrature, ODE/SDE solvers, linear algebra, roots, interpolation, PDE"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -52,6 +53,7 @@ flowchart LR
     O --> L
     P --> L
     Q --> L
+    R --> L
 ```
 
 ## Tech Stack
@@ -66,7 +68,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (177 checks)"]
+    C --> C3["spl --test embedded self-check (187 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -150,10 +152,21 @@ README per module):
   Geweke, Raftery-Lewis, autocorrelation time, `TraceAnalysis`; mean-field VI,
   ADVI (support transforms, full rank), black-box VI, planar normalizing flows
   with hand-derived gradients, SVGD.
+- `numerical_methods/` — Gauss-Legendre/Hermite/Chebyshev quadrature via
+  Golub-Welsch, adaptive Gauss-Kronrod/Simpson, Romberg, tensor/Smolyak
+  cubature; Euler/RK4/embedded Dormand-Prince/Adams-Bashforth-Moulton/implicit
+  BDF ODE solvers, Euler-Maruyama/Milstein SDE paths; native Pade matrix
+  exponential/logarithm, Cholesky, Jacobi/QR eigendecomposition, one-sided-
+  Jacobi SVD, Householder/Gram-Schmidt/Givens QR, Francis-shift real and
+  complex Schur; bisection/Brent/secant/Newton/fixed-point root finding;
+  natural/clamped/not-a-knot splines, PCHIP cubic Hermite, barycentric
+  Lagrange, Chebyshev series, NURBS; finite-difference/finite-element/
+  boundary-element/spectral PDE solvers plus a FEniCS-style adapter that
+  solves natively by default and only lazily imports a real FEniCS install.
 
-Planned modules (9, in rough implementation order): bayesian,
+Planned modules (8, in rough implementation order): bayesian,
 nonparametric, robust_statistics,
-numerical_methods, spatial_statistics, optimization,
+spatial_statistics, optimization,
 experimental_design, viz, utils — each lands with the same bar:
 native implementations, the shared conventions, full tests against independent
 oracles, honest documentation of deviations.
@@ -208,6 +221,15 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
 - **Test critical values**: published tables where rock-solid and tiny (KPSS);
   otherwise a cached seeded Monte Carlo of the null distribution (ADF/PP/
   Johansen) — deterministic, provenance-documented, no folklore constants.
+- **Numerical conventions** (established by `numerical_methods`): integrands/
+  functions are scalar callables by default (`vectorized=True` opts into
+  array-in/array-out for speed); quadrature returns `QuadratureResult` (value +
+  error estimate + `converged`), root finders `RootResult`, ODE solvers
+  `ODESolution` with callable dense output, SDE solvers `SDESolution`;
+  matrix-decomposition classes are fluent `.compute()` objects with `_`-suffixed
+  attributes; every algorithm is implemented natively, with `numpy.linalg` as an
+  explicit `method="numpy"` fast path where offered —
+  `scipy.integrate/optimize/interpolate/linalg` remain test oracles only.
 - **Every public name is exercised end to end**: each module ships
   `tests/<module>/e2e.py` — one realistic exercise per name in `__all__`, run as
   its own pytest case, with a guard that fails when a name has no exercise. A

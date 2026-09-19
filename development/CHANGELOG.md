@@ -978,3 +978,107 @@ base (`_base.py`).
   == inf` on perfectly good iid chains.
 
 Suite: 1540 collected - 1538 passed / 2 skipped. Version 0.11.0.
+
+## Phase 29 — V0.12.0 numerical_methods: quadrature, ODE/SDE solvers, linear algebra, root finding, interpolation, PDE tools (38 names)
+
+The fifteenth module: the numerical analysis backbone the rest of the library has been
+building on top of implicitly (finite differences, quadrature, matrix decompositions),
+now a first-class module with native implementations across six submodules.
+
+- **`integration.py`:** `GaussLegendre`/`GaussHermite`/`GaussChebyshev` (all via the
+  Golub-Welsch symmetric-tridiagonal-eigenvalue construction, not looked up from
+  `numpy.polynomial`); `AdaptiveQuadrature` (QUADPACK-style adaptive Gauss-Kronrod 7-15
+  with a heap of worst-error intervals, or adaptive Simpson; infinite/half-infinite
+  limits via a change of variables); `NumericalIntegration` (dispatcher over
+  adaptive/trapezoid/simpson/romberg/gauss_legendre/gauss_kronrod/monte_carlo);
+  `MonteCarloIntegration` (a `numerical_methods`-native facade delegating sampling to
+  `stochpylib.montecarlo.crude_mc`/`quasi_montecarlo` — a deliberate same-name-different-
+  module pairing, precedented by `random_matrix.InverseWishart` vs
+  `distributions.InverseWishart`); `CubatureRule` (tensor-product or Smolyak sparse
+  grids over Gauss-Legendre/Gauss-Hermite/Clenshaw-Curtis 1-D rules).
+- **`ode_sde.py`:** `EulerMethod`, `RungeKutta4` (classic or a custom explicit Butcher
+  tableau), `DormandPrince` (embedded RK5(4)7FM with FSAL, Hairer-Norsett-Wanner initial
+  step heuristic, classic PI-free step control, cubic-Hermite dense output — not DP's
+  own 5th-order interpolant), `Adams_Bashforth` (explicit orders 1-5, RK4-started,
+  optional PECE Adams-Moulton corrector), `BDF` (implicit orders 1-5, Newton-corrected,
+  order ramp on startup — order 1 is backward Euler); `Euler_Maruyama_SDE` (diagonal or
+  general/correlated noise) and `Milstein_SDE` (diagonal noise, numeric or analytic
+  diffusion derivative) SDE path solvers, both taking a shared `brownian=` array so
+  strong-convergence studies compare schemes on the identical driving path.
+- **`linear_algebra.py`:** `MatrixExponential` (Higham 2005 degree-13 Pade with scaling-
+  and-squaring, plus eigendecomposition/Taylor fallbacks), `MatrixLogarithm` (inverse
+  scaling-and-squaring via Denman-Beavers matrix square roots and a Gauss-Legendre
+  partial-fraction Pade evaluation of `log(I+X)`), `CholeskyDecomp` (native
+  Cholesky-Banachiewicz with optional escalating jitter), `EigenDecomp` (cyclic Jacobi
+  for symmetric matrices, Hessenberg reduction + shifted QR with inverse-iteration
+  eigenvectors for general matrices), `SVD` (one-sided Hestenes Jacobi), `QRDecomp`
+  (Householder, modified Gram-Schmidt, or Givens), `Schur` (Francis implicit
+  double-shift QR for the real form, single complex-Wilkinson-shift QR for the complex
+  form).
+- **`root_solve.py`:** `Bisection`, `Brent` (Brent-Dekker: inverse quadratic
+  interpolation / secant with a bisection safety net), `Secant`, `NewtonRaphson`
+  (scalar or vector, analytic or finite-difference derivative/Jacobian, backtracking
+  damped), `FixedPoint` (plain, Aitken delta-squared, or Steffensen acceleration),
+  `RootFinding` (dispatcher + `find_bracket` expanding-interval search + `all_roots`
+  grid-scan-and-refine).
+- **`interpolation.py`:** `SplineInterpolation` (natural/clamped/not-a-knot cubic
+  spline, second-derivative formulation), `CubicHermite` (Fritsch-Carlson PCHIP slopes
+  by default, or given slopes), `BarycentricLagrange` (+ Chebyshev-point construction
+  for Runge-phenomenon-free interpolation), `Chebyshev` (series via the Clenshaw
+  recurrence; derivative/integral by the standard coefficient recurrences; roots via the
+  colleague matrix), `NURBS` (Cox-de Boor basis recursion; `circle()`/`interpolate()`
+  constructors), `Interpolation` (facade: linear/nearest/polynomial/cubic/pchip/
+  spline_natural).
+- **`pde.py`:** `Mesh` (1-D interval / 2-D triangulated rectangle), `FiniteDifference`
+  (Fornberg arbitrary-stencil weights, 1-D/2-D Poisson via Thomas/conjugate-gradient
+  solves, 1-D heat with explicit/implicit/Crank-Nicolson theta-schemes, a Black-Scholes
+  PDE pricer with an American early-exercise projection, 1-D advection with
+  upwind/Lax-Wendroff), `FiniteElement` (1-D P1/P2 Galerkin, 2-D P1 on triangles),
+  `FEniCS_Interface` (solves natively via `FiniteElement` by default; `.export_mesh()`
+  writes DOLFIN-XML or XDMF; `.to_fenics()` lazily hands the mesh to a real
+  dolfinx/dolfin install when present, else a clear `ImportError` — FEniCS is never a
+  runtime dependency), `BoundaryElement` (2-D interior Laplace, constant elements, the
+  `-(1/2*pi)*ln(r)` fundamental solution), `SpectralMethod` (Fourier
+  derivative/Poisson/heat on periodic domains via FFT, Chebyshev-collocation BVP solver
+  via Trefethen's differentiation matrix).
+- **Every algorithm is native**; `numpy.linalg` (eigh/eig/qr/svd/solve) is used as an
+  explicit `method="numpy"` fast path in the linear-algebra classes, and
+  `scipy.integrate/optimize/interpolate/linalg` remain test oracles only, never
+  imported inside `stochpylib/`.
+- **Five bugs found and fixed while testing (see `Probleme.md` #85-89):**
+  `FiniteElement.evaluate()` silently discarded the P2 midpoint DOFs (linear-only
+  lookup), erasing all of P2's extra accuracy until a P1-vs-P2 convergence-rate
+  comparison caught two identical error curves; the complex-Schur QR step never
+  updated the coupling block above a deflated trailing part, so reconstruction broke
+  as soon as any eigenvalue had deflated; `Chebyshev.integral()`'s `T_1` coefficient
+  used the general recurrence instead of its required special case, giving a definite
+  integral off by exactly half the constant term; the DOLFIN-XML mesh exporter wrote
+  NumPy 2.x's `repr()` (`"np.float64(0.0)"`) instead of a plain float string, breaking
+  the reader round-trip — the same class of NumPy-2.x formatting break this project
+  has hit before (Probleme #41-51); and `spl --help`'s column-padding logic used `>`
+  instead of `>=`, so a module name of exactly 17 characters (`numerical_methods`
+  itself, the first module name to ever hit that exact length) got zero separator
+  characters before its summary.
+- **`tests/numerical_methods/tests.py` (85 tests):** `scipy.integrate`/`optimize`/
+  `interpolate`/`linalg` and `numpy.polynomial` as independent oracles, closed forms,
+  step-halving order verification for every ODE/SDE scheme, an SDE strong-convergence
+  study (Euler-Maruyama order ~0.5, Milstein order ~1.0, log-log slope fit), the
+  Robertson stiff-system benchmark against `scipy.integrate.solve_ivp(method="Radau")`,
+  P1/P2 finite-element convergence rates, a Black-Scholes PDE price against the
+  library's own closed form and against `BinomialTree`'s American exercise, a
+  FEniCS-stub-module injection test for `.to_fenics()`, and cross-module checks against
+  `financial_stochastics.BlackScholes` and `levy_processes.Euler_Maruyama`.
+- **Every Essential-Tasks.md wrap-up item completed:** `tests/numerical_methods/e2e.py`
+  (43 exercises, one per public name); `selftest.py` extended 177 -> 187 checks
+  (`NUM:` block); `stochpylib/numerical_methods/README.md` written;
+  `development/CHANGELOG.md`, `Probleme.md`, `Implementation-Checklist.md` (38/38,
+  progress line 544/794), `architecture.md`, `infrastructure.md` updated; root
+  `README.md` (badges, status table, Known Limitations, architecture diagrams,
+  roadmap, CLI reference counts, demo prose), `stochpylib/README.md`, `tests/README.md`,
+  `CONTRIBUTING.md`, `AGENTS.md`, `development/{Development,README,project_structure}.md`
+  all synced; `tests/docs/tests.py` and `tests/library/tests.py` updated (spec-name
+  conformance, wiring, a cross-module integration test pricing Black-Scholes through
+  both a finite-difference PDE and a Gauss-Hermite risk-neutral expectation); `spl demo
+  numerical_methods` added to `cli_demo.py`; `ci.yml` `module-smoke` matrix extended.
+
+Suite: 1673 collected - 1671 passed / 2 skipped. Version 0.12.0.

@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 506 / 794 public names implemented.**
+**Progress: 544 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -780,53 +780,53 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [ ] `ActiveSet`
     - [ ] `InteriorPoint`
 
-## [numerical_methods](../Stochpylib-Obsidian-Vault/Modules/numerical_methods.md) — Numerical analysis backbone (0/38)
+## [numerical_methods](../Stochpylib-Obsidian-Vault/Modules/numerical_methods.md) — Numerical analysis backbone (38/38)
 
-- [ ] **stochpylib.numerical_methods** module overall
-  - [ ] `numerical_methods.integration`
-    - [ ] `NumericalIntegration`
-    - [ ] `AdaptiveQuadrature`
-    - [ ] `GaussLegendre`
-    - [ ] `GaussHermite`
-    - [ ] `GaussChebyshev`
-    - [ ] `MonteCarloIntegration`
-    - [ ] `CubatureRule`
-  - [ ] `numerical_methods.ode_sde`
-    - [ ] `EulerMethod`
-    - [ ] `RungeKutta4`
-    - [ ] `DormandPrince`
-    - [ ] `Adams_Bashforth`
-    - [ ] `BDF`
-    - [ ] `Euler_Maruyama_SDE`
-    - [ ] `Milstein_SDE`
-  - [ ] `numerical_methods.linear_algebra`
-    - [ ] `MatrixExponential`
-    - [ ] `MatrixLogarithm`
-    - [ ] `CholeskyDecomp`
-    - [ ] `EigenDecomp`
-    - [ ] `SVD`
-    - [ ] `QRDecomp`
-    - [ ] `Schur`
-  - [ ] `numerical_methods.root_solve`
-    - [ ] `RootFinding`
-    - [ ] `Bisection`
-    - [ ] `NewtonRaphson`
-    - [ ] `Brent`
-    - [ ] `Secant`
-    - [ ] `FixedPoint`
-  - [ ] `numerical_methods.interpolation`
-    - [ ] `Interpolation`
-    - [ ] `SplineInterpolation`
-    - [ ] `CubicHermite`
-    - [ ] `BarycentricLagrange`
-    - [ ] `Chebyshev`
-    - [ ] `NURBS`
-  - [ ] `numerical_methods.pde`
-    - [ ] `FiniteDifference`
-    - [ ] `FiniteElement`
-    - [ ] `FEniCS_Interface`
-    - [ ] `BoundaryElement`
-    - [ ] `SpectralMethod`
+- [x] **stochpylib.numerical_methods** module overall
+  - [x] `numerical_methods.integration`
+    - [x] `NumericalIntegration`
+    - [x] `AdaptiveQuadrature`
+    - [x] `GaussLegendre`
+    - [x] `GaussHermite`
+    - [x] `GaussChebyshev`
+    - [x] `MonteCarloIntegration`
+    - [x] `CubatureRule`
+  - [x] `numerical_methods.ode_sde`
+    - [x] `EulerMethod`
+    - [x] `RungeKutta4`
+    - [x] `DormandPrince`
+    - [x] `Adams_Bashforth`
+    - [x] `BDF`
+    - [x] `Euler_Maruyama_SDE`
+    - [x] `Milstein_SDE`
+  - [x] `numerical_methods.linear_algebra`
+    - [x] `MatrixExponential`
+    - [x] `MatrixLogarithm`
+    - [x] `CholeskyDecomp`
+    - [x] `EigenDecomp`
+    - [x] `SVD`
+    - [x] `QRDecomp`
+    - [x] `Schur`
+  - [x] `numerical_methods.root_solve`
+    - [x] `RootFinding`
+    - [x] `Bisection`
+    - [x] `NewtonRaphson`
+    - [x] `Brent`
+    - [x] `Secant`
+    - [x] `FixedPoint`
+  - [x] `numerical_methods.interpolation`
+    - [x] `Interpolation`
+    - [x] `SplineInterpolation`
+    - [x] `CubicHermite`
+    - [x] `BarycentricLagrange`
+    - [x] `Chebyshev`
+    - [x] `NURBS`
+  - [x] `numerical_methods.pde`
+    - [x] `FiniteDifference`
+    - [x] `FiniteElement`
+    - [x] `FEniCS_Interface`
+    - [x] `BoundaryElement`
+    - [x] `SpectralMethod`
 
 ## [experimental_design](../Stochpylib-Obsidian-Vault/Modules/experimental_design.md) — Design of experiments (0/29)
 
