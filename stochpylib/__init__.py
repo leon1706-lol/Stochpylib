@@ -8,6 +8,7 @@ from stochpylib import (
     montecarlo,
     probability,
     queueing,
+    random_matrix,
     statistics,
     survival,
     timeseries,
@@ -23,9 +24,10 @@ __all__ = [
     "montecarlo",
     "probability",
     "queueing",
+    "random_matrix",
     "statistics",
     "survival",
     "timeseries",
 ]
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"

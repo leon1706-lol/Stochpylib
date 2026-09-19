@@ -9,13 +9,15 @@ are for — see `AGENTS.md`).
 
 -----
 
-## V0.9.0 — complete
+## V0.10.0 — complete
 
-`stochpylib.statistics` (twelfth module, 48/48 spec names) is implemented, tested, and
-documented — see `development/CHANGELOG.md` Phase 26. Full verification: `tests/statistics`,
-`tests/library`, `tests/docs`, `tests/cli` all green; `spl --test` reports 160/160 checks
-passing; per-module/chunked `pytest tests/ -v` runs green throughout (see the note below on
-why chunked, not monolithic).
+`stochpylib.random_matrix` (thirteenth module, 23/23 spec names) is implemented, tested and
+documented — see `development/CHANGELOG.md` Phase 27. The testing infrastructure the brief
+asked for is in place: every module has an end-to-end API sweep (`tests/<module>/e2e.py`,
+one exercise per public name, guarded), CI runs one visible `smoke (<module>)` job per
+module plus `cross-suite` and `install-smoke`, and the sweeps surfaced and fixed twelve shipped
+bugs (`Probleme.md` #71–#82). Verification: every `tests/<module>` pair green, cross suites
+green, `spl --test` 168/168, wheel build + spec-name check green.
 
 No new objective has been set yet — treat an otherwise-empty canvas as a prompt to *ask* the
 owner what's next (or fall back to the roadmap order in `README.md`'s Roadmap section:

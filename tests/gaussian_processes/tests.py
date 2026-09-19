@@ -261,6 +261,32 @@ def test_cross_validate_gp_returns_valid_structure():
     assert np.isfinite(cv["mean_rmse"])
 
 
+def test_kernel_composition_supports_scalar_weights():
+    # regression: non-unit weights built KernelProduct([k, w]) which the composite base
+    # rejected as "part 1 is not a kernel" (development/Probleme.md #74)
+    X = np.array([[0.0], [0.5], [1.5]])
+    k = gp.KernelComposition([gp.RBFKernel(1.0), gp.LinearKernel()], weights=[0.5, 2.0])
+    expected = 0.5 * gp.kernel_matrix(gp.RBFKernel(1.0), X) + 2.0 * gp.kernel_matrix(gp.LinearKernel(), X)
+    assert np.allclose(gp.kernel_matrix(k, X), expected)
+    assert np.allclose(k.diag(X), np.diag(expected))
+    k.set_params({"part0__part0__length_scale": 2.0})       # scalar factors carry no params
+    assert k.get_params()["part0__part0__length_scale"] == 2.0
+    scaled = 3.0 * gp.RBFKernel(1.0)
+    assert np.allclose(gp.kernel_matrix(scaled, X), 3.0 * gp.kernel_matrix(gp.RBFKernel(1.0), X))
+    with pytest.raises(TypeError):
+        gp.KernelSum([gp.RBFKernel(1.0), 2.0])
+
+
+def test_spectral_mixture_dimension_keeps_components():
+    # regression: dimension=d overwrote the q component vectors with d-vectors and then
+    # failed its own length check for d != q (development/Probleme.md #75)
+    k = gp.SpectralMixtureKernel(q=3, dimension=2)
+    assert len(k.weights) == len(k.means) == len(k.scales) == 3 and k.dimension == 2
+    X = np.random.default_rng(0).normal(size=(10, 2))
+    K = k(X)
+    assert K.shape == (10, 10) and np.allclose(K, K.T)
+
+
 def test_ard_initializer():
     v = gp.ARD(3)
     assert isinstance(v, np.ndarray) and np.allclose(v, 1.0)

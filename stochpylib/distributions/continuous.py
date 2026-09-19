@@ -1138,7 +1138,8 @@ class VonMises(Distribution):
         c, s = np.mean(np.cos(data)), np.mean(np.sin(data))
         mu = np.arctan2(s, c)
         r = np.sqrt(c**2 + s**2)
-        kappa = optimize.brentq(lambda k: special.i1(k) / special.i0(k) - r, 1e-8, 1e4)
+        # i1e/i0e: same ratio as i1/i0 without the overflow to inf/inf = NaN at the upper bracket
+        kappa = optimize.brentq(lambda k: special.i1e(k) / special.i0e(k) - r, 1e-8, 1e4)
         return cls(float(mu), float(kappa))
 
 

@@ -905,6 +905,16 @@ def test_pca_matches_eigh_and_orthonormal():
     assert np.allclose(scores, r.scores_, atol=1e-8)
 
 
+def _ml_discrepancy(psi, R, n_factors):
+    """Jöreskog's concentrated ML objective F(Psi) at a given uniqueness vector
+    (see stochpylib.statistics.multivariate.factor_analysis for the derivation)."""
+    Psi_inv_sqrt = np.diag(1.0 / np.sqrt(psi))
+    M = Psi_inv_sqrt @ R @ Psi_inv_sqrt
+    w = np.sort(np.linalg.eigvalsh(M))[::-1]
+    w_rest = np.clip(w[n_factors:], 1e-10, None)
+    return float(np.sum(w_rest - np.log(w_rest) - 1.0))
+
+
 def test_factor_analysis_ml_matches_statsmodels_covariance():
     rng = np.random.default_rng(58)
     n = 200
@@ -915,9 +925,21 @@ def test_factor_analysis_ml_matches_statsmodels_covariance():
     Sigma_mine = r.loadings_ @ r.loadings_.T + np.diag(r.uniquenesses_)
     fa_ref = Factor(endog=X, n_factor=2, method="ml", smc=True).fit()
     Sigma_ref = np.real(fa_ref.fitted_cov)
-    # statsmodels' own BFGS fit occasionally reports "did not converge" on this kind
-    # of data; both are iterative optimizers so a small residual gap is expected.
-    assert np.allclose(Sigma_mine, Sigma_ref, atol=1e-3)
+
+    # This particular draw is a near-Heywood case (one communality ~1, statsmodels'
+    # own BFGS warns "did not converge"), so the exact optimum is on a flat/near-
+    # singular ridge: two runs can land on visibly different Psi/loadings while
+    # achieving essentially the same minimized discrepancy F(Psi) -- that objective
+    # value, not the raw parameters, is what's actually pinned down at the optimum,
+    # and comparing it directly is robust to platform-dependent BLAS/optimizer paths
+    # (this raw-covariance comparison alone was observed to fail by ~1.1e-3 on
+    # Windows CI while passing on Linux, for exactly this reason).
+    R = np.corrcoef(X, rowvar=False)
+    F_mine = _ml_discrepancy(r.uniquenesses_, R, 2)
+    F_ref = _ml_discrepancy(fa_ref.uniqueness, R, 2)
+    assert F_mine <= F_ref + 1e-4, f"F_mine={F_mine} should not exceed statsmodels' F_ref={F_ref}"
+
+    assert np.allclose(Sigma_mine, Sigma_ref, atol=5e-3)
     assert math.isfinite(r.loglik_)
 
 

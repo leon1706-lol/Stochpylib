@@ -189,6 +189,24 @@ class KalmanSmoother:
 # --------------------------------------------------------------------------- EKF / UKF
 
 
+def _nonlinear_rts(xf, Pf, x_pred, P_pred, C, loglik):
+    """Backward RTS pass shared by the extended and unscented smoothers.
+
+    ``x_pred[t]``/``P_pred[t]`` are the one-step predictions used at step ``t`` and
+    ``C[t]`` the cross-covariance ``Cov(x_{t-1|t-1}, x_{t|t-1})`` (Sarkka 2008, eq. 26):
+    the gain is ``D_t = C[t+1] P_pred[t+1]^{-1}`` -- for a linear model this is the
+    classical ``P_t F^T P_pred^{-1}``.
+    """
+    T = len(xf)
+    xs, Ps = xf.copy(), Pf.copy()
+    for t in range(T - 2, -1, -1):
+        D = C[t + 1] @ np.linalg.inv(P_pred[t + 1])
+        xs[t] = xf[t] + D @ (xs[t + 1] - x_pred[t + 1])
+        Ps[t] = Pf[t] + D @ (Ps[t + 1] - P_pred[t + 1]) @ D.T
+        Ps[t] = 0.5 * (Ps[t] + Ps[t].T)
+    return FilterPath(means=xs, covs=Ps, loglik=loglik, smoothed_means=xs, smoothed_covs=Ps)
+
+
 def _numeric_jacobian(f, x, eps=1e-6):
     x = np.asarray(x, dtype=float)
     f0 = np.atleast_1d(f(x))
@@ -233,11 +251,14 @@ class ExtendedKalmanFilter(StateSpaceModel):
         I_k = np.eye(k)
         x, P = self.x0.copy(), self.P0.copy()
         xf = np.empty((T, k)); Pf = np.empty((T, k, k))
+        xp = np.empty((T, k)); Pp = np.empty((T, k, k)); C = np.empty((T, k, k))
         loglik = 0.0
         for t in range(T):
             F = self.jf_fn(x)
+            C[t] = P @ F.T                    # Cov(x_{t-1|t-1}, x_{t|t-1}) for the smoother
             x = self.f_fn(x)
             P = F @ P @ F.T + self.Q
+            xp[t], Pp[t] = x, P
             H = self.jh_fn(x)
             S = H @ P @ H.T + self.R
             K = P @ H.T @ np.linalg.inv(S)
@@ -249,6 +270,7 @@ class ExtendedKalmanFilter(StateSpaceModel):
             loglik += -0.5 * (self.m * np.log(2 * np.pi) + logdet + innov @ np.linalg.solve(S, innov))
             xf[t], Pf[t] = x, P
         self.filtered_means_, self.filtered_covs_ = xf, Pf
+        self._pred_means, self._pred_covs, self._cross_covs = xp, Pp, C
         self.loglik_ = float(loglik)
         return self
 
@@ -256,7 +278,11 @@ class ExtendedKalmanFilter(StateSpaceModel):
         return self.filtered_means_
 
     def smooth(self):
-        raise NotImplementedError("EKF smoothing requires iterated methods; not implemented")
+        """Extended RTS smoother (linearized backward pass); returns :class:`FilterPath`."""
+        if not hasattr(self, "filtered_means_"):
+            raise RuntimeError("fit() must be called first")
+        return _nonlinear_rts(self.filtered_means_, self.filtered_covs_, self._pred_means,
+                              self._pred_covs, self._cross_covs, self.loglik_)
 
 
 class UnscentedKalmanFilter(StateSpaceModel):
@@ -305,6 +331,7 @@ class UnscentedKalmanFilter(StateSpaceModel):
         k = self.k
         x, P = self.x0.copy(), self.P0.copy()
         xf = np.empty((T, k)); Pf = np.empty((T, k, k))
+        xp = np.empty((T, k)); Pp = np.empty((T, k, k)); C = np.empty((T, k, k))
         loglik = 0.0
         I_k = np.eye(k)
         for t in range(T):
@@ -313,6 +340,8 @@ class UnscentedKalmanFilter(StateSpaceModel):
             x_pred = self.w_m @ sig_f
             d = sig_f - x_pred
             P_pred = self.Q + sum(self.w_c[i] * np.outer(d[i], d[i]) for i in range(2 * k + 1))
+            C[t] = sum(self.w_c[i] * np.outer(sig[i] - x, d[i]) for i in range(2 * k + 1))
+            xp[t], Pp[t] = x_pred, P_pred
 
             sig_p = self._sigma_points(x_pred, P_pred)
             sig_h = np.array([np.atleast_1d(self.h_fn(s)) for s in sig_p])
@@ -329,6 +358,7 @@ class UnscentedKalmanFilter(StateSpaceModel):
             loglik += -0.5 * (self.m * np.log(2 * np.pi) + logdet + innov @ np.linalg.solve(S, innov))
             xf[t], Pf[t] = x, P
         self.filtered_means_, self.filtered_covs_ = xf, Pf
+        self._pred_means, self._pred_covs, self._cross_covs = xp, Pp, C
         self.loglik_ = float(loglik)
         return self
 
@@ -336,7 +366,11 @@ class UnscentedKalmanFilter(StateSpaceModel):
         return self.filtered_means_
 
     def smooth(self):
-        raise NotImplementedError("UKF smoothing (UKS) not implemented")
+        """Unscented RTS smoother (Sarkka 2008); returns :class:`FilterPath`."""
+        if not hasattr(self, "filtered_means_"):
+            raise RuntimeError("fit() must be called first")
+        return _nonlinear_rts(self.filtered_means_, self.filtered_covs_, self._pred_means,
+                              self._pred_covs, self._cross_covs, self.loglik_)
 
 
 # --------------------------------------------------------------------------- particle

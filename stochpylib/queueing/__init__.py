@@ -23,6 +23,9 @@ from stochpylib.queueing.single_queues import (
 )
 from stochpylib.queueing.birth_death import (
     BirthDeathQueue,
+    EngsetFormula,
+    ErlangBFormula,
+    ErlangCFormula,
     erlang_b_formula,
     erlang_c_formula,
     engset_formula,
@@ -53,7 +56,7 @@ __all__ = [
     "GI1Queue", "GIGQueue", "MG1PriorityQueue",
     # birth-death
     "BirthDeathQueue", "erlang_b_formula", "erlang_c_formula",
-    "engset_formula",
+    "engset_formula", "ErlangBFormula", "ErlangCFormula", "EngsetFormula",
     # simulation
     "DiscreteEventSim", "EventDrivenSim", "SimStats", "QueueSimulation",
     # networks

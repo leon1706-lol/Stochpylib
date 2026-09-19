@@ -30,6 +30,8 @@ from stochpylib import (
     levy_processes,
     montecarlo,
     probability,
+    queueing,
+    random_matrix,
     statistics,
     survival,
     timeseries,
@@ -49,6 +51,9 @@ _MODULES = {
     "levy_processes": levy_processes,
     "financial_stochastics": financial_stochastics,
     "statistics": statistics,
+    "random_matrix": random_matrix,
+    "queueing": queueing,
+    "information_theory": information_theory,
 }
 
 # Documented public extras beyond the 229 spec names (utilities & result
@@ -63,13 +68,17 @@ _EXTRAS = {
                            "NonStationaryKernel", "StationaryKernelOp",
                            "NonStationaryKernelOp", "cholesky_with_jitter"},
     "copulas": {"BaseCopula"},
-    "survival": set(),
+    "survival": {"SurvivalFitter"},
+    "queueing": {"BaseQueue", "QueueResult", "erlang_b_formula", "erlang_c_formula",
+                 "engset_formula"},
+    "information_theory": set(),
     "probability": set(),
     "levy_processes": set(),
     "financial_stochastics": set(),
     "statistics": {"TestResult", "EstimateResult", "DescribeResult", "RegressionResult",
                    "PCAResult", "FactorResult", "CanonicalCorrelationResult",
                    "DiscriminantResult", "ClusterResult", "MDSResult"},
+    "random_matrix": {"MatrixEnsemble", "CircularLaw"},
 }
 
 DISTRIBUTION_METHODS_DOC = (".pdf()/.pmf()", ".cdf()", ".ppf()", ".rvs()",
@@ -100,9 +109,9 @@ def test_total_spec_name_count():
     implemented = ("probability", "montecarlo", "timeseries",
                    "gaussian_processes", "copulas", "survival", "queueing",
                    "information_theory", "levy_processes",
-                   "financial_stochastics", "statistics")
+                   "financial_stochastics", "statistics", "random_matrix")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 448  # 448/794 across the twelve implemented modules
+    assert total == 471  # 471/794 across the thirteen implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -134,8 +143,8 @@ def test_top_level_package_wiring():
     assert set(stochpylib.__all__) == {
         "copulas", "distributions", "financial_stochastics",
         "gaussian_processes", "information_theory", "levy_processes",
-        "montecarlo", "probability", "queueing", "statistics", "survival",
-        "timeseries"}
+        "montecarlo", "probability", "queueing", "random_matrix", "statistics",
+        "survival", "timeseries"}
     # version consistency, never a literal: the installed metadata and the
     # in-code __version__ must agree (a hardcoded literal here broke CI on
     # every version bump — development/Probleme.md [39])
@@ -268,3 +277,25 @@ def test_montecarlo_reliability_with_survival_km_cross_check():
     # KM S(2) = P(T>2), so failure prob P(T<=2)=1-S(2); MC uses uncensored
     # exp(0.5) draws so they should be consistent within MC noise
     assert abs((1 - km_s_at_2) - mc_fail) < .06
+
+
+def test_random_matrix_wishart_spectrum_flows_into_statistics_test_result():
+    """E2E: random_matrix -> distributions -> statistics. A Wishart ensemble sampled
+    through the library Wishart distribution has a Marchenko-Pastur bulk, and the
+    comparison comes back as the shared statistics.TestResult object."""
+    from stochpylib.statistics import TestResult
+    W = random_matrix.WishartMatrix(p=150, n=600)
+    res = W.limit_law().compare(W.normalized_eigenvalues(random_state=21))
+    assert isinstance(res, TestResult) and not res.reject(0.01)
+    assert res.extras["n"] == 150
+
+
+def test_random_matrix_wigner_universality_with_library_entry_distribution():
+    """E2E: random_matrix <- distributions. A Wigner matrix whose entries are drawn from
+    the library Exponential distribution still has a semicircular bulk, and the limit
+    law behaves as a full library distribution (ks_test contract)."""
+    from stochpylib.distributions import Exponential
+    W = random_matrix.WignerMatrix(600, entries=Exponential(2.0))
+    e = W.normalized_eigenvalues(random_state=22)
+    d, p = random_matrix.WignerSemicircle(2.0).ks_test(e)
+    assert d < 0.04 and p > 0.01

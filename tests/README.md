@@ -6,9 +6,9 @@ ship inside the wheel — `development/Probleme.md` [3]).
 
 ## Conventions
 
-- One file per module, mirroring the layout: `tests/<module>/tests.py` (e.g.
-  `probability/tests.py`). Files are named `tests.py` so pytest picks them up
-  via `python_files = ["tests.py"]` in `pyproject.toml`; each folder — and
+- Two files per module, mirroring the layout: `tests/<module>/tests.py` (the
+  oracle suite) and `tests/<module>/e2e.py` (the API sweep). pytest picks them
+  up via `python_files = ["tests.py", "e2e.py"]` in `pyproject.toml`; each folder — and
   `tests/` itself — carries an `__init__.py`, so every suite imports as
   `tests.<module>.tests`, rooted at the repo (not just at directory name,
   which would let a module named after a stdlib package, e.g. `statistics`,
@@ -21,12 +21,19 @@ ship inside the wheel — `development/Probleme.md` [3]).
 
 ## Layout
 
-- `tests/<module>/tests.py` — one suite per implemented module (twelve today:
-  probability, distributions, montecarlo, timeseries, gaussian_processes,
+- `tests/<module>/tests.py` — one oracle suite per implemented module (thirteen
+  today: probability, distributions, montecarlo, timeseries, gaussian_processes,
   copulas, survival, queueing, information_theory, levy_processes,
-  financial_stochastics, statistics).
+  financial_stochastics, statistics, random_matrix).
+- `tests/<module>/e2e.py` — the end-to-end API sweep of the same module: an
+  `EXERCISES` registry with one realistic exercise per name in the module's
+  `__all__`, each run as its own `test_exercise[<name>]` case, plus
+  `test_every_public_name_is_exercised`, which fails the moment a name ships
+  without an exercise. Fast (seconds to ~2 min per module); heavy statistical
+  validation stays in `tests.py`. CI runs each module's pair as its own
+  `smoke (<module>)` job.
 - `tests/library/tests.py` — the cross-module suite: spec-name conformance for
-  all 448 implemented public names (generated from
+  all 471 implemented public names (generated from
   `development/Implementation-Checklist.md` via `_extract_spec_names.py`, cached
   in `_spec_names.json`), pinned documented extras (`MCResult`,
   `DigitalNetBase2`, timeseries result objects, GP kernel base/ops,
@@ -49,6 +56,6 @@ pytest tests/ -v
 ```
 
 The package also ships an embedded smoke suite runnable from any pip install:
-`spl --test` (160 checks), which includes the per-module conformance and
+`spl --test` (168 checks), which includes the per-module conformance and
 cross-module spot checks. The live pass count lives only in the root README
 badge — deliberately no second copy here to go stale.

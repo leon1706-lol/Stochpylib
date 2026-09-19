@@ -194,11 +194,9 @@ class SpectralMixtureKernel(NonStationaryKernel):
         self.scales = np.asarray(
             scales if scales is not None else np.abs(rng_default_scales(q)), dtype=float
         )
-        if dimension is not None:
-            d = int(dimension)
-            for name in ("means", "scales"):
-                vec = getattr(self, name)
-                setattr(self, name, np.full(d, vec.mean()))
+        # each of the q components is isotropic across input dimensions, so ``dimension``
+        # is informational only (it used to overwrite the q-vectors with d-vectors)
+        self.dimension = None if dimension is None else int(dimension)
         if not (len(self.weights) == len(self.means) == len(self.scales)):
             raise ValueError("weights, means and scales must have equal length")
         if np.any(self.weights < 0) or abs(self.weights.sum() - 1.0) > 1e-9:

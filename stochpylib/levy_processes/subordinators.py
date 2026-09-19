@@ -133,7 +133,7 @@ class StableSubordinator(Subordinator):
         norm = np.cos(np.pi * self.alpha / 2.0) ** (1.0 / self.alpha)
         s = StableDistribution(alpha=self.alpha, beta=1.0, loc=0.0,
                                scale=norm * dt ** (1.0 / self.alpha))
-        return float(s.rvs(1, random_state=rng))
+        return float(np.asarray(s.rvs(1, random_state=rng)).ravel()[0])
 
 
 def upper_gamma_negative(s, x):

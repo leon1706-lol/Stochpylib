@@ -186,6 +186,14 @@ class LifeTable(SurvivalFitter):
         self.n_obs_ = len(t)
         return self
 
+    def predict(self, times):
+        """Actuarial survival at ``times``: S at the end of each completed interval
+        (right-continuous step function; 1 before the first edge)."""
+        if self.interval_edges_ is None:
+            raise RuntimeError("fit() must be called first")
+        step = self._step_array(self.interval_edges_[1:], self.survival_)
+        return self._step_evaluate(step, times)
+
 
 class EmpiricalSurvival(SurvivalFitter):
     """Uncensored empirical survival function S(t) = 1 - F_n(t)."""

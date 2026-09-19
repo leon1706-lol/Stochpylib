@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 448 / 794 public names implemented.**
+**Progress: 471 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -376,36 +376,36 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `TypicalSet()`
     - [x] `AEP()`
 
-## [random_matrix](../Stochpylib-Obsidian-Vault/Modules/random_matrix.md) — Random matrix theory (0/23)
+## [random_matrix](../Stochpylib-Obsidian-Vault/Modules/random_matrix.md) — Random matrix theory (23/23)
 
-- [ ] **stochpylib.random_matrix** module overall
-  - [ ] `random_matrix.ensembles`
-    - [ ] `GOE`
-    - [ ] `GUE`
-    - [ ] `GSE`
-    - [ ] `WishartMatrix`
-    - [ ] `InverseWishart`
-    - [ ] `WignerMatrix`
-    - [ ] `CUE`
-    - [ ] `MuresanMatrix`
-  - [ ] `random_matrix.empirical_spectra`
-    - [ ] `MarchenkoPastur`
-    - [ ] `WignerSemicircle`
-    - [ ] `TracyWidomDistribution`
-    - [ ] `BetaEnsemble`
-    - [ ] `JacobiEnsemble`
-  - [ ] `random_matrix.random_rotations`
-    - [ ] `RandomOrthogonalMatrix`
-    - [ ] `RandomUnitaryMatrix`
-    - [ ] `HaarMeasure`
-    - [ ] `RandomSymplectic`
-  - [ ] `random_matrix.statistics`
-    - [ ] `EigenvalueSpacing`
-    - [ ] `LevelRepulsion`
-    - [ ] `EigenvalueDistribution`
-    - [ ] `LargestEigenvalue`
-    - [ ] `BulkSpectrum`
-    - [ ] `SpectralEdge`
+- [x] **stochpylib.random_matrix** module overall
+  - [x] `random_matrix.ensembles`
+    - [x] `GOE`
+    - [x] `GUE`
+    - [x] `GSE`
+    - [x] `WishartMatrix`
+    - [x] `InverseWishart`
+    - [x] `WignerMatrix`
+    - [x] `CUE`
+    - [x] `MuresanMatrix`
+  - [x] `random_matrix.empirical_spectra`
+    - [x] `MarchenkoPastur`
+    - [x] `WignerSemicircle`
+    - [x] `TracyWidomDistribution`
+    - [x] `BetaEnsemble`
+    - [x] `JacobiEnsemble`
+  - [x] `random_matrix.random_rotations`
+    - [x] `RandomOrthogonalMatrix`
+    - [x] `RandomUnitaryMatrix`
+    - [x] `HaarMeasure`
+    - [x] `RandomSymplectic`
+  - [x] `random_matrix.statistics`
+    - [x] `EigenvalueSpacing`
+    - [x] `LevelRepulsion`
+    - [x] `EigenvalueDistribution`
+    - [x] `LargestEigenvalue`
+    - [x] `BulkSpectrum`
+    - [x] `SpectralEdge`
 
 ## [levy_processes](../Stochpylib-Obsidian-Vault/Modules/levy_processes.md) — Levy & advanced stochastic processes (33/33)
 

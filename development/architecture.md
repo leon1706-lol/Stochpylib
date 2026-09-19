@@ -1,6 +1,6 @@
 # stochpylib Architecture
 
-**Status:** twelve of 23 planned modules are implemented and tested (448/794
+**Status:** thirteen of 23 planned modules are implemented and tested (471/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state). Everything else in the module map below
 remains design spec, not shipped code.
@@ -40,6 +40,7 @@ flowchart LR
     C --> M["stochpylib.levy_processes<br/>jump-diffusion pricing, subordinators, SDE solvers"]
     C --> N["stochpylib.financial_stochastics<br/>option pricing, Heston/SABR, rate models, risk, credit, portfolio"]
     B --> O["stochpylib.statistics<br/>descriptive · estimation · hypothesis tests · regression · multivariate"]
+    C --> P["stochpylib.random_matrix<br/>ensembles, limit laws, Haar rotations, spectral statistics"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -48,6 +49,7 @@ flowchart LR
     M --> L
     N --> L
     O --> L
+    P --> L
 ```
 
 ## Tech Stack
@@ -62,7 +64,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (160 checks)"]
+    C --> C3["spl --test embedded self-check (168 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -124,10 +126,19 @@ README per module):
   and IRLS GLM (6 families x 8 links) regression, ridge/lasso/elastic-net,
   exact-LP quantile regression, PCA, ML/PA factor analysis, canonical
   correlation, LDA/QDA, k-means/hierarchical clustering, classical/SMACOF MDS.
+- `random_matrix/` — GOE/GUE/GSE (quaternion self-dual GSE), Wigner matrices over
+  any library distribution, Wishart/inverse-Wishart via the library distributions,
+  CUE, a Ginibre-type i.i.d. ensemble (`MuresanMatrix`, circular law); Wigner
+  semicircle, Marchenko-Pastur and Tracy-Widom (Painleve II, beta = 1/2/4) as full
+  `Distribution` subclasses; Dumitriu-Edelman beta-Hermite/Laguerre and Jacobi
+  ensembles; Haar O(n)/U(n)/Sp(n); spacing statistics (unfolding-free gap ratio,
+  MLE level repulsion), empirical spectra, Tracy-Widom edge scaling
+  (Ramirez-Rider-Virag / Johnstone-Ma), Dyson-Mehta number variance, Edelman's
+  hard-edge law.
 
-Planned modules (11, in rough implementation order): advanced_mcmc,
+Planned modules (10, in rough implementation order): advanced_mcmc,
 bayesian, nonparametric, robust_statistics,
-numerical_methods, random_matrix, spatial_statistics, optimization,
+numerical_methods, spatial_statistics, optimization,
 experimental_design, viz, utils — each lands with the same bar:
 native implementations, the shared conventions, full tests against independent
 oracles, honest documentation of deviations.
@@ -177,6 +188,10 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
 - **Test critical values**: published tables where rock-solid and tiny (KPSS);
   otherwise a cached seeded Monte Carlo of the null distribution (ADF/PP/
   Johansen) — deterministic, provenance-documented, no folklore constants.
+- **Every public name is exercised end to end**: each module ships
+  `tests/<module>/e2e.py` — one realistic exercise per name in `__all__`, run as
+  its own pytest case, with a guard that fails when a name has no exercise. A
+  module is not done until both `tests.py` (oracles) and `e2e.py` exist.
 
 ## Package Layout Convention
 

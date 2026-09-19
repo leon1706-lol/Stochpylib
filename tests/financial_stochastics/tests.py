@@ -730,6 +730,25 @@ def test_lmm_caplets_vs_black_and_discount_identity():
     assert np.allclose(df, expected)
 
 
+@pytest.mark.parametrize("make", [lambda: fs_rate.HullWhiteModel(kappa=0.5, sigma=0.01),
+                                  lambda: fs_rate.HoLeeModel(sigma=0.01)])
+def test_curve_models_support_fluent_fit_from_bare_constructor(make):
+    # regression: the constructor demanded a curve or (r0, theta) up front, so the
+    # documented fit(maturities, discount_factors) path was unreachable
+    # (development/Probleme.md #77)
+    m = make()
+    with pytest.raises(RuntimeError):
+        m.zcb_price(1.0)
+    with pytest.raises(RuntimeError):
+        m.theta(0.5)
+    maturities, dfs = [1.0, 2.0, 5.0], [0.97, 0.94, 0.85]
+    fitted = m.fit(maturities, dfs)
+    assert fitted is m
+    for T, df in zip(maturities, dfs):
+        assert abs(m.zcb_price(T) - df) < 1e-9          # input curve reproduced exactly
+    assert m.simulate(1.0, N=10, n_paths=3, random_state=0).shape == (3, 11)
+
+
 def test_hjm_reproduces_initial_curve_and_hw_pathwise():
     forward_curve = lambda x: 0.03 + 0.01 * x / 10.0
     vol_fn = lambda x: 0.01 * math.exp(-0.5 * x)

@@ -12,12 +12,12 @@ working on the library — they hold the structure and plan context.
 | [`project_structure.md`](project_structure.md) | The annotated directory tree: what every folder and top-level file is for |
 | [`CHANGELOG.md`](CHANGELOG.md) | Detailed, append-only, per-phase build history: what was built, when, and why |
 | [`Probleme.md`](Probleme.md) | Audit log of bugs and infrastructure issues, each with a severity rating (1–10) and a status from the legend at the top (fixed / partial / closed). Add an entry for every bug you find and fix |
-| [`Implementation-Checklist.md`](Implementation-Checklist.md) | Every planned module/submodule/public name as checkboxes — the single-glance progress tracker (currently 448/794). Update it whenever you implement |
+| [`Implementation-Checklist.md`](Implementation-Checklist.md) | Every planned module/submodule/public name as checkboxes — the single-glance progress tracker (currently 471/794). Update it whenever you implement |
 
 Module status snapshot: `probability`, `distributions`, `montecarlo`,
 `timeseries`, `gaussian_processes`, `copulas`, `survival`, `queueing`,
-`information_theory`, `levy_processes`, `financial_stochastics` and
-`statistics` are complete and tested (448/794 spec names across twelve
+`information_theory`, `levy_processes`, `financial_stochastics`, `statistics`
+and `random_matrix` are complete and tested (471/794 spec names across thirteen
 modules); all other modules are still planned — see the checklist for the
 authoritative per-name state.
 

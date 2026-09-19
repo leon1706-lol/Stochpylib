@@ -333,7 +333,8 @@ class RegimeSwitching(SwitchingRegression):
     def fit(self, y):
         y = as_1d(y)
         X_lags, target = lag_matrix(y, self.p)
-        base = super().fit(X_lags, target)
+        # lag_matrix already carries a constant column; the base fit prepends the intercept
+        base = super().fit(X_lags[:, 1:], target)
         self.ar_coefficients_ = [b[1:] for b in self.coefficients_]
         self.intercepts_ = [b[0] for b in self.coefficients_]
         self._y = y
@@ -356,7 +357,7 @@ class MixtureAutoregressive(SwitchingRegression):
     def fit(self, y):
         y = as_1d(y)
         X_lags, target = lag_matrix(y, self.p)
-        design = np.column_stack([np.ones(len(X_lags)), X_lags])
+        design = X_lags                      # lag_matrix's design already has the intercept column
         out = _fit_switching_core(design, target, self.n_regimes, markov=False,
                                   max_iter=self.max_iter, tol=self.tol,
                                   random_state=self.random_state)

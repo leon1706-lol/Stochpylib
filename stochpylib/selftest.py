@@ -331,6 +331,8 @@ def run(verbose=False):
         "financial_stochastics": (50, ["BlackScholes", "HestonModel",
                                        "ValueAtRisk", "RiskParity"]),
         "statistics": (48, ["t_test", "linear_regression", "PCA", "bootstrap_ci"]),
+        "random_matrix": (23, ["GOE", "MarchenkoPastur", "HaarMeasure",
+                               "EigenvalueSpacing"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -462,6 +464,38 @@ def run(verbose=False):
 
     st.check("STAT: studentized range CDF at q=0 is 0",
              abs(_stat_ptukey(0.0, 3, 20)) < 1e-8)
+
+    # random_matrix quick checks
+    from stochpylib.random_matrix import (
+        GOE as _RmGOE,
+        EigenvalueSpacing as _RmSpacing,
+        HaarMeasure as _RmHaar,
+        MarchenkoPastur as _RmMP,
+        MuresanMatrix as _RmGinibre,
+        TracyWidomDistribution as _RmTW,
+        WignerSemicircle as _RmSemicircle,
+    )
+
+    semi_rm = _RmSemicircle(2.0)
+    st.check("RMT: semicircle cdf spans [0, 1] and var = R^2/4",
+             abs(semi_rm.cdf(2.0) - 1.0) < 1e-12 and abs(semi_rm.cdf(-2.0)) < 1e-12
+             and abs(semi_rm.var() - 1.0) < 1e-12)
+    goe_rm = _RmGOE(300)
+    eig_rm = goe_rm.eigenvalues(random_state=104)
+    st.check("RMT: GOE(300) bulk matches the semicircle",
+             semi_rm.compare(goe_rm.normalize(eig_rm)).pvalue > 1e-3)
+    st.check("RMT: GOE mean gap ratio ~ 0.53 (GOE reference)",
+             abs(_RmSpacing(eig_rm).mean_ratio() - 0.5307) < 0.05)
+    q_rm = _RmHaar("O", 6).sample(random_state=105)
+    st.check("RMT: Haar orthogonal matrix satisfies Q^T Q = I",
+             bool(np.allclose(q_rm.T @ q_rm, np.eye(6), atol=1e-10)))
+    mp_rm = _RmMP(0.5, sigma=1.3)
+    st.check("RMT: Marchenko-Pastur mean = sigma^2", abs(mp_rm.mean() - 1.69) < 1e-12)
+    st.check("RMT: Tracy-Widom beta=2 mean ~ -1.771",
+             abs(_RmTW(2).mean() + 1.7711) < 1e-3)
+    z_rm = _RmGinibre(200).normalized_eigenvalues(random_state=106)
+    st.check("RMT: Ginibre-type circular law E|z|^2 ~ 1/2",
+             abs(float(np.mean(np.abs(z_rm) ** 2)) - 0.5) < 0.08)
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

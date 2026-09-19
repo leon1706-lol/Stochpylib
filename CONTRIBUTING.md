@@ -1,7 +1,7 @@
 # Contributing to stochpylib
 
-Thanks for your interest! This project is early-stage (currently 448/794 planned public names
-across twelve implemented modules),
+Thanks for your interest! This project is early-stage (currently 471/794 planned public names
+across thirteen implemented modules),
 so the most useful contributions implement or improve **one module at a time**.
 
 ## Development setup
@@ -17,7 +17,7 @@ Verify your installation any time with the shipped CLI:
 
 ```bash
 spl --version   # prints the installed version
-spl --test      # embedded self-check suite (160 checks, no pytest needed)
+spl --test      # embedded self-check suite (168 checks, no pytest needed)
 ```
 
 Python >= 3.10 required. NumPy/SciPy are the only runtime dependencies.
@@ -32,7 +32,8 @@ Python >= 3.10 required. NumPy/SciPy are the only runtime dependencies.
    `.cf()`, `.fit()`, `.ks_test()` — either closed-form or via the generic fallbacks in
    `stochpylib/distributions/_base.py`. Multivariate classes intentionally raise
    `NotImplementedError` where no standard generalization exists.
-3. **Tests live outside the package**, one file per module: `tests/<module>/tests.py`.
+3. **Tests live outside the package**, two files per module: `tests/<module>/tests.py` (oracle
+   suite) and `tests/<module>/e2e.py` (one end-to-end exercise per public name).
 4. **Spec first.** Every module has a target-API spec. Specs are maintained in a private vault;
    ask in an issue before implementing so we can hand you the relevant API contract and agree
    on constructor/method signatures up front.

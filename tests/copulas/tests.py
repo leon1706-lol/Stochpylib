@@ -419,6 +419,33 @@ def test_pair_rotation_h_functions_match_fd_of_rotated_cdf():
 
 # ------------------------------------------------------------------ methods
 
+@pytest.mark.parametrize("cls,kw", [(BB1Copula, dict(theta=1.4, delta=1.7)),
+                                    (BB7Copula, dict(theta=1.8, delta=1.1))])
+def test_two_parameter_tau_cache_is_keyed_on_delta(cls, kw):
+    # regression: the per-class tau(theta) curve cache ignored delta, so after any BB1/BB7
+    # fit every instance's kendall_tau() read a curve built for a different delta, and the
+    # fit's own theta inversion used the wrong curve (development/Probleme.md #82)
+    exact = cls(**kw)._tau_integral(kw["theta"])
+    data = cls(**kw).sample(2000, random_state=3)
+    fitted = cls().fit(data)
+    fresh = cls(**kw)
+    fresh.dimension = 2
+    assert abs(fresh.kendall_tau() - exact) < 1e-9
+    assert abs(fitted.kendall_tau() - kendall_tau_estimate(data[:, 0], data[:, 1])) < 1e-3
+
+
+def test_vine_loglik_accepts_copula_scale_data():
+    # regression: loglik(data, raw=False) referenced as_u_matrix without importing it
+    # and raised NameError (development/Probleme.md #73)
+    vine = cp.DVine(families=("gaussian",)).fit(VINE_DATA)
+    u = vine.sample(300, random_state=3)
+    ll_u = vine.loglik(u, raw=False)
+    assert np.isfinite(ll_u)
+    assert np.isfinite(vine.aic(u, raw=False))
+    # raw=True recomputes pseudo-observations; on already-uniform data both agree closely
+    assert abs(vine.loglik(u, raw=True) - ll_u) < 0.1 * abs(ll_u) + 5.0
+
+
 def test_copulafit_ranks_true_family_first():
     data = ClaytonCopula(theta=3.0).sample(3000, random_state=5)
     fit = cp.CopulaFit().fit(data)

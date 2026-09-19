@@ -445,6 +445,56 @@ def test_ekf_ukf_track_nonlinear_observation():
         assert corr > 0.8
 
 
+def test_nonlinear_smoothers_reduce_to_rts_on_a_linear_model():
+    """Regression for Probleme.md #80: EKF/UKF ``smooth()`` raised
+    NotImplementedError. On a linear model both must reproduce the exact RTS
+    smoother, and on a monotone nonlinear model beat their own filter."""
+    rng = np.random.default_rng(81)
+    x = np.cumsum(0.1 * rng.standard_normal(300))
+    y = x + rng.standard_normal(300)
+    kf = KalmanFilter(F=[[1.0]], H=[[1.0]], Q=[[0.01]], R=[[1.0]], x0=[0.0], P0=[[1.0]]).fit(y)
+    rts = kf.smooth().smoothed_means
+    common = dict(Q=0.01 * np.eye(1), R=np.eye(1), x0=np.array([0.0]), P0=np.eye(1))
+    for cls in (ExtendedKalmanFilter, UnscentedKalmanFilter):
+        sm = cls(f=lambda s: s.copy(), h=lambda s: s.copy(), **common).fit(y).smooth()
+        assert np.abs(sm.smoothed_means - rts).max() < 1e-3
+        assert sm.smoothed_covs.shape == (300, 1, 1) and np.isfinite(sm.loglik)
+    xn = np.cumsum(0.05 * rng.standard_normal(300)) + 1.5
+    yn = xn + 0.2 * xn ** 3 + 0.25 * rng.standard_normal(300)
+    cn = dict(Q=0.0025 * np.eye(1), R=0.0625 * np.eye(1), x0=np.array([1.5]), P0=np.eye(1))
+    for cls in (ExtendedKalmanFilter, UnscentedKalmanFilter):
+        est = cls(f=lambda s: s.copy(), h=lambda s: np.array([s[0] + 0.2 * s[0] ** 3]), **cn).fit(yn)
+        mse_f = np.mean((est.filtered_means_.ravel() - xn) ** 2)
+        mse_s = np.mean((est.smooth().smoothed_means.ravel() - xn) ** 2)
+        assert mse_s < mse_f
+
+
+def test_vecm_forecast_after_fit():
+    """Regression for Probleme.md #78: forecast() read ``self.k`` which fit() never set."""
+    rng = np.random.default_rng(82)
+    c = np.cumsum(rng.standard_normal(400))
+    Y = np.column_stack([c + 0.3 * rng.standard_normal(400), 0.8 * c + 0.3 * rng.standard_normal(400)])
+    fc = VECM(rank=1, p=1).fit(Y).forecast(4)
+    assert np.asarray(fc.mean).shape == (4, 2) and np.all(np.isfinite(fc.mean))
+
+
+def test_switching_ar_models_have_a_single_intercept():
+    """Regression for Probleme.md #79: the lag design already carried a constant column
+    and the switching fit prepended another, so each regime had p+2 coefficients
+    (a duplicated, collinear intercept) and predict() rejected p lagged values."""
+    rng = np.random.default_rng(83)
+    y = np.zeros(400)
+    for t in range(1, 400):
+        y[t] = 0.6 * y[t - 1] + rng.standard_normal()
+    rs = RegimeSwitching(p=2, n_states=2, random_state=0).fit(y)
+    assert all(c.shape == (3,) for c in rs.coefficients_)          # intercept + 2 AR terms
+    assert all(a.shape == (2,) for a in rs.ar_coefficients_)
+    assert np.asarray(rs.predict(np.column_stack([y[-5:], y[-6:-1]]))).shape == (5,)
+    mix = MixtureAutoregressive(k=2, p=1, random_state=0).fit(y)
+    assert all(c.shape == (2,) for c in mix.coefficients_)
+    assert np.asarray(mix.predict(y[-5:][:, None])).shape == (5,)
+
+
 def test_particle_filter_tracks_local_level():
     rng = np.random.default_rng(68)
     latent = np.cumsum(0.1 * rng.standard_normal(300))

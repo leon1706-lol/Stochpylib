@@ -798,6 +798,7 @@ class VECM:
         Y = as_2d(Y, "VECM input")
         k = Y.shape[1]
         T = Y.shape[0]
+        self.k = k
         m = self.p  # number of lagged-difference terms
         if T - self.p - m < k + 2:
             raise ValueError("sample too short for VECM fit")

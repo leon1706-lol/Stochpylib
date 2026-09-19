@@ -200,11 +200,18 @@ class HullWhiteModel:
         if discount_curve is not None:
             self.r0 = float(r0) if r0 is not None else -self._log_curve_deriv(1e-6)
             self._const_theta = None
+        elif theta is None or r0 is None:
+            # unfitted: fit(maturities, discount_factors) must supply the curve before use
+            self.r0 = None if r0 is None else float(r0)
+            self._const_theta = None
         else:
-            if theta is None or r0 is None:
-                raise ValueError("either discount_curve, or both r0 and theta, must be given")
             self.r0 = float(r0)
             self._const_theta = float(theta)
+
+    def _require_curve(self):
+        if self.discount_curve_ is None and self._const_theta is None:
+            raise RuntimeError("no term structure yet: construct with r0 and theta, or with a "
+                               "discount_curve, or call fit(maturities, discount_factors)")
 
     def _log_curve_deriv(self, t, h=1e-4):
         P = self.discount_curve_
@@ -217,6 +224,7 @@ class HullWhiteModel:
         return -self._log_curve_deriv(t)
 
     def theta(self, t):
+        self._require_curve()
         if self.discount_curve_ is None:
             return self._const_theta
         h = 1e-4
@@ -244,6 +252,7 @@ class HullWhiteModel:
         return self
 
     def zcb_price(self, T, t=0.0, r=None):
+        self._require_curve()
         kappa, sigma = self.kappa, self.sigma
         r = self.r0 if r is None else r
         B = (1.0 - math.exp(-kappa * (T - t))) / kappa
@@ -301,11 +310,18 @@ class HoLeeModel:
         if discount_curve is not None:
             self.r0 = float(r0) if r0 is not None else self._forward(1e-6)
             self._const_theta = None
+        elif theta is None or r0 is None:
+            # unfitted: fit(maturities, discount_factors) must supply the curve before use
+            self.r0 = None if r0 is None else float(r0)
+            self._const_theta = None
         else:
-            if theta is None or r0 is None:
-                raise ValueError("either discount_curve, or both r0 and theta, must be given")
             self.r0 = float(r0)
             self._const_theta = float(theta)
+
+    def _require_curve(self):
+        if self.discount_curve_ is None and self._const_theta is None:
+            raise RuntimeError("no term structure yet: construct with r0 and theta, or with a "
+                               "discount_curve, or call fit(maturities, discount_factors)")
 
     def _forward(self, t, h=1e-4):
         P = self.discount_curve_
@@ -313,6 +329,7 @@ class HoLeeModel:
         return -(math.log(P(t + h)) - math.log(P(max(t - h, 1e-8)))) / (h + (t - max(t - h, 1e-8)))
 
     def theta(self, t):
+        self._require_curve()
         if self.discount_curve_ is None:
             return self._const_theta
         h = 1e-4
@@ -338,6 +355,7 @@ class HoLeeModel:
         return self
 
     def zcb_price(self, T, t=0.0, r=None):
+        self._require_curve()
         r = self.r0 if r is None else r
         tau = T - t
         sigma = self.sigma

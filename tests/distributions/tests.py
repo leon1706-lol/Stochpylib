@@ -289,6 +289,16 @@ def test_von_mises_circular_variance_convention():
     assert np.isclose(d.var(), expected, rtol=1e-12)
 
 
+@pytest.mark.parametrize("kappa", [0.5, 2.0, 20.0])
+def test_von_mises_fit_recovers_parameters(kappa):
+    # regression: fit used i1/i0 whose inf/inf = NaN at the 1e4 bracket end made brentq
+    # abort on every dataset (development/Probleme.md #71)
+    x = np.asarray(D.VonMises(0.3, kappa).rvs(5000, random_state=0))
+    fitted = D.VonMises.fit(x)
+    assert abs(fitted.mu - 0.3) < 0.1
+    assert abs(fitted.kappa - kappa) < 0.05 * kappa + 0.05
+
+
 def test_gpareto_support_mask():
     d = D.GPareto(0.0, 1.0, 0.3)
     assert float(d.pdf(-0.5)) == 0.0

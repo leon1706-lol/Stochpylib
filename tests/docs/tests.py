@@ -31,7 +31,7 @@ IMPLEMENTED = (
     "probability", "distributions", "montecarlo", "timeseries",
     "gaussian_processes", "copulas", "survival", "queueing",
     "information_theory", "levy_processes", "financial_stochastics",
-    "statistics",
+    "statistics", "random_matrix",
 )
 
 
@@ -180,7 +180,9 @@ def test_no_stale_claims_in_readme():
                   r"\bten modules\b", r"\b145 checks\b", r"\b145-check\b",
                   r"\b612 passed\b", r"\b612 passing\b", r"\b400\b",
                   r"\beleven modules\b", r"\b152 checks\b", r"\b152-check\b",
-                  r"\b727 passed\b", r"\b727 passing\b"):
+                  r"\b727 passed\b", r"\b727 passing\b", r"\b448\b",
+                  r"\b848 passed\b", r"\b848 passing\b", r"\b160 checks\b",
+                  r"\b160-check\b", r"\btwelve modules\b"):
         assert not re.search(stale, readme), f"stale claim survived: {stale}"
 
 
@@ -209,7 +211,7 @@ def test_implementation_checklist_progress_line_matches_reality():
     expected_total = sum(
         len(spec[n]) + (13 if n == "distributions" else 0) for n in IMPLEMENTED
     )
-    assert total_done == expected_total == 448, (
+    assert total_done == expected_total == 471, (
         f"checklist progress {total_done} != true spec total {expected_total}"
     )
 
@@ -236,3 +238,27 @@ def test_spl_help_invents_every_module():
     assert out.returncode == 0
     for name in IMPLEMENTED:
         assert name in out.stdout, f"spl --help inventory lacks module {name}"
+
+
+def test_every_module_has_unit_suite_and_e2e_sweep():
+    import stochpylib
+    for name in stochpylib.__all__:
+        folder = REPO / "tests" / name
+        for fname in ("__init__.py", "tests.py", "e2e.py"):
+            assert (folder / fname).exists(), f"tests/{name}/{fname} missing"
+
+
+def test_ci_runs_one_smoke_job_per_module():
+    """ci.yml's module-smoke matrix must list exactly the implemented modules, so every
+    module gets its own visible check, and must not fail-fast."""
+    import stochpylib
+    ci = _read(REPO / ".github" / "workflows" / "ci.yml")
+    flow = re.search(r"^\s*module:\s*\[([^\]]+)\]", ci, re.MULTILINE)
+    if flow:
+        listed = [m.strip() for m in flow.group(1).replace("\n", ",").split(",") if m.strip()]
+    else:
+        block = re.search(r"^(\s*)module:\s*\n((?:\1\s+-\s+\S+\s*\n)+)", ci, re.MULTILINE)
+        assert block, "ci.yml lacks a `module:` smoke matrix"
+        listed = re.findall(r"-\s+(\S+)", block.group(2))
+    assert sorted(listed) == sorted(stochpylib.__all__), (sorted(listed), sorted(stochpylib.__all__))
+    assert re.search(r"fail-fast:\s*false", ci), "smoke matrix must not fail-fast"

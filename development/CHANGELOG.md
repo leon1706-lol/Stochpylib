@@ -836,3 +836,60 @@ names, no new runtime dependencies.
   `pyproject.toml` and `stochpylib/__init__.py`.
 
 Suite: 850 collected - 848 passed / 2 skipped. Version 0.9.0.
+
+## Phase 27 — V0.10.0 random_matrix (23 names), per-module CI smoke jobs, end-to-end API sweeps for every module
+
+The thirteenth module plus the testing infrastructure the V0.10.0 brief asked for.
+
+- **`stochpylib.random_matrix` (23/23 spec names, four submodules):** `ensembles.py`
+  (GOE/GUE/GSE with a quaternion self-dual GSE, `WignerMatrix` over any library
+  distribution, `WishartMatrix`/`InverseWishart` sampled through
+  `distributions.Wishart`/`InverseWishart`, `CUE`, and `MuresanMatrix` — a name the spec
+  lists without defining, implemented as the missing Ginibre-type i.i.d. ensemble with the
+  circular law); `empirical_spectra.py` (`WignerSemicircle`, `MarchenkoPastur` with the
+  `gamma > 1` atom, and `TracyWidomDistribution` for beta = 1, 2, 4 from the Hastings-McLeod
+  Painleve II solution, all three full `Distribution` subclasses; Dumitriu-Edelman
+  `BetaEnsemble` for any beta and the MANOVA `JacobiEnsemble` with the Wachter law);
+  `random_rotations.py` (`HaarMeasure` on O(n)/U(n)/Sp(n) via Mezzadri's QR and a
+  quaternionic Gram-Schmidt); `statistics.py` (`EigenvalueSpacing` with the unfolding-free
+  mean gap ratio, `LevelRepulsion` by maximum likelihood in the generalized-surmise family,
+  `EigenvalueDistribution`, `LargestEigenvalue` with Tracy-Widom scaling — Ramirez-Rider-Virag
+  for the Hermitian ensembles, Johnstone-Ma for Wishart — `BulkSpectrum` with the Dyson-Mehta
+  number variance, `SpectralEdge` with Edelman's hard-edge law).
+- **Tracy-Widom conventions pinned numerically:** beta = 4 tables use the classical
+  `F4(s / sqrt 2)` convention (mean -2.3069), and the beta-ensemble edge variable needs the
+  factor `2^(1/6)` to reach it — verified to KS p = 0.37 on 1500 tridiagonal draws before
+  being written into `LargestEigenvalue`.
+- **`tests/random_matrix/tests.py` (71 tests):** closed-form moments (Catalan/Narayana
+  numbers), published Tracy-Widom moments and cdf values, `scipy.stats.ortho_group` /
+  `unitary_group` Haar oracles, semicircle universality across three entry laws, `<r>` for
+  GOE/GUE/GSE/Poisson, Tracy-Widom edge KS tests, Edelman hard edge, the full distribution
+  contract on the three limit laws.
+- **End-to-end API sweeps (`tests/<module>/e2e.py`, all 13 modules, 486 exercises):** one
+  realistic exercise per public name, run as its own pytest case, with a guard that fails the
+  moment a name ships without one (`pyproject.toml` now collects `e2e.py`). Writing them
+  surfaced **ten shipped bugs** (Probleme #71-#80): `VonMises.fit` never returning, six
+  survival fitters without `predict`, a vine `NameError`, `KernelComposition` rejecting
+  weights, `SpectralMixtureKernel(dimension=)`, stable increments crashing on NumPy >= 2.5,
+  Hull-White/Ho-Lee unreachable `fit`, `VECM.forecast`, a duplicated intercept in the
+  switching-AR models, and the unimplemented EKF/UKF smoothers — all fixed with regression
+  tests in the modules' own suites. The new wheel check then caught an eleventh (#81): three
+  `queueing` spec names (`ErlangBFormula`/`ErlangCFormula`/`EngsetFormula`) had never been
+  exported and the conformance test had skipped `queueing` and `information_theory`; and
+  running the sweeps ahead of the oracle suites exposed a twelfth (#82): the BB1/BB7
+  Kendall-tau curve cache ignored `delta`, so their fits inverted tau on the wrong curve and
+  `kendall_tau()` went stale process-wide after any fit.
+- **CI restructured (`ci.yml`):** `finance-smoke`/`stats-smoke` replaced by a
+  `smoke (<module>)` matrix job for every module (oracle suite + e2e sweep + `spl demo`),
+  `fail-fast: false` on both matrices so one red cell no longer cancels the rest, a
+  `cross-suite` job for library/docs/cli, and an `install-smoke` that verifies every spec
+  name of every module against the built wheel. `tests/docs` now asserts the matrix equals
+  `stochpylib.__all__` and that every module has both `tests.py` and `e2e.py`;
+  `publish.yml` runs every module demo against the wheel.
+- **CLI/selftest:** `spl demo random_matrix`, `--help` blurb, roadmap epilog; `spl --test`
+  160 -> 168 checks (conformance + seven `RMT:` checks).
+- **Docs synced:** README (badges, status table, diagrams, roadmap, test counts), package/
+  tests/development docs, `stochpylib/random_matrix/README.md` (new), checklist 471/794,
+  vault status. Version 0.10.0.
+
+Suite: 1449 collected - 1447 passed / 2 skipped. Version 0.10.0.

@@ -201,6 +201,25 @@ def _demo_statistics():
     print(f"  PCA explained variance ratio = {np.round(pca.explained_variance_ratio_, 4)}")
 
 
+def _demo_random_matrix():
+    from stochpylib.random_matrix import GOE, EigenvalueSpacing, MarchenkoPastur, WishartMatrix
+
+    print("Random matrix theory - semicircle, Marchenko-Pastur, and level repulsion:")
+    goe = GOE(300)
+    eig = goe.eigenvalues(random_state=0)
+    res = goe.limit_law().compare(goe.normalize(eig))
+    print(f"  GOE(300): eigenvalues/sqrt(n) vs Wigner semicircle -> KS D={res.statistic:.4f} "
+          f"(p={res.pvalue:.3f})")
+    W = WishartMatrix(p=100, n=400)
+    mp = MarchenkoPastur(gamma=0.25)
+    e = W.normalized_eigenvalues(random_state=1)
+    print(f"  Wishart(p=100, n=400): eigenvalues/n in [{e.min():.3f}, {e.max():.3f}] vs "
+          f"Marchenko-Pastur support [{mp.lam_minus:.3f}, {mp.lam_plus:.3f}], KS p={mp.compare(e).pvalue:.3f}")
+    r = EigenvalueSpacing(eig).mean_ratio()
+    print(f"  GOE mean adjacent-gap ratio <r> = {r:.4f}  (GOE 0.5307, Poisson 0.3863) -> "
+          f"{EigenvalueSpacing(eig).classify()}")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -214,6 +233,7 @@ DEMOS = {
     "levy_processes": _demo_levy_processes,
     "financial_stochastics": _demo_financial_stochastics,
     "statistics": _demo_statistics,
+    "random_matrix": _demo_random_matrix,
 }
 DEMO_MODULES = tuple(DEMOS)
 

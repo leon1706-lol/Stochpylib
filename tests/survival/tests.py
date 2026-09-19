@@ -168,6 +168,23 @@ def test_other_parametrics_fit_finitely(cls):
 
 # ---------------------------------------------------------------- functions
 
+def test_every_fitter_exposes_predict_as_survival():
+    # regression: LifeTable and the five parametric fitters inherited the abstract
+    # predict() and raised NotImplementedError (development/Probleme.md #72)
+    t, e = _censored_exponential(0.5, 400, seed=7)
+    times = np.array([0.5, 2.0, 5.0])
+    for cls in (WeibullSurvival, ExponentialSurvival, LogNormalSurvival,
+                LogLogisticSurvival, GompertzSurvival):
+        m = cls().fit(t, e)
+        assert np.allclose(m.predict(times), m.survival_(times))
+    lt = LifeTable().fit(t, e, width=1.0)
+    s = lt.predict(times)
+    assert s.shape == (3,) and np.all(np.diff(s) <= 0)
+    assert s[0] == 1.0                                   # before the first interval edge
+    assert np.isclose(lt.predict([1.0])[0], lt.survival_[0])
+    assert np.isclose(lt.predict([2.0])[0], lt.survival_[1])
+
+
 def test_survival_function_wrapper_from_data_and_distribution():
     from stochpylib.distributions import Weibull
     t, e = _censored_exponential(.5, 4000, seed=14)

@@ -5,9 +5,12 @@ on:
   pull_request:
 
 jobs:
+  # Full suite on every supported interpreter and OS. fail-fast is off so one red cell
+  # never cancels the other seven (development/Probleme.md #39, #52).
   test:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
         os: [ubuntu-latest, windows-latest]
@@ -23,35 +26,59 @@ jobs:
           spl --version
           spl --test
 
-  finance-smoke:
+  # One visible check per module: its oracle suite, its end-to-end API sweep (every
+  # public name exercised), and its CLI surface. The matrix must list exactly
+  # stochpylib.__all__ -- tests/docs/tests.py::test_ci_runs_one_smoke_job_per_module
+  # enforces that.
+  module-smoke:
+    name: smoke (${{ matrix.module }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - probability
+          - distributions
+          - montecarlo
+          - timeseries
+          - gaussian_processes
+          - copulas
+          - survival
+          - queueing
+          - information_theory
+          - levy_processes
+          - financial_stochastics
+          - statistics
+          - random_matrix
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
-      - run: pytest tests/financial_stochastics tests/library tests/docs tests/cli -v
-      - name: Exercise the financial_stochastics CLI surface
+      - name: Unit / oracle suite
+        run: pytest tests/${{ matrix.module }}/tests.py -v
+      - name: End-to-end API sweep
+        run: pytest tests/${{ matrix.module }}/e2e.py -v
+      - name: CLI surface
         run: |
-          spl demo financial_stochastics
-          spl show BlackScholes
+          spl demo ${{ matrix.module }}
+          python -c "import stochpylib.${{ matrix.module }} as m; print(len(m.__all__), 'public names')"
 
-  stats-smoke:
+  # Cross-module conformance, documentation-consistency and CLI suites.
+  cross-suite:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
-      - run: pytest tests/statistics tests/library tests/docs tests/cli -v
-      - name: Exercise the statistics CLI surface
-        run: |
-          spl demo statistics
-          spl show linear_regression
+      - run: pytest tests/library tests/docs tests/cli -v
 
+  # The built wheel must ship every spec name of every module.
   install-smoke:
     runs-on: ubuntu-latest
     steps:
@@ -62,8 +89,19 @@ jobs:
       - run: pip install build
       - run: python -m build
       - run: pip install dist/*.whl
-      - name: Verify the wheel ships every subpackage
+      - name: Verify the wheel ships every subpackage and spec name
         run: |
-          python -c "import stochpylib.financial_stochastics as m; assert len(m.__all__) == 50"
-          python -c "import stochpylib.statistics as m, statistics as s; assert len(m.__all__) == 58 and s is not m"
+          python - <<'EOF'
+          import importlib, json
+          spec = json.load(open("tests/library/_spec_names.json", encoding="utf-8"))
+          import stochpylib
+          missing = []
+          for name in stochpylib.__all__:
+              mod = importlib.import_module(f"stochpylib.{name}")
+              missing += [f"{name}.{n}" for n in spec[name] if not hasattr(mod, n)]
+          assert not missing, missing
+          import statistics as stdlib_statistics
+          assert stdlib_statistics is not stochpylib.statistics
+          print(f"wheel ships {len(stochpylib.__all__)} modules, all spec names present")
+          EOF
           spl --test

@@ -84,6 +84,10 @@ class _ParametricBase(SurvivalFitter):
         self._require_fit()
         return self._survival(np.asarray(times, dtype=float), self._theta())
 
+    def predict(self, times):
+        """Fitted survival probability at ``times`` (the shared fitter surface)."""
+        return self.survival_(times)
+
     def hazard_(self, times):
         self._require_fit()
         return self._hazard(np.asarray(times, dtype=float), self._theta())

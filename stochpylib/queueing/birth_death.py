@@ -4,7 +4,7 @@ import numpy as np
 
 __all__ = [
     "BirthDeathQueue", "erlang_b_formula", "erlang_c_formula",
-    "engset_formula",
+    "engset_formula", "ErlangBFormula", "ErlangCFormula", "EngsetFormula",
 ]
 
 
@@ -128,3 +128,10 @@ def engset_formula(n_sources, n_servers, per_source_offered_load):
     if denominator == 0:
         return 0.0
     return float(min(1.0, numerator / denominator))
+
+
+# Spec-named aliases (Module-Map lists the formulas in PascalCase); the snake_case
+# functions above are the primary API.
+ErlangBFormula = erlang_b_formula
+ErlangCFormula = erlang_c_formula
+EngsetFormula = engset_formula

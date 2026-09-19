@@ -161,6 +161,13 @@ def _implemented_overview():
             "                   comparison tests, OLS/GLM/ridge/lasso/elastic-net/quantile\n"
             "                   regression, PCA/factor analysis/canonical correlation/\n"
             "                   discriminant analysis/clustering/MDS",
+        "random_matrix":
+            "random matrix theory: GOE/GUE/GSE, Wigner, Wishart/inverse-\n"
+            "                   Wishart, CUE, Ginibre-type ensembles; semicircle, Marchenko-\n"
+            "                   Pastur and Tracy-Widom laws as full distributions; beta-\n"
+            "                   Hermite/Laguerre and Jacobi ensembles; Haar O(n)/U(n)/Sp(n);\n"
+            "                   spacing ratios, level repulsion, empirical spectra, edge\n"
+            "                   (Tracy-Widom / Edelman) statistics",
     }
 
     blocks = []
@@ -394,8 +401,8 @@ Try a live mini-example:  spl demo <module>   (bare 'spl demo' lists them)
         epilog=(
             "subcommands: update, info, show, demo, cite - run 'spl <command> --help'\n"
             "for details.\n\n"
-            "roadmap: eleven more modules are planned (advanced_mcmc,\n"
-            "bayesian, random_matrix, spatial_statistics, robust_statistics, ...) -\n"
+            "roadmap: ten more modules are planned (advanced_mcmc,\n"
+            "bayesian, nonparametric, spatial_statistics, robust_statistics, ...) -\n"
             "see the repository README and development/Implementation-Checklist.md.\n\n"
             "docs: README.md - contributing: CONTRIBUTING.md - security: SECURITY.md"
         ),

@@ -123,8 +123,7 @@ class _ArchimedeanBase(BaseCopula):
         saved = self.theta_
         self.theta_ = float(theta)
         try:
-            cls = type(self)
-            cache = cls.__dict__.get("_tau_curve_")
+            cache = self._tau_cache()
             if cache is None or not (cache["lo"] <= theta <= cache["hi"]):
                 return self._tau_integral(theta)
             grid, vals = cache["grid"], cache["vals"]
@@ -160,8 +159,18 @@ class _ArchimedeanBase(BaseCopula):
         finally:
             self.theta_ = saved
 
+    def _tau_cache_key(self):
+        """Extra parameters tau depends on besides theta (two-parameter families)."""
+        return ()
+
+    def _tau_cache(self):
+        """The cached tau(theta) curve for this class and its extra parameters, or None."""
+        curves = type(self).__dict__.get("_tau_curves_")
+        return None if curves is None else curves.get(self._tau_cache_key())
+
     def _build_tau_curve(self, lo, hi, n=48):
-        """Precompute the monotone tau(theta) curve on a dense grid."""
+        """Precompute the monotone tau(theta) curve on a dense grid, cached per class and
+        per extra-parameter key (BB1/BB7: per delta)."""
         cls = type(self)
         if hi > 1e4:
             grid = np.geomspace(max(lo, 1e-3), hi, n)
@@ -172,16 +181,34 @@ class _ArchimedeanBase(BaseCopula):
         else:
             grid = lo + (hi - lo) * (np.linspace(0.0, 1.0, n) ** 1.6)
         vals = np.array([self._tau_integral(float(th)) for th in grid])
-        cls._tau_curve_ = {"lo": float(lo), "hi": float(hi),
-                           "grid": grid, "vals": vals}
+        if "_tau_curves_" not in cls.__dict__:
+            cls._tau_curves_ = {}
+        cls._tau_curves_[self._tau_cache_key()] = {"lo": float(lo), "hi": float(hi),
+                                                   "grid": grid, "vals": vals}
 
     def _invert_tau(self, tau):
         lo, hi = self._theta_bounds()
         cls = type(self)
-        cache = cls.__dict__.get("_tau_curve_")
+        if self._tau_cache_key():
+            # two-parameter families: tau depends on the extra parameter, so a curve per
+            # key would cost 48 integrals per delta -- a direct root-find needs ~12
+            f = lambda th: self._tau_integral(th) - tau
+            # tau(theta) is monotone but numerically unreliable at the tiny lower bound,
+            # so scan a short geometric grid for the sign change before root-finding
+            grid = np.geomspace(max(lo, 1e-3), hi, 10)
+            prev_th, prev_f = None, None
+            for th in grid:
+                val = f(float(th))
+                if prev_f is not None and np.sign(val) != np.sign(prev_f):
+                    return float(brentq_on_bracket(f, prev_th, float(th), xtol=1e-7))
+                prev_th, prev_f = float(th), val
+            raise ValueError(
+                f"tau={tau:.4f} outside what {cls.__name__} can represent "
+                f"on ({lo}, {hi})")
+        cache = self._tau_cache()
         if cache is None or cache["lo"] != lo or cache["hi"] != hi:
             self._build_tau_curve(lo, hi)
-            cache = cls._tau_curve_
+            cache = self._tau_cache()
         grid, vals = cache["grid"], cache["vals"]
         below = np.where(vals <= tau)[0]
         above = np.where(vals >= tau)[0]
@@ -534,6 +561,9 @@ class BB1Copula(_ArchimedeanBase):
     def _theta_bounds(self):
         return (1e-6, 50.0)
 
+    def _tau_cache_key(self):
+        return (round(float(self.delta_), 12),)
+
     def _psi(self, t):
         y = np.maximum(t, 0.0) ** (1.0 / self.delta_)
         return (1.0 + y) ** (-1.0 / self.theta_)
@@ -618,6 +648,9 @@ class BB7Copula(_ArchimedeanBase):
 
     def _theta_bounds(self):
         return (1.0 + 1e-9, 30.0)
+
+    def _tau_cache_key(self):
+        return (round(float(self.delta_), 12),)
 
     def _psi(self, t):
         y = 1.0 + np.minimum(np.maximum(t, 0.0), _EXP_MAX)

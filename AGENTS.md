@@ -8,11 +8,12 @@ file defers to — part of the contract, not optional.
 
 Complete stochastic-computing library — probability, distributions, Monte
 Carlo, time series, GPs, copulas, survival, queueing, information theory,
-Lévy processes, financial stochastics, statistics — native on NumPy/SciPy, no
+Lévy processes, financial stochastics, statistics, random matrix theory — native on
+NumPy/SciPy, no
 wrapper deps. Thesis: one coherent package replaces scipy.stats + statsmodels
 + lifelines + copulas.
 
-- **State:** 12 modules implemented (448 / 794 spec names), 11 remaining as spec.
+- **State:** 13 modules implemented (471 / 794 spec names), 10 remaining as spec.
 - **Runtime deps:** NumPy, SciPy (`special`/`optimize`/`integrate` only).
   **Test deps:** pytest. Nothing else, ever.
 - **Docs move with code:** a change not reflected in the relevant docs in the
@@ -62,7 +63,8 @@ stochpylib/                 # installable package
   __init__.py               # re-exports all subpackages, __version__
   cli.py / cli_pypi.py / cli_demo.py / selftest.py   # spl command
   <module>/{__init__.py, README.md, *.py}
-tests/<module>/tests.py     # outside the package, one folder per module
+tests/<module>/{tests.py, e2e.py}   # outside the package, one folder per module:
+                                     # oracle suite + end-to-end sweep of every public name
 development/                # dev docs
 Stochpylib-Obsidian-Vault/  # design spec (private)
 ```
@@ -80,9 +82,12 @@ manual real repro — green unit tests alone have missed real bugs here.
 2. **Manual debug:** realistic end-to-end scratch script against the real
    implementation, not mocks.
 3. **Tests:** `tests/<module>/tests.py` in the same task, scipy.stats etc. as
-   independent oracles, statistical assertions ≥ 3 SE. CI (`ci.yml`) runs
-   `pytest tests/` over the whole tree — nothing extra to wire unless you
-   touched `.github/workflows/`.
+   independent oracles, statistical assertions ≥ 3 SE — **and**
+   `tests/<module>/e2e.py`: one realistic exercise per public name (the
+   `EXERCISES == __all__` guard fails otherwise). CI (`ci.yml`) runs
+   `pytest tests/` over the whole tree plus one `smoke (<module>)` job per
+   module; a new module must be added to the `module-smoke` matrix
+   (`tests/docs` asserts it equals `stochpylib.__all__`).
 4. **`pytest tests/ -v`** must be green; fix failures now, not later.
 5. **Update docs** (style in §6):
    `stochpylib/<module>/README.md` · `tests/README.md` (test count) ·
@@ -122,7 +127,10 @@ preference.
 
 ## 7. CI, Release, CLI
 
-- `ci.yml`: full pytest on push/PR, Python 3.10–3.13, ubuntu + windows.
+- `ci.yml`: full pytest on push/PR, Python 3.10–3.13, ubuntu + windows
+  (`fail-fast: false`); `smoke (<module>)` per module (oracle suite + e2e sweep
+  + `spl demo`); `cross-suite` (library/docs/cli); `install-smoke` (wheel ships
+  every spec name).
 - `publish.yml` on `v*` tags: build, smoke-test (`spl --version`,
   `spl --test`), publish via Trusted Publisher. `release.yml` creates the
   GitHub Release. Bump both version files before tagging.

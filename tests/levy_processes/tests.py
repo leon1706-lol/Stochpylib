@@ -184,6 +184,20 @@ class TestLevyKhintchine:
         c = ad.cdf(0.0)
         assert 0.4 < c < 0.6
 
+    def test_gaussian_stable_increments_are_scalars(self):
+        """Regression for Probleme.md #76: ``float(s.rvs(1))`` on the alpha=2
+        (Gaussian-delegated) stable sampler's length-1 array is a TypeError on
+        NumPy >= 2.5, so ``StableProcess(alpha=2)``-based subordination, the
+        stable subordinator and the stable random measure all crashed."""
+        rng = np.random.default_rng(3)
+        inc = StableProcess(alpha=2.0)._increment(0.5, rng)
+        assert isinstance(inc, float)
+        sp = SubordinatedProcess(base=StableProcess(alpha=2.0),
+                                 subordinator=GammaSubordinator(rate=2.0, scale=0.5))
+        assert np.asarray(sp.sample([0.5, 1.0], random_state=5)).shape == (2,)
+        assert isinstance(StableSubordinator(alpha=0.5)._increment(0.1, rng), float)
+        assert RandomMeasure(kind="stable", alpha=0.5).sample((0, 1), random_state=1) >= 0
+
     def test_subordinated_process_variance_matches_subordinator_mean(self):
         gs = GammaSubordinator(rate=2.0, scale=0.5)
         sub = SubordinatedProcess(base=BrownianMotion(), subordinator=gs)

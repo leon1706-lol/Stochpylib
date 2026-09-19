@@ -22,14 +22,22 @@ class _CompositeBase(BaseKernel):
     """Composite kernels expose flattened parameters of their parts as
     ``part<i>__<name>`` so optimizers can walk the whole tree uniformly."""
 
+    _allow_scalars = False
+
     def __init__(self, parts):
         parts = list(parts)
         if len(parts) < 2:
             raise ValueError("composites need at least two parts")
         for i, k in enumerate(parts):
-            if not isinstance(k, BaseKernel):
-                raise TypeError(f"part {i} is not a kernel")
+            if isinstance(k, BaseKernel):
+                continue
+            if self._allow_scalars and isinstance(k, (int, float)) and not isinstance(k, bool):
+                continue
+            raise TypeError(f"part {i} is not a kernel")
         self.parts = parts
+
+    def _kernel_parts(self):
+        return [p for p in self.parts if isinstance(p, BaseKernel)]
 
     def get_params(self):
         out = {}
@@ -39,7 +47,8 @@ class _CompositeBase(BaseKernel):
         return out
 
     def set_params(self, params):
-        per_part = [dict() for _ in self.parts]
+        kernels = self._kernel_parts()   # scalar factors carry no parameters
+        per_part = [dict() for _ in kernels]
         for key, value in params.items():
             if "__" not in key:
                 raise KeyError(f"composite parameter keys must look like 'part0__{key}'")
@@ -47,7 +56,7 @@ class _CompositeBase(BaseKernel):
             if not idx.startswith("part"):
                 raise KeyError(key)
             per_part[int(idx[4:])][name] = value
-        for part, sub in zip(self.parts, per_part):
+        for part, sub in zip(kernels, per_part):
             if sub:
                 part.set_params(sub)
         return self
@@ -69,6 +78,8 @@ class KernelSum(_CompositeBase):
 
 class KernelProduct(_CompositeBase):
     """Elementwise product of kernel matrices; scalar factors allowed."""
+
+    _allow_scalars = True
 
     def _matrix(self, X, Y):
         Y2d = None if Y is None else _as_2d(Y)

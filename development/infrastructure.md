@@ -20,7 +20,7 @@ cd Stochpylib
 pip install -e ".[dev]"     # runtime deps + pytest
 pytest tests/ -v            # full suite must be green before you change anything
 spl --version               # verify the editable install
-spl --test                  # embedded self-check (160 checks), no pytest needed
+spl --test                  # embedded self-check (168 checks), no pytest needed
 ```
 
 The full suite is heavy (statistical convergence tests; tens of minutes on a
@@ -37,7 +37,7 @@ Registered by every install (PyPI wheel or `pip install -e .`) via
 | `spl` / `spl --help` | Full library inventory: modules with public-name counts, public functions, all distribution classes (generated dynamically from the package's `__all__`, never stale), the common interface, quick-start snippet |
 | `spl --version` | Installed version (pip metadata, falling back to the in-code `__version__`) plus the latest version on PyPI — 4 s timeout, 24 h on-disk cache, offline-safe, `STOCHPYLIB_SKIP_UPDATE_CHECK=1` disables all PyPI traffic |
 | `spl --version --list` | Lists every version ever published on PyPI in release order; installed marked `* installed`, newest marked `latest`. Always fetches fresh (never from the cache) |
-| `spl --test` | The embedded self-check suite (`stochpylib/selftest.py`, 160 checks): package sanity, per-module spec conformance, one closed-form spot check per distribution family, MC convergence sanity, cross-module workflows, offline CLI-helper logic. Exits non-zero on any failure; works after any plain `pip install` |
+| `spl --test` | The embedded self-check suite (`stochpylib/selftest.py`, 168 checks): package sanity, per-module spec conformance, one closed-form spot check per distribution family, MC convergence sanity, cross-module workflows, offline CLI-helper logic. Exits non-zero on any failure; works after any plain `pip install` |
 | `spl update [--vers X] [--yes] [--dry-run] [--force]` | Switches the pip-installed package to any published version (default: latest). Validates the target against PyPI's release list, refuses editable/source installs without `--force`, prints the exact pip command, prompts unless `--yes`; `--dry-run` executes nothing |
 | `spl info` | Environment report: install mode, python/platform, numpy/scipy versions, module inventory with public-name counts |
 | `spl show <Name>` | Qualified path + signature + docstring of any public name; close-match suggestions and non-zero exit on a miss |
@@ -48,8 +48,8 @@ Registered by every install (PyPI wheel or `pip install -e .`) via
 
 | Workflow | Trigger | Jobs |
 |---|---|---|
-| `.github/workflows/ci.yml` | every push / PR | Job `test`: matrix Python 3.10–3.13 × `${{ matrix.os }}` (ubuntu-latest + windows-latest, each actually running on its named runner); installs `-e ".[dev]" lifelines`, runs `pytest tests/ -v`, then smoke-verifies the install (`spl --version`, `spl --test`). Job `finance-smoke` (ubuntu, py3.12): fast-feedback run of `tests/financial_stochastics tests/library tests/docs tests/cli`, then `spl demo financial_stochastics` / `spl show BlackScholes`. Job `stats-smoke` (ubuntu, py3.12, 20 min timeout): fast-feedback run of `tests/statistics tests/library tests/docs tests/cli`, then `spl demo statistics` / `spl show linear_regression`. Job `install-smoke` (ubuntu, py3.12): builds and installs the wheel, verifies `financial_stochastics.__all__` ships 50 names and `statistics.__all__` ships 58 (and that the stdlib `statistics` module still resolves separately), runs `spl --test` |
-| `.github/workflows/publish.yml` | `v*` tag | Job 1: full pytest. Job 2 (`environment: pypi`, `id-token: write`): build sdist + wheel, install the wheel and smoke-verify (`spl --version`, `spl --test`, `spl demo financial_stochastics`, `spl demo statistics`), publish to PyPI via Trusted Publisher (OIDC — no API tokens stored anywhere) |
+| `.github/workflows/ci.yml` | every push / PR | Job `test`: matrix Python 3.10–3.13 × ubuntu-latest + windows-latest, `fail-fast: false` (one red cell never cancels the others); installs `-e ".[dev]" lifelines`, runs `pytest tests/ -v`, then smoke-verifies the install (`spl --version`, `spl --test`). Job `module-smoke` (`smoke (<module>)`, ubuntu, py3.12, one matrix cell per module in `stochpylib.__all__`, `fail-fast: false`): the module's oracle suite `tests/<module>/tests.py`, its end-to-end API sweep `tests/<module>/e2e.py`, then `spl demo <module>` — `tests/docs` asserts the matrix equals `stochpylib.__all__`. Job `cross-suite` (ubuntu, py3.12): `pytest tests/library tests/docs tests/cli`. Job `install-smoke` (ubuntu, py3.12): builds and installs the wheel, verifies every spec name of every module (from `tests/library/_spec_names.json`) imports from the installed copy and that the stdlib `statistics` module still resolves separately, runs `spl --test` |
+| `.github/workflows/publish.yml` | `v*` tag | Job 1: full pytest. Job 2 (`environment: pypi`, `id-token: write`): build sdist + wheel, install the wheel and smoke-verify (`spl --version`, `spl --test`, then `spl demo <module>` for every module in `stochpylib.__all__`), publish to PyPI via Trusted Publisher (OIDC — no API tokens stored anywhere) |
 | `.github/workflows/release.yml` | `v*` tag | Creates the matching GitHub Release with auto-generated changelog notes |
 
 ## Release process

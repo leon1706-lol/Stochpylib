@@ -27,7 +27,7 @@ in introduction order.
 import numpy as np
 
 from stochpylib.copulas._base import BaseCopula
-from stochpylib.copulas._utils import kendall_tau_estimate, pseudo_obs
+from stochpylib.copulas._utils import as_u_matrix, kendall_tau_estimate, pseudo_obs
 from stochpylib.copulas.pair import PAIR_FAMILIES, PairCopulaConstruction
 
 __all__ = [

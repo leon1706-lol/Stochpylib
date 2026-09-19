@@ -1535,3 +1535,241 @@ only over the discarded (smallest) eigenvalues.
 reconstructs `L @ L.T + diag(Psi)` within 1e-3 of `statsmodels.Factor
 (method="ml")`'s fitted covariance (previously off by up to 0.67 on a unit
 correlation matrix).
+
+---
+
+### 70. `test_factor_analysis_ml_matches_statsmodels_covariance` was flaky across platforms
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.9.0)
+
+**Problem:** The test's fixed seed happens to draw a near-Heywood case (one
+communality ~1; `statsmodels`' own BFGS warns "Fitting did not converge").
+Near that boundary the ML objective's minimum sits on a flat/near-singular
+ridge, so two independent BFGS runs converge to visibly different `Psi`/
+loadings with almost identical objective value — comparing the raw fitted
+covariance matrix (`atol=1e-3`) is sensitive to exactly which point on that
+ridge each platform's BLAS/LAPACK backend lands on. CI failed on
+`windows-latest` (Python 3.10 and 3.11) with a max cell diff of 1.1e-3,
+just over the threshold, while `ubuntu-latest` and this machine's local
+Windows run both passed.
+
+**Fix:** Added a primary assertion that the actual minimized quantity — the
+concentrated ML discrepancy `F(Psi)` — is no worse (within `1e-4`) than
+`statsmodels`' own `F(Psi)`, which is what is genuinely pinned down at the
+optimum regardless of which point on a flat ridge either optimizer picks.
+The raw-covariance check is kept as a secondary sanity net at a looser
+`atol=5e-3`.
+
+**Verification:** Reproduced the exact CI seed locally: `F_mine` exceeds
+`F_ref` by `3.6e-5`, comfortably inside the new `1e-4` tolerance (3x
+headroom) — the objective-value check is robust where the raw-parameter
+comparison was not. Full `tests/statistics`/`tests/library`/`tests/docs`/
+`tests/cli` suite re-verified green (215 passed) after the change.
+
+---
+
+### 71. `distributions.VonMises.fit` crashed on every dataset (Bessel overflow)
+
+**Severity:** 7/10 · **Status:** 🟢 `fixed` (V0.10.0)
+
+**Problem:** The concentration solve bracketed `kappa` up to `1e4`, where
+`special.i1(k) / special.i0(k)` is `inf / inf = NaN`, so `brentq` aborted with "function
+value at x=10000.0 is NaN" — `VonMises.fit` never returned. Found by the new
+end-to-end API sweep (`tests/distributions/e2e.py`).
+
+**Fix:** Use the exponentially scaled Bessel functions `i1e / i0e` — the same ratio with no
+overflow.
+
+**Verification:** `test_von_mises_fit_recovers_parameters` recovers `(mu=0.3, kappa)` for
+`kappa` in {0.5, 2, 20} from 5000 draws (kappa within 5 %).
+
+---
+
+### 72. Six survival fitters inherited the abstract `predict()` and raised
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.10.0)
+
+**Problem:** `LifeTable` and the five parametric fitters (`WeibullSurvival`,
+`ExponentialSurvival`, `LogNormalSurvival`, `LogLogisticSurvival`, `GompertzSurvival`) never
+overrode `SurvivalFitter.predict`, so the documented uniform `predict(times)` surface raised
+`NotImplementedError` for them. Found by `tests/survival/e2e.py`.
+
+**Fix:** Parametric `predict` returns `survival_(times)`; `LifeTable.predict` evaluates the
+actuarial survival as a right-continuous step function at the interval edges.
+
+**Verification:** `test_every_fitter_exposes_predict_as_survival` — parametric `predict ==
+survival_`, life-table `predict` equals `survival_` at the edges and is 1 before the first.
+
+---
+
+### 73. `copulas` vine `loglik(data, raw=False)` raised `NameError`
+
+**Severity:** 5/10 · **Status:** 🟢 `fixed` (V0.10.0)
+
+**Problem:** `vine.py` referenced `as_u_matrix` without importing it, so evaluating a fitted
+vine's log-likelihood or AIC on copula-scale data (`raw=False`) crashed. Found by
+`tests/copulas/e2e.py`.
+
+**Fix:** Import `as_u_matrix` from `copulas._utils`.
+
+**Verification:** `test_vine_loglik_accepts_copula_scale_data` — finite `loglik`/`aic` on
+sampled uniforms, agreeing with the `raw=True` path within noise.
+
+---
+
+### 74. `gaussian_processes.KernelComposition` rejected every non-unit weight
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.10.0)
+
+**Problem:** A weight `w != 1` built `KernelProduct([k, w])`, but the shared composite base
+rejected the scalar part ("part 1 is not a kernel") even though `KernelProduct` documents
+and evaluates scalar factors; `set_params` also indexed over all parts including scalars.
+`KernelComposition(..., weights=[0.5, 2.0])` and `3.0 * RBFKernel()` were unusable. Found by
+`tests/gaussian_processes/e2e.py`.
+
+**Fix:** `_CompositeBase` accepts scalar parts where the subclass opts in
+(`KernelProduct._allow_scalars = True`); parameter get/set map over kernel parts only.
+
+**Verification:** `test_kernel_composition_supports_scalar_weights` — weighted matrix and
+diagonal equal the hand-built sum, nested `part0__part0__length_scale` round-trips, `KernelSum`
+still rejects scalars.
+
+---
+
+### 75. `SpectralMixtureKernel(dimension=d)` failed its own length check
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.10.0)
+
+**Problem:** Passing `dimension` overwrote the `q` component vectors (`means`, `scales`) with
+`d`-length vectors and then raised "weights, means and scales must have equal length" for any
+`d != q`. Each component is isotropic across inputs, so the reshape was meaningless.
+
+**Fix:** `dimension` is stored as information only; component vectors stay length `q`.
+
+**Verification:** `test_spectral_mixture_dimension_keeps_components` — `q=3, dimension=2`
+constructs and evaluates a symmetric kernel matrix on 2-D inputs.
+
+---
+
+### 76. `levy_processes` stable increments crashed on NumPy >= 2.5
+
+**Severity:** 8/10 · **Status:** 🟢 `fixed` (V0.10.0)
+
+**Problem:** `StableProcess`, `StableSubordinator` and `RandomMeasure(kind="stable")` drew
+increments with `float(s.rvs(1, random_state=rng))`; the `alpha=2` Gaussian-delegated sampler
+returns a length-1 array, and NumPy >= 2.5 raises `TypeError: only 0-dimensional arrays can be
+converted to Python scalars` instead of the old deprecation warning. Any Brownian-based
+subordination (`SubordinatedProcess(base=StableProcess(alpha=2))`) crashed. Found by
+`tests/levy_processes/e2e.py`.
+
+**Fix:** Extract the scalar with `np.asarray(...).ravel()[0]` in all three places.
+
+**Verification:** `test_gaussian_stable_increments_are_scalars` — increments are Python
+floats, subordinated sampling and the stable random measure run.
+
+---
+
+### 77. `HullWhiteModel` / `HoLeeModel` could not be constructed for `fit()`
+
+**Severity:** 5/10 · **Status:** 🟢 `fixed` (V0.10.0)
+
+**Problem:** The constructors demanded either a `discount_curve` or both `r0` and `theta`, so
+the documented fluent `HullWhiteModel(kappa, sigma).fit(maturities, discount_factors)` path
+raised before `fit` could run. Found by `tests/financial_stochastics/e2e.py`.
+
+**Fix:** A bare constructor now yields an unfitted model; `theta()`/`zcb_price()` raise a
+clear `RuntimeError` until a curve is fitted or given.
+
+**Verification:** `test_curve_models_support_fluent_fit_from_bare_constructor` — bare
+construction, guarded errors, then `fit` reproduces the input discount factors to 1e-9.
+
+---
+
+### 78. `timeseries.VECM.forecast` raised `AttributeError: 'VECM' object has no attribute 'k'`
+
+**Severity:** 7/10 · **Status:** 🟢 `fixed` (V0.10.0)
+
+**Problem:** `fit` kept the system dimension in a local `k`; `forecast` read `self.k`. Every
+VECM forecast crashed. Found by `tests/timeseries/e2e.py`.
+
+**Fix:** `fit` stores `self.k`.
+
+**Verification:** `test_vecm_forecast_after_fit` — a 4-step forecast of a cointegrated pair
+has shape `(4, 2)` and is finite.
+
+---
+
+### 79. `RegimeSwitching` / `MixtureAutoregressive` fitted a duplicated intercept
+
+**Severity:** 7/10 · **Status:** 🟢 `fixed` (V0.10.0)
+
+**Problem:** `lag_matrix` already returns `[1, y_{t-1}, ..., y_{t-p}]`; both AR variants passed
+it through a fit that prepends another constant column, giving a perfectly collinear design
+with `p + 2` coefficients per regime, `ar_coefficients_` of length `p + 1` (the second
+intercept masquerading as an AR term), split intercepts, and a `predict()` that rejected `p`
+lagged values. Found by `tests/timeseries/e2e.py`.
+
+**Fix:** Drop `lag_matrix`'s constant before the switching fit (`RegimeSwitching`) and use
+the lag design directly (`MixtureAutoregressive`).
+
+**Verification:** `test_switching_ar_models_have_a_single_intercept` — `p + 1` coefficients per
+regime, `ar_coefficients_` of length `p`, `predict` on `(n, p)` lags works.
+
+---
+
+### 80. `ExtendedKalmanFilter.smooth()` / `UnscentedKalmanFilter.smooth()` were unimplemented
+
+**Severity:** 5/10 · **Status:** 🟢 `fixed` (V0.10.0)
+
+**Problem:** Both public smoothers raised `NotImplementedError` (the EKF one claiming
+"requires iterated methods", which is not the case for the standard extended RTS pass). Found
+by `tests/timeseries/e2e.py`.
+
+**Fix:** Both filters now store the one-step predictions and the cross-covariance
+`Cov(x_{t-1|t-1}, x_{t|t-1})` (linearized for the EKF, sigma-point for the UKF) and run the
+shared backward RTS recursion of Sarkka (2008).
+
+**Verification:** `test_nonlinear_smoothers_reduce_to_rts_on_a_linear_model` — on a linear
+model both agree with the exact `KalmanSmoother` to 1e-3; on a monotone nonlinear model the
+smoother MSE is below the filter MSE for both.
+
+---
+
+### 81. Three `queueing` spec names were missing and the conformance test never looked
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.10.0)
+
+**Problem:** The checklist lists `ErlangBFormula()`, `ErlangCFormula()` and `EngsetFormula()`
+but `queueing` only exported the snake_case functions, and `tests/library`'s
+`test_spec_names_present` parametrization omitted both `queueing` and `information_theory`,
+so the gap shipped through three releases. Found by the new `install-smoke` wheel check.
+
+**Fix:** Spec-named aliases (`ErlangBFormula = erlang_b_formula`, ...) exported alongside the
+snake_case API; `queueing` and `information_theory` added to the conformance parametrization
+(with their documented extras pinned).
+
+**Verification:** `test_spec_names_present[queueing]` / `[information_theory]` pass; the wheel
+check in `ci.yml` asserts every spec name of every module against the installed copy.
+
+---
+
+### 82. BB1/BB7 Kendall-tau curve cache ignored `delta`
+
+**Severity:** 7/10 · **Status:** 🟢 `fixed` (V0.10.0)
+
+**Problem:** The Archimedean `tau(theta)` curve is cached per class, keyed only on the theta
+bounds. For the two-parameter BB1/BB7 families tau also depends on `delta`, so `fit()` — which
+scans a delta grid — inverted tau on the curve built for the *first* delta, and afterwards
+`kendall_tau()` on any BB1/BB7 instance in the process returned that stale curve's value
+(`BB1Copula(1.4, 1.7).kendall_tau()` gave 0.44 instead of 0.65). Surfaced as an
+order-dependent failure of `test_archimedean_sampler_margins_and_tau[bb1/bb7]` once the e2e
+sweep fitted BB1/BB7 earlier in the same session.
+
+**Fix:** The cache is a per-class dict keyed on `_tau_cache_key()` (BB1/BB7: `delta`). For
+those families `_invert_tau` root-finds on the exact integral directly (a curve per delta
+would cost 48 integrals each), with a short geometric scan for the sign change because
+`tau(theta)` is numerically unreliable at the tiny lower bound.
+
+**Verification:** `test_two_parameter_tau_cache_is_keyed_on_delta` — after a fit, a fresh
+instance's `kendall_tau()` equals the exact integral to 1e-9 and the fitted copula's tau
+matches the empirical tau to 1e-3; BB1/BB7 fits now recover the generating tau (5 s / 4 s).
