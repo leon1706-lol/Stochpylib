@@ -9,19 +9,22 @@ are for — see `AGENTS.md`).
 
 -----
 
-## V0.10.0 — complete
+## V0.11.0 — advanced_mcmc — DONE, awaiting commit confirmation
 
-`stochpylib.random_matrix` (thirteenth module, 23/23 spec names) is implemented, tested and
-documented — see `development/CHANGELOG.md` Phase 27. The testing infrastructure the brief
-asked for is in place: every module has an end-to-end API sweep (`tests/<module>/e2e.py`,
-one exercise per public name, guarded), CI runs one visible `smoke (<module>)` job per
-module plus `cross-suite` and `install-smoke`, and the sweeps surfaced and fixed twelve shipped
-bugs (`Probleme.md` #71–#82). Verification: every `tests/<module>` pair green, cross suites
-green, `spl --test` 168/168, wheel build + spec-name check green.
+Implemented `stochpylib.advanced_mcmc` (35/35 spec names, 6 submodules) end to end:
+`tests/advanced_mcmc/{tests.py,e2e.py}` (48 + 39 tests), the `smoke (advanced_mcmc)`
+CI job, `spl demo`/selftest coverage (177 checks), all docs/counters synced, vault
+handoff done. Full suite verified green in per-module chunks (1538 passed / 2 skipped
+of 1540 collected — matches the README exactly) plus a from-scratch wheel install-smoke
+check in a clean venv.
 
-No new objective has been set yet — treat an otherwise-empty canvas as a prompt to *ask* the
-owner what's next (or fall back to the roadmap order in `README.md`'s Roadmap section:
-advanced MCMC, Bayesian inference, nonparametric methods, robust statistics, ...).
+Status: [x] 1 package  [x] 2 manual debug  [x] 3 tests  [x] 4 wiring  [x] 5 docs
+        [x] 6 vault handoff  [ ] 7 commit — proposed, waiting on the user (AGENTS.md §5.6)
+
+Two library bugs found and fixed while testing (see `development/Probleme.md` #83-84):
+`NoUTurnSampler` never counted its own divergences into the public `divergences_`
+attribute, and the diagnostics rank-normalization transform used the wrong Blom-formula
+denominator (gave `NaN`/`inf` R-hat on perfectly good chains).
 
 -----
 
@@ -35,4 +38,7 @@ advanced MCMC, Bayesian inference, nonparametric methods, robust statistics, ...
 
 ### Future work not in scope for current plans
 
--//-
+- V0.12.0: next module per the README roadmap is `bayesian` (25 names, 4 submodules).
+  `Ratings.md` notes its variational-inference submodule is thin relative to the rest
+  and suggests it could delegate to `advanced_mcmc.variational` (now implemented)
+  instead of duplicating scope — worth reconsidering when that module is picked up.

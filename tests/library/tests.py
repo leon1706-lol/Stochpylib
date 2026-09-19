@@ -22,6 +22,7 @@ from scipy import stats
 
 import stochpylib
 from stochpylib import (
+    advanced_mcmc,
     copulas,
     distributions,
     financial_stochastics,
@@ -54,6 +55,7 @@ _MODULES = {
     "random_matrix": random_matrix,
     "queueing": queueing,
     "information_theory": information_theory,
+    "advanced_mcmc": advanced_mcmc,
 }
 
 # Documented public extras beyond the 229 spec names (utilities & result
@@ -79,6 +81,7 @@ _EXTRAS = {
                    "PCAResult", "FactorResult", "CanonicalCorrelationResult",
                    "DiscriminantResult", "ClusterResult", "MDSResult"},
     "random_matrix": {"MatrixEnsemble", "CircularLaw"},
+    "advanced_mcmc": {"LogDensity", "MCMCSampler", "RafteryLewisResult"},
 }
 
 DISTRIBUTION_METHODS_DOC = (".pdf()/.pmf()", ".cdf()", ".ppf()", ".rvs()",
@@ -109,9 +112,10 @@ def test_total_spec_name_count():
     implemented = ("probability", "montecarlo", "timeseries",
                    "gaussian_processes", "copulas", "survival", "queueing",
                    "information_theory", "levy_processes",
-                   "financial_stochastics", "statistics", "random_matrix")
+                   "financial_stochastics", "statistics", "random_matrix",
+                   "advanced_mcmc")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 471  # 471/794 across the thirteen implemented modules
+    assert total == 506  # 506/794 across the fourteen implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -141,7 +145,7 @@ def test_every_distribution_class_exposes_common_interface():
 
 def test_top_level_package_wiring():
     assert set(stochpylib.__all__) == {
-        "copulas", "distributions", "financial_stochastics",
+        "advanced_mcmc", "copulas", "distributions", "financial_stochastics",
         "gaussian_processes", "information_theory", "levy_processes",
         "montecarlo", "probability", "queueing", "random_matrix", "statistics",
         "survival", "timeseries"}
@@ -299,3 +303,21 @@ def test_random_matrix_wigner_universality_with_library_entry_distribution():
     e = W.normalized_eigenvalues(random_state=22)
     d, p = random_matrix.WignerSemicircle(2.0).ks_test(e)
     assert d < 0.04 and p > 0.01
+
+
+def test_mcmc_samples_a_library_distribution_and_diagnostics_return_test_result():
+    """E2E: advanced_mcmc -> distributions/statistics. A slice sampler driven by a
+    library Gamma log-density reproduces its mean, and geweke_test returns a shared
+    statistics.TestResult."""
+    from stochpylib.advanced_mcmc import LogDensity, SliceSampling, geweke_test
+    from stochpylib.distributions import Gamma
+    from stochpylib.statistics import TestResult
+
+    g = Gamma(3.0, 2.0)
+    target = LogDensity.from_distribution(g)
+    s = SliceSampling(target, n_samples=3000, n_warmup=500)
+    s.sample(np.array([g.mean()]), random_state=5)
+    x = s.get_samples()[:, 0]
+    se = g.std() / np.sqrt(advanced_mcmc.ESS(x[None, :, None], method="mean"))
+    assert abs(x.mean() - g.mean()) < 5 * se
+    assert isinstance(geweke_test(x), TestResult)

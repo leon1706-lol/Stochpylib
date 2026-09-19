@@ -220,6 +220,54 @@ def _demo_random_matrix():
           f"{EigenvalueSpacing(eig).classify()}")
 
 
+def _demo_advanced_mcmc():
+    import numpy as np
+
+    from stochpylib.advanced_mcmc import ESS, NoUTurnSampler, Rhat, SequentialMonteCarlo, SliceSampling
+
+    print("Advanced MCMC - NUTS on a correlated Gaussian, slice sampling, SMC evidence:")
+    mu = np.array([1.0, -1.0])
+    rho = 0.6
+    prec = np.linalg.inv([[1.0, rho], [rho, 1.0]])
+
+    def log_prob(theta):
+        d = theta - mu
+        return -0.5 * d @ prec @ d
+
+    def grad_log_prob(theta):
+        return -prec @ (theta - mu)
+
+    nuts = NoUTurnSampler(log_prob, grad_log_prob, n_samples=1500, n_warmup=500, n_chains=2, target_accept=0.8)
+    nuts.sample(theta_init=np.zeros(2), random_state=0)
+    chains = nuts.get_chains()
+    print(f"  NUTS(2 chains, correlated Gaussian): R-hat={Rhat(chains).max():.4f}, "
+          f"ESS={ESS(chains).min():.0f}, mean accept-stat={nuts.acceptance_rate_:.3f}")
+
+    def log_prob_gamma(theta):
+        x = theta[0]
+        return -np.inf if x <= 0 else 2.0 * np.log(x) - x / 2.0  # Gamma(3, scale=2), mean 6
+
+    sl = SliceSampling(log_prob_gamma, n_samples=2000, n_warmup=300, width=3.0)
+    sl.sample(np.array([6.0]), random_state=1)
+    print(f"  Slice sampler on Gamma(3, scale=2): sample mean = {sl.get_samples().mean():.3f} (true 6.000)")
+
+    y = np.array([1.0])
+
+    def log_prior(theta):
+        return -0.5 * np.sum(theta ** 2)
+
+    def log_lik(theta):
+        return -0.5 * np.sum(((theta - y) / 0.5) ** 2)
+
+    def prior_sampler(n, rng):
+        return rng.standard_normal((n, 1))
+
+    smc = SequentialMonteCarlo(log_prior, log_lik, prior_sampler, n_particles=1000, n_mcmc=3)
+    smc.sample(random_state=2)
+    logZ_true = -0.5 * np.log(2 * np.pi * 1.25) - 0.5 * y[0] ** 2 / 1.25
+    print(f"  SMC log evidence = {smc.log_evidence_:.4f} (closed form {logZ_true:.4f})")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -234,6 +282,7 @@ DEMOS = {
     "financial_stochastics": _demo_financial_stochastics,
     "statistics": _demo_statistics,
     "random_matrix": _demo_random_matrix,
+    "advanced_mcmc": _demo_advanced_mcmc,
 }
 DEMO_MODULES = tuple(DEMOS)
 

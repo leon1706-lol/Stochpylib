@@ -11,10 +11,10 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10%2B-FF8C00?style=flat-square&labelColor=1A1A1A&logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/%F0%9F%93%84%20license-MIT-8B5CF6?style=flat-square&labelColor=1A1A1A" alt="License: MIT">
-  <img src="https://img.shields.io/badge/tests-1447%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="1447 of 1449 tests passing">
+  <img src="https://img.shields.io/badge/tests-1538%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="1538 of 1540 tests passing">
   <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&style=flat-square&labelColor=1A1A1A&label=CI&logo=githubactions&logoColor=white" alt="CI status"></a>
   <a href="https://pypi.org/project/stochpylib/"><img src="https://img.shields.io/pypi/v/stochpylib?style=flat-square&labelColor=1A1A1A&color=FF8C00&logo=pypi&logoColor=white" alt="PyPI version"></a>
-  <img src="https://img.shields.io/badge/public%20names-471%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="471 of 794 spec names implemented">
+  <img src="https://img.shields.io/badge/public%20names-506%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="506 of 794 spec names implemented">
 </p>
 
 <p align="center">
@@ -36,7 +36,7 @@ exposes the same method set
 (`.pdf()/.cdf()/.ppf()/.rvs()/.mean()/.var()/.skewness()/.kurtosis()/.entropy()/.mgf()/.cf()/.fit()/.ks_test()`),
 every stochastic method takes a `random_state=` seed, and every Monte Carlo estimator returns a
 shared result object carrying its point estimate together with an honest standard error and
-confidence interval. Around that contract, thirteen modules are live today: a **probability
+confidence interval. Around that contract, fourteen modules are live today: a **probability
 engine** (sample spaces, Bayes' theorem, exact-integer combinatorics, independence
 testing), **47 distributions** across discrete/continuous/multivariate/heavy-tailed
 families — including stable laws with Chambers–Mallows–Leckie sampling and numerically
@@ -58,10 +58,13 @@ Black-Scholes to Heston/SABR/rough-volatility and Fourier methods, short-rate an
 market models, VaR/ES/stress risk, credit risk, portfolio construction) and **statistics**
 (descriptive stats, MLE/MOM/Bayesian/bootstrap estimation, z/t/chi2/F/ANOVA/MANOVA/rank
 tests, OLS/GLM/ridge/lasso/quantile regression, PCA/factor analysis/discriminant analysis/
-clustering/MDS) and **random matrix theory** (GOE/GUE/GSE, Wigner, Wishart and Ginibre-type
+clustering/MDS), **random matrix theory** (GOE/GUE/GSE, Wigner, Wishart and Ginibre-type
 ensembles, the semicircle/Marchenko-Pastur/Tracy-Widom laws as full distributions, Haar
-rotations, spacing and edge statistics). The roadmap takes
-it onward through advanced MCMC and beyond (23 modules, ~794 public names planned). The
+rotations, spacing and edge statistics), and **advanced MCMC** (Metropolis/Gibbs/adaptive
+samplers, HMC/NUTS/MALA and Riemannian variants, slice samplers, parallel tempering,
+sequential Monte Carlo, particle MCMC, reversible-jump samplers, R-hat/ESS diagnostics,
+variational inference and planar normalizing flows). The roadmap takes
+it onward through Bayesian inference and beyond (23 modules, ~794 public names planned). The
 [Architecture](#architecture) section
 below has the structural picture; [`development/architecture.md`](development/architecture.md)
 goes deeper still.
@@ -69,10 +72,10 @@ goes deeper still.
 ## Known Limitations
 
 - **PyPI lags the repository.** The latest published release is `0.1.1`; the code here is at
-  `0.10.0`. Releases are tag-triggered (see [Release Process](#release-process)) and no tag has
+  `0.11.0`. Releases are tag-triggered (see [Release Process](#release-process)) and no tag has
   been pushed since the early modules — `pip install stochpylib` gets 0.1.1, so for the
   current state of the library, install from source (`pip install -e .`).
-- **10 of 23 planned modules remain.** The implemented thirteen are complete and tested against
+- **9 of 23 planned modules remain.** The implemented fourteen are complete and tested against
   their spec; everything else in the roadmap is design spec, not shipped code. Exact
   per-name state: [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md).
 - **`statistics`'s two-sample KS p-value uses the classical asymptotic formula**, not
@@ -84,6 +87,9 @@ goes deeper still.
   tests.
 - **GP expectation propagation is experimental** — documented convergence issues; prefer
   Laplace or variational inference (see `stochpylib/gaussian_processes/README.md`).
+- **Gradient-based MCMC has no autodiff.** `advanced_mcmc` takes an optional
+  `grad_log_prob=`; without it HMC/NUTS/MALA fall back to central finite differences
+  (`2 * dim` density evaluations per gradient) — see `stochpylib/advanced_mcmc/README.md`.
 - **The full test suite is heavy** — statistical convergence tests (GARCH fits, VARMA
   estimation, vine copulas) put it in the tens of minutes on a laptop. CI runs the same
   suite on every push, so a locally slow but green run is normal; a red run is not.
@@ -180,7 +186,7 @@ For local development (this repo cloned, a virtual environment active):
 pip install -e ".[dev]"     # runtime deps + pytest
 pytest tests/ -v            # full test suite must be green before you start changing things
 spl --version               # verify your editable install
-spl --test                  # embedded self-check (168 checks), no pytest needed
+spl --test                  # embedded self-check (177 checks), no pytest needed
 ```
 
 Then implement or improve one module at a time and run the wrap-up procedure described in
@@ -221,6 +227,7 @@ flowchart LR
     C --> N["stochpylib.financial_stochastics<br/>option pricing, Heston/SABR, rate models, risk, credit, portfolio"]
     B --> O["stochpylib.statistics<br/>descriptive · estimation · hypothesis tests · regression · multivariate"]
     C --> P["stochpylib.random_matrix<br/>ensembles, limit laws, Haar rotations, spectral statistics"]
+    C --> Q["stochpylib.advanced_mcmc<br/>MCMC samplers, HMC/NUTS, SMC, diagnostics, variational inference"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -230,6 +237,7 @@ flowchart LR
     N --> L
     O --> L
     P --> L
+    Q --> L
 ```
 
 #### Tech Stack
@@ -244,7 +252,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (168 checks)"]
+    C --> C3["spl --test embedded self-check (177 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -256,7 +264,7 @@ module must follow — see
 
 ## Current Status
 
-Thirteen modules implemented and tested — **471 / 794 spec names**:
+Fourteen modules implemented and tested — **506 / 794 spec names**:
 
 | Module | Public names | What's inside |
 |---|---|---|
@@ -273,10 +281,11 @@ Thirteen modules implemented and tested — **471 / 794 spec names**:
 | `stochpylib.financial_stochastics` | 50 | option pricing (Black-Scholes/trees/Monte Carlo/Longstaff-Schwartz/Fourier-COS) & Greeks, stochastic/local vol (Heston/SABR/rough Heston/rough Bergomi/Dupire/LVSV/variance swaps), short-rate models (Vasicek/CIR/Hull-White/Ho-Lee/G2++/Black-Karasinski/LMM/HJM), risk (VaR/ES/stress/scenario), credit (CDS/Merton/rating migration/copula portfolio loss), portfolio (mean-variance/Black-Litterman/risk parity) |
 | `stochpylib.statistics` | 48 | descriptive stats, MLE/MOM/Bayesian-conjugate/bootstrap/jackknife/delta-method/profile-likelihood estimation, z/t/chi2/F/ANOVA/MANOVA/rank/normality/multiple-comparison tests, OLS/GLM/ridge/lasso/elastic-net/quantile regression, PCA/factor analysis/canonical correlation/discriminant analysis/clustering/MDS |
 | `stochpylib.random_matrix` | 23 | GOE/GUE/GSE, Wigner, Wishart/inverse-Wishart, CUE and Ginibre-type ensembles; Wigner semicircle, Marchenko-Pastur and Tracy-Widom laws as full distributions; beta-Hermite/Laguerre and Jacobi ensembles; Haar O(n)/U(n)/Sp(n); spacing ratios, level repulsion, empirical spectra, Tracy-Widom / Edelman edge statistics |
+| `stochpylib.advanced_mcmc` | 35 | Metropolis-Hastings/independence/Gibbs, adaptive Metropolis (Haario, Vihola RAM), HMC/NUTS (dual averaging, mass adaptation), MALA/manifold MALA/Riemannian HMC/NeuTra, slice samplers (stepping/doubling/elliptical/polar), replica exchange & parallel tempering, adaptive-tempering SMC, particle MCMC, reversible-jump & Carlin-Chib transdimensional samplers, R-hat/ESS/Gelman-Rubin/PSRF/Geweke/Raftery-Lewis diagnostics, mean-field/ADVI/black-box VI, planar normalizing flows, SVGD |
 
 Exact progress against the full design spec lives in
 [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md)
-(currently **471 / 794 public names**).
+(currently **506 / 794 public names**).
 
 ## Project Layout
 
@@ -286,7 +295,7 @@ as an entry-point guide:
 
 | Folder | Guide | What lives there |
 |---|---|---|
-| `stochpylib/` | [package guide](stochpylib/README.md) | the installable package: thirteen module subpackages, `cli.py`, `selftest.py` |
+| `stochpylib/` | [package guide](stochpylib/README.md) | the installable package: fourteen module subpackages, `cli.py`, `selftest.py` |
 | `tests/` | [suite guide](tests/README.md) | per module: an oracle suite (`tests.py`) and an end-to-end API sweep (`e2e.py`), plus the cross-module library/docs/cli suites, outside the installed package |
 | `development/` | [dev-docs guide](development/README.md) | architecture, infrastructure runbook, build history, bug audit log, progress checklist |
 | `.github/` | — | CI / PyPI-publish / GitHub-Release workflows, issue & PR templates |
@@ -312,6 +321,7 @@ conventions and its documented limitations — this table is the index:
 | `stochpylib/financial_stochastics/` | Option pricing & Greeks, stochastic/local vol, short-rate models, risk, credit, portfolio construction | [README](stochpylib/financial_stochastics/README.md) |
 | `stochpylib/statistics/` | Descriptive stats, estimation, hypothesis tests, regression, multivariate methods | [README](stochpylib/statistics/README.md) |
 | `stochpylib/random_matrix/` | Classical ensembles, limiting spectral laws, Haar rotations, spectral statistics | [README](stochpylib/random_matrix/README.md) |
+| `stochpylib/advanced_mcmc/` | MCMC samplers (MH to NUTS/RMHMC), slice/tempering/SMC/particle/transdimensional methods, diagnostics, variational inference | [README](stochpylib/advanced_mcmc/README.md) |
 
 ## Development Documentation
 
@@ -343,7 +353,7 @@ conventions and its documented limitations — this table is the index:
 pytest tests/ -v
 ```
 
-**1447 passed / 2 skipped** as of the V0.10.0 `random_matrix` implementation (the 2 permanent skips
+**1538 passed / 2 skipped** as of the V0.11.0 `advanced_mcmc` implementation (the 2 permanent skips
 are the VonMises/Kumaraswamy scipy cross-checks — no direct scipy mapping, covered by
 dedicated checks instead). Tests are deterministic (fixed seeds everywhere), live outside
 the installed package, and use `scipy.stats`, `statsmodels` and brute-force references as
@@ -373,7 +383,7 @@ interface, and a runnable quick-start snippet. Running bare `spl` shows the same
 
 ```bash
 $ spl --version
-0.10.0
+0.11.0
 latest on PyPI: 0.1.1  (installed version is newer / unreleased)
 ```
 
@@ -388,7 +398,7 @@ entirely by setting `STOCHPYLIB_SKIP_UPDATE_CHECK=1`.
 
 ```bash
 $ spl --version --list
-0.10.0
+0.11.0
 latest on PyPI: 0.1.1  (installed version is newer / unreleased)
 2 published versions:
   0.1.0
@@ -401,7 +411,7 @@ served from the 24 h cache).
 
 ### `spl --test`
 
-Runs the embedded self-check suite shipped inside the wheel (**168 checks**): package sanity and per-module spec
+Runs the embedded self-check suite shipped inside the wheel (**177 checks**): package sanity and per-module spec
 conformance, one closed-form spot check per distribution family, Monte Carlo
 convergence sanity, cross-module workflows, and the offline CLI-helper logic. This works
 after any `pip install` — no pytest, no source checkout — making it the quickest way to verify
@@ -454,7 +464,8 @@ Sobol + option pricing vs Black-Scholes, AR fit + forecast, GP regression with
 uncertainty, copula AIC selection, Kaplan-Meier, M/M/1 closed form, entropy + Huffman,
 Kou jump-diffusion pricing + a tempered-stable subordinator path, Black-Scholes/Heston
 pricing + historical VaR, descriptive stats + t-test + OLS regression + PCA, GOE spectrum
-vs the semicircle + Marchenko-Pastur + level repulsion). Bare `spl demo` lists the
+vs the semicircle + Marchenko-Pastur + level repulsion, NUTS on a correlated Gaussian
+with R-hat/ESS + slice sampling + SMC evidence vs closed form). Bare `spl demo` lists the
 available demos.
 
 ### `spl cite`
@@ -482,8 +493,7 @@ Publishing.
 
 ## Roadmap
 
-Ten modules remain on the spec (in rough implementation order):
-advanced MCMC, Bayesian inference,
+Nine modules remain on the spec (in rough implementation order): Bayesian inference,
 nonparametric methods, robust statistics, numerical methods,
 spatial statistics, optimization, experimental design, visualization, and utilities.
 Each lands with the same bar: native implementations, the shared

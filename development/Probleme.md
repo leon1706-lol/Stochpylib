@@ -1773,3 +1773,53 @@ would cost 48 integrals each), with a short geometric scan for the sign change b
 **Verification:** `test_two_parameter_tau_cache_is_keyed_on_delta` — after a fit, a fresh
 instance's `kendall_tau()` equals the exact integral to 1e-9 and the fitted copula's tau
 matches the empirical tau to 1e-3; BB1/BB7 fits now recover the generating tau (5 s / 4 s).
+
+---
+
+### 83. `NoUTurnSampler._step` never counted divergences into the reported `divergences_`
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.11.0)
+
+**Problem:** `HamiltonianMonteCarlo._step` increments both a per-call counter
+(`self._divergences`) and a per-chain list (`self._divergences_per_chain[-1]`, added for
+correct multi-chain totals and to exclude transient warmup divergences). `NoUTurnSampler`
+overrides `_step` entirely and had its own, separate divergence-increment line inside the
+tree-building loop that only touched `self._divergences` — never the per-chain list that
+`sample()` actually sums into the public `divergences_` attribute. Every NUTS run therefore
+reported `divergences_ == 0` no matter how badly the trajectory was actually blowing up,
+verified with a deliberately unstable (large fixed step size, no adaptation) run on Neal's
+funnel that produced repeated single-leapfrog energy blow-ups (`H1 - H0` in the thousands)
+yet `divergences_` stayed 0.
+
+**Fix:** Added the matching `self._divergences_per_chain[-1] += 1` alongside the existing
+`self._divergences += 1` in `NoUTurnSampler._step`.
+
+**Verification:** `tests/advanced_mcmc/tests.py::test_nuts_flags_divergences_on_a_funnel`
+— a reckless (unadapted, oversized step) NUTS run on Neal's funnel now reports
+`divergences_ > 0`, and a carefully adapted run on the same target reports fewer than 10%
+divergent draws.
+
+---
+
+### 84. Rank-normalization used the wrong Blom-transform denominator, producing `NaN` R-hat/ESS
+
+**Severity:** 8/10 · **Status:** 🟢 `fixed` (V0.11.0)
+
+**Problem:** `diagnostics._rank_normalize` computed normal scores as
+`ndtri((rank - 3/8) / (N - 3/4))`. The correct Blom transform for `c = 3/8` is
+`(rank - c) / (N - 2c + 1) = (rank - 3/8) / (N + 1/4)` — the denominator had the wrong
+sign and was missing the `+1`. For the largest rank in a sample of size `N`, this pushed
+the argument of `ndtri` fractionally *above* 1 (e.g. `1.00004` for `N = 8000`), which
+`scipy.special.ndtri` maps to `NaN` rather than a large finite z-score. Any chain
+containing the sample's overall maximum (guaranteed, since ranks are pooled across all
+chains) got a `NaN` z-score, which propagated into `NaN` within-chain variance and then
+`Rhat(method="rank") == inf` — reproduced on four perfectly well-behaved i.i.d. Gaussian
+chains, which should have given `Rhat` close to 1.
+
+**Fix:** Corrected the denominator to `N + 1/4`.
+
+**Verification:** `tests/advanced_mcmc/tests.py::test_rhat_detects_shifted_and_scaled_chains`
+and the `advanced_mcmc.diagnostics` e2e/selftest checks — `Rhat(iid, method="rank")` is
+now finite and close to 1 for i.i.d. chains, correctly exceeds 1.05 when one chain has a
+different scale (the property the rank variant exists to catch), and no `NaN` appears in
+`TraceAnalysis.summary()`'s `ess_bulk`/`ess_tail` columns.

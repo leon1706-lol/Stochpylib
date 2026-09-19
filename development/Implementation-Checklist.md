@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 471 / 794 public names implemented.**
+**Progress: 506 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -628,50 +628,50 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `RiskParity`
     - [x] `CovarianceEstimation`
 
-## [advanced_mcmc](../Stochpylib-Obsidian-Vault/Modules/advanced_mcmc.md) — State-of-the-art sampling algorithms (0/35)
+## [advanced_mcmc](../Stochpylib-Obsidian-Vault/Modules/advanced_mcmc.md) — State-of-the-art sampling algorithms (35/35)
 
-- [ ] **stochpylib.advanced_mcmc** module overall
-  - [ ] `advanced_mcmc.standard`
-    - [ ] `MetropolisHastings`
-    - [ ] `GibbsSampler`
-    - [ ] `IndependenceSampler`
-    - [ ] `AdaptiveMetropolis`
-    - [ ] `RobustAdaptiveMetropolis`
-  - [ ] `advanced_mcmc.gradient_based`
-    - [ ] `HamiltonianMonteCarlo`
-    - [ ] `NoUTurnSampler`
-    - [ ] `MALA`
-    - [ ] `MMALA`
-    - [ ] `RiemannianHMC`
-    - [ ] `NeutraHMC`
-  - [ ] `advanced_mcmc.slice_sampling`
-    - [ ] `SliceSampling`
-    - [ ] `EllipticalSliceSampling`
-    - [ ] `Doubling`
-    - [ ] `Stepping`
-    - [ ] `Polar_Slice`
-  - [ ] `advanced_mcmc.advanced`
-    - [ ] `ParallelTempering`
-    - [ ] `ReplicaExchange`
-    - [ ] `SequentialMonteCarlo`
-    - [ ] `ParticleMCMC`
-    - [ ] `ReversibleJumpMCMC`
-    - [ ] `TransdimensionalMCMC`
-  - [ ] `advanced_mcmc.diagnostics`
-    - [ ] `Rhat()`
-    - [ ] `ESS()`
-    - [ ] `GelmanRubin()`
-    - [ ] `geweke_test()`
-    - [ ] `raftery_lewis()`
-    - [ ] `autocorr_time()`
-    - [ ] `PSRF()`
-    - [ ] `TraceAnalysis`
-  - [ ] `advanced_mcmc.variational`
-    - [ ] `MeanFieldVI`
-    - [ ] `ADVI`
-    - [ ] `BlackBoxVI`
-    - [ ] `NormalizingFlows`
-    - [ ] `SteinVI`
+- [x] **stochpylib.advanced_mcmc** module overall
+  - [x] `advanced_mcmc.standard`
+    - [x] `MetropolisHastings`
+    - [x] `GibbsSampler`
+    - [x] `IndependenceSampler`
+    - [x] `AdaptiveMetropolis`
+    - [x] `RobustAdaptiveMetropolis`
+  - [x] `advanced_mcmc.gradient_based`
+    - [x] `HamiltonianMonteCarlo`
+    - [x] `NoUTurnSampler`
+    - [x] `MALA`
+    - [x] `MMALA`
+    - [x] `RiemannianHMC`
+    - [x] `NeutraHMC`
+  - [x] `advanced_mcmc.slice_sampling`
+    - [x] `SliceSampling`
+    - [x] `EllipticalSliceSampling`
+    - [x] `Doubling`
+    - [x] `Stepping`
+    - [x] `Polar_Slice`
+  - [x] `advanced_mcmc.advanced`
+    - [x] `ParallelTempering`
+    - [x] `ReplicaExchange`
+    - [x] `SequentialMonteCarlo`
+    - [x] `ParticleMCMC`
+    - [x] `ReversibleJumpMCMC`
+    - [x] `TransdimensionalMCMC`
+  - [x] `advanced_mcmc.diagnostics`
+    - [x] `Rhat()`
+    - [x] `ESS()`
+    - [x] `GelmanRubin()`
+    - [x] `geweke_test()`
+    - [x] `raftery_lewis()`
+    - [x] `autocorr_time()`
+    - [x] `PSRF()`
+    - [x] `TraceAnalysis`
+  - [x] `advanced_mcmc.variational`
+    - [x] `MeanFieldVI`
+    - [x] `ADVI`
+    - [x] `BlackBoxVI`
+    - [x] `NormalizingFlows`
+    - [x] `SteinVI`
 
 ## [montecarlo](../Stochpylib-Obsidian-Vault/Modules/montecarlo.md) — Simulation & variance reduction (25/25)
 

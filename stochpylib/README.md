@@ -3,7 +3,7 @@
 The installable package: one subpackage per library module behind a single
 load-bearing contract — every distribution exposes the same method set, every
 stochastic method takes `random_state=`, every Monte Carlo estimator returns a
-shared result object. Thirteen subpackages live today (471/794 spec names):
+shared result object. Fourteen subpackages live today (506/794 spec names):
 
 | Subpackage | Spec names | What it owns | Guide |
 |---|---|---|---|
@@ -20,6 +20,7 @@ shared result object. Thirteen subpackages live today (471/794 spec names):
 | `financial_stochastics/` | 50 | option pricing & Greeks, stochastic/local vol, short-rate models, risk, credit, portfolio construction | [README](financial_stochastics/README.md) |
 | `statistics/` | 48 | descriptive stats, MLE/MOM/Bayesian/bootstrap estimation, hypothesis tests, OLS/GLM/penalized/quantile regression, multivariate methods | [README](statistics/README.md) |
 | `random_matrix/` | 23 | GOE/GUE/GSE, Wigner, Wishart, CUE, Ginibre-type ensembles; semicircle/Marchenko-Pastur/Tracy-Widom laws; Haar rotations; spacing & edge statistics | [README](random_matrix/README.md) |
+| `advanced_mcmc/` | 35 | MCMC samplers (MH, Gibbs, adaptive, HMC/NUTS/MALA/RMHMC/NeuTra, slice, tempering, SMC, particle, transdimensional), diagnostics, variational inference | [README](advanced_mcmc/README.md) |
 
 Package-level files:
 
@@ -30,8 +31,8 @@ Package-level files:
   `cite` subcommands.
 - `cli_pypi.py` — offline-safe PyPI metadata access (fetch, 24 h cache,
   version parsing, install-mode detection) behind `--version` and `update`.
-- `cli_demo.py` — the thirteen live mini-examples behind `spl demo <module>`.
-- `selftest.py` — the 168-check self-check suite shipped inside the wheel,
+- `cli_demo.py` — the fourteen live mini-examples behind `spl demo <module>`.
+- `selftest.py` — the 177-check self-check suite shipped inside the wheel,
   runnable from any pip install without pytest or a source checkout.
 
 Target API for every planned module lives in the private Obsidian vault

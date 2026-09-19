@@ -1,6 +1,6 @@
 # stochpylib Architecture
 
-**Status:** thirteen of 23 planned modules are implemented and tested (471/794
+**Status:** fourteen of 23 planned modules are implemented and tested (506/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state). Everything else in the module map below
 remains design spec, not shipped code.
@@ -41,6 +41,7 @@ flowchart LR
     C --> N["stochpylib.financial_stochastics<br/>option pricing, Heston/SABR, rate models, risk, credit, portfolio"]
     B --> O["stochpylib.statistics<br/>descriptive · estimation · hypothesis tests · regression · multivariate"]
     C --> P["stochpylib.random_matrix<br/>ensembles, limit laws, Haar rotations, spectral statistics"]
+    C --> Q["stochpylib.advanced_mcmc<br/>MCMC samplers, HMC/NUTS, SMC, diagnostics, variational inference"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -50,6 +51,7 @@ flowchart LR
     N --> L
     O --> L
     P --> L
+    Q --> L
 ```
 
 ## Tech Stack
@@ -64,7 +66,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (168 checks)"]
+    C --> C3["spl --test embedded self-check (177 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -135,9 +137,22 @@ README per module):
   MLE level repulsion), empirical spectra, Tracy-Widom edge scaling
   (Ramirez-Rider-Virag / Johnstone-Ma), Dyson-Mehta number variance, Edelman's
   hard-edge law.
+- `advanced_mcmc/` — Metropolis-Hastings/independence/Gibbs (exact conditionals
+  or Metropolis-within-Gibbs), Haario adaptive Metropolis, Vihola RAM; HMC and
+  NUTS (multinomial trajectories, dual averaging, windowed diagonal mass
+  adaptation), MALA, simplified manifold MALA and Riemannian HMC (SoftAbs
+  default metric, generalized leapfrog), NeuTra HMC through a planar flow;
+  stepping/doubling slice sampling, elliptical slice sampling, Gibbsian polar
+  slice sampler; replica exchange / parallel tempering with ladder adaptation,
+  adaptive-tempering SMC with evidence estimates, particle marginal MH on the
+  library particle filter, Green reversible-jump and Carlin-Chib product-space
+  samplers; split/rank R-hat, Stan-style ESS, Gelman-Rubin/multivariate PSRF,
+  Geweke, Raftery-Lewis, autocorrelation time, `TraceAnalysis`; mean-field VI,
+  ADVI (support transforms, full rank), black-box VI, planar normalizing flows
+  with hand-derived gradients, SVGD.
 
-Planned modules (10, in rough implementation order): advanced_mcmc,
-bayesian, nonparametric, robust_statistics,
+Planned modules (9, in rough implementation order): bayesian,
+nonparametric, robust_statistics,
 numerical_methods, spatial_statistics, optimization,
 experimental_design, viz, utils — each lands with the same bar:
 native implementations, the shared conventions, full tests against independent
@@ -182,9 +197,14 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
   parameterization through jittered Cholesky factors — no raw inverses of
   near-singular kernel matrices.
 - **Diagnostics live next to the algorithm they check**: `timeseries.tests`
-  (ADF, KPSS, Ljung-Box) sits inside time series; MCMC diagnostics will sit
-  inside `advanced_mcmc` — no centralized hypothesis-test module unless the
-  test is genuinely general-purpose.
+  (ADF, KPSS, Ljung-Box) sits inside time series; MCMC diagnostics sit
+  inside `advanced_mcmc.diagnostics` — no centralized hypothesis-test module
+  unless the test is genuinely general-purpose.
+- **MCMC conventions** (established by `advanced_mcmc`): chains are
+  `(n_chains, n_samples, dim)`, `sample(theta_init, random_state=)` is fluent
+  and discards warmup, adaptation freezes after warmup, gradients are optional
+  callables with a finite-difference fallback, and diagnostics accept raw
+  arrays so any sampler (or SMC particle cloud) can be checked.
 - **Test critical values**: published tables where rock-solid and tiny (KPSS);
   otherwise a cached seeded Monte Carlo of the null distribution (ADF/PP/
   Johansen) — deterministic, provenance-documented, no folklore constants.

@@ -168,6 +168,14 @@ def _implemented_overview():
             "                   Hermite/Laguerre and Jacobi ensembles; Haar O(n)/U(n)/Sp(n);\n"
             "                   spacing ratios, level repulsion, empirical spectra, edge\n"
             "                   (Tracy-Widom / Edelman) statistics",
+        "advanced_mcmc":
+            "MCMC & variational inference: Metropolis/Gibbs/adaptive\n"
+            "                   (AM, RAM) samplers, HMC/NUTS/MALA/manifold MALA/Riemannian\n"
+            "                   HMC/NeuTra, slice samplers (stepping, doubling, elliptical,\n"
+            "                   polar), replica exchange & parallel tempering, SMC, particle\n"
+            "                   MCMC, reversible-jump & product-space transdimensional\n"
+            "                   samplers, R-hat/ESS/Geweke/Raftery-Lewis diagnostics,\n"
+            "                   mean-field/ADVI/black-box VI, planar flows, SVGD",
     }
 
     blocks = []
@@ -401,8 +409,8 @@ Try a live mini-example:  spl demo <module>   (bare 'spl demo' lists them)
         epilog=(
             "subcommands: update, info, show, demo, cite - run 'spl <command> --help'\n"
             "for details.\n\n"
-            "roadmap: ten more modules are planned (advanced_mcmc,\n"
-            "bayesian, nonparametric, spatial_statistics, robust_statistics, ...) -\n"
+            "roadmap: nine more modules are planned (bayesian,\n"
+            "nonparametric, spatial_statistics, robust_statistics, numerical_methods, ...) -\n"
             "see the repository README and development/Implementation-Checklist.md.\n\n"
             "docs: README.md - contributing: CONTRIBUTING.md - security: SECURITY.md"
         ),

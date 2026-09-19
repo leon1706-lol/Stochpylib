@@ -893,3 +893,88 @@ The thirteenth module plus the testing infrastructure the V0.10.0 brief asked fo
   vault status. Version 0.10.0.
 
 Suite: 1449 collected - 1447 passed / 2 skipped. Version 0.10.0.
+
+## Phase 28 — V0.11.0 advanced_mcmc: samplers from Metropolis to NUTS/RMHMC, slice/tempering/SMC/particle/transdimensional methods, diagnostics, variational inference (35 names)
+
+The fourteenth module: state-of-the-art MCMC and variational inference, natively on
+numpy/scipy.special only, across six submodules plus a shared `LogDensity`/`MCMCSampler`
+base (`_base.py`).
+
+- **`standard.py`:** `MetropolisHastings` (random-walk or fully general/asymmetric
+  proposal with `proposal_log_density` correction), `IndependenceSampler`, `GibbsSampler`
+  (exact conditionals or Metropolis-within-Gibbs, systematic/random scan), `AdaptiveMetropolis`
+  (Haario, Saksman & Tamminen 2001), `RobustAdaptiveMetropolis` (Vihola 2012 Cholesky-factor
+  adaptation).
+- **`gradient_based.py`:** `HamiltonianMonteCarlo` (leapfrog, dual-averaging step size,
+  Stan-style windowed diagonal mass adaptation), `NoUTurnSampler` (multinomial trajectory
+  sampling with biased progressive sampling, the classic position-momentum stopping
+  criterion), `MALA`, `MMALA` (simplified manifold MALA, SoftAbs-regularised metric
+  default), `RiemannianHMC` (generalized leapfrog via fixed-point iteration), `NeutraHMC`
+  (fits a `NormalizingFlows` approximation and runs NUTS/HMC in its base space — proven
+  exact regardless of flow fit quality, since the flow is only a reparameterization).
+- **`slice_sampling.py`:** `Stepping`/`Doubling` (Neal 2003 interval strategies),
+  `SliceSampling` (coordinate-wise with shrinkage), `EllipticalSliceSampling` (Murray,
+  Adams & MacKay 2010, exact for a Gaussian prior), `Polar_Slice` (Gibbsian polar slice
+  sampler, Schar-Habeck-Rudolf 2023).
+- **`advanced.py`:** `ReplicaExchange` (general population-MCMC engine) and
+  `ParallelTempering` (tempered-ladder specialization with a pilot-phase ladder
+  adaptation toward equal swap rates); `SequentialMonteCarlo` (adaptive-tempering SMC
+  with bisection-chosen annealing schedule, systematic resampling, RW-MH rejuvenation,
+  and marginal-likelihood estimation); `ParticleMCMC` (particle marginal MH via
+  `timeseries.ParticleFilter`); `ReversibleJumpMCMC` (Green 1995, default
+  Gaussian-auxiliary dimension-matching move) and `TransdimensionalMCMC` (Carlin & Chib
+  1995 product-space sampler with fitted Gaussian pseudo-priors).
+- **`diagnostics.py`:** `Rhat` (split/rank/classic), `ESS` (bulk/tail/mean/sd, Stan-style
+  Geyer-paired estimator), `GelmanRubin`, `PSRF` (Brooks & Gelman multivariate),
+  `geweke_test`, `raftery_lewis` (+ `RafteryLewisResult`), `autocorr_time`
+  (Sokal/Geyer), `TraceAnalysis` (bundles all diagnostics per parameter).
+- **`variational.py`:** `MeanFieldVI`, `ADVI` (mean-field or full-rank, with
+  unconstraining bound transforms), `BlackBoxVI` (score-function gradients, no target
+  gradient needed), `NormalizingFlows` (planar flows, Rezende & Mohamed 2015, with
+  hand-derived reverse-mode gradients — no autodiff anywhere in the stack), `SteinVI`
+  (Stein variational gradient descent).
+- **Numerical decisions worth recording:** NUTS uses the classic Hoffman-Gelman position-
+  momentum stopping criterion (an earlier attempt at a `rho`-accumulated "generalized"
+  criterion terminated trees almost immediately — the classic criterion is simpler and
+  provably correct here); momentum must be sampled as `p ~ N(0, mass)` where `mass =
+  1/inv_mass` (the adapted quantity), not `inv_mass` directly — this bug caused a runaway
+  mass-adaptation collapse across warmup windows before being caught; `NormalizingFlows`
+  needed weight decay, per-sample and per-step gradient clipping, a hard cap on `||u||`,
+  and an invertibility safety margin (`denom >= margin`, not just `>= 0`) to train
+  stably — even plain small-step gradient ascent on the raw ELBO diverges to NaN without
+  them, a genuine (documented) planar-flow pathology, not an optimizer artifact; its
+  forward/backward pass is vectorized over the whole Monte Carlo batch for a ~10-50x
+  speedup, verified to match the original per-sample loop to floating-point precision.
+- **Trans-dimensional correctness note:** `ReversibleJumpMCMC`/`TransdimensionalMCMC`
+  compare densities across models of different dimension, so (unlike single-model MCMC)
+  every `log_posteriors[k]` must include *all* normalizing constants — an early manual
+  test with unnormalized densities gave a wildly wrong Bayes factor (P(M2) off by an
+  order of magnitude) purely from this omission, not a sampler bug; fixed in the test
+  and called out prominently in the module README.
+- **`tests/advanced_mcmc/tests.py` (48 tests):** closed-form posteriors (conjugate
+  Gaussian models, a hand-written Kalman-filter oracle for `ParticleMCMC`, conjugate
+  linear-regression Bayes factors for the two trans-dimensional samplers), `scipy.stats`
+  KS tests, and independent hand-derived diagnostic formulas, plus exact finite-difference
+  gradient checks for the planar flow (both the per-sample and batched code paths).
+- **Every Essential-Tasks.md wrap-up item completed:** `tests/advanced_mcmc/e2e.py` (39
+  exercises, one per public name); `selftest.py` extended 168 -> 177 checks (`MCMC:`
+  block); `stochpylib/advanced_mcmc/README.md` written; `development/CHANGELOG.md`,
+  `Probleme.md`, `Implementation-Checklist.md` (35/35, progress line 506/794),
+  `architecture.md`, `infrastructure.md` updated; root `README.md` (badges, status
+  table, Known Limitations, architecture diagrams, roadmap, CLI reference counts,
+  demo prose), `stochpylib/README.md`, `tests/README.md`, `CONTRIBUTING.md`,
+  `AGENTS.md`, `development/{Development,README,project_structure}.md` all synced;
+  `tests/docs/tests.py` and `tests/library/tests.py` updated (spec-name conformance,
+  wiring, a cross-module integration test sampling a library `Gamma` distribution
+  through `SliceSampling`); `spl demo advanced_mcmc` added to `cli_demo.py`; `ci.yml`
+  `module-smoke` matrix extended.
+- **Two bugs found and fixed while testing (see `Probleme.md` #83-84):**
+  `NoUTurnSampler._step` incremented the old single-chain divergence counter but never
+  the newer per-chain list used to compute the public `divergences_` attribute, so NUTS
+  always reported zero divergences regardless of how unstable the trajectory actually
+  was; and the rank-normalization transform (`Rhat`/`ESS` "rank"/"bulk" variants) used
+  `N - 3/4` instead of Blom's `N + 1/4` in its denominator, producing values fractionally
+  above 1 for the extreme ranks and `NaN` from `ndtri` — surfaced as `Rhat(method="rank")
+  == inf` on perfectly good iid chains.
+
+Suite: 1540 collected - 1538 passed / 2 skipped. Version 0.11.0.

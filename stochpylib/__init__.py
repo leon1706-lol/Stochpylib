@@ -1,4 +1,5 @@
 from stochpylib import (
+    advanced_mcmc,
     copulas,
     distributions,
     financial_stochastics,
@@ -15,6 +16,7 @@ from stochpylib import (
 )
 
 __all__ = [
+    "advanced_mcmc",
     "copulas",
     "distributions",
     "financial_stochastics",
@@ -30,4 +32,4 @@ __all__ = [
     "timeseries",
 ]
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"

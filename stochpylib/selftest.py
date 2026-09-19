@@ -333,6 +333,7 @@ def run(verbose=False):
         "statistics": (48, ["t_test", "linear_regression", "PCA", "bootstrap_ci"]),
         "random_matrix": (23, ["GOE", "MarchenkoPastur", "HaarMeasure",
                                "EigenvalueSpacing"]),
+        "advanced_mcmc": (35, ["MetropolisHastings", "NoUTurnSampler", "Rhat", "ESS"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -496,6 +497,57 @@ def run(verbose=False):
     z_rm = _RmGinibre(200).normalized_eigenvalues(random_state=106)
     st.check("RMT: Ginibre-type circular law E|z|^2 ~ 1/2",
              abs(float(np.mean(np.abs(z_rm) ** 2)) - 0.5) < 0.08)
+
+    # advanced_mcmc quick checks
+    from stochpylib.advanced_mcmc import ESS as _AmESS
+    from stochpylib.advanced_mcmc import MetropolisHastings as _AmMH
+    from stochpylib.advanced_mcmc import NoUTurnSampler as _AmNUTS
+    from stochpylib.advanced_mcmc import Rhat as _AmRhat
+    from stochpylib.advanced_mcmc import SequentialMonteCarlo as _AmSMC
+    from stochpylib.advanced_mcmc import SliceSampling as _AmSlice
+    from stochpylib.advanced_mcmc import MeanFieldVI as _AmMFVI
+    from stochpylib.advanced_mcmc import autocorr_time as _am_autocorr_time
+
+    mh_rm = _AmMH(lambda t: -0.5 * ((t[0] - 1.0) / 0.5) ** 2, n_samples=1500, n_warmup=500)
+    mh_rm.sample(np.zeros(1), random_state=107)
+    st.check("MCMC: random-walk MH recovers N(1, 0.5^2) mean",
+             abs(mh_rm.get_samples().mean() - 1.0) < 0.1)
+
+    nuts_rm = _AmNUTS(lambda t: -0.5 * t @ np.linalg.inv([[1.0, 0.8], [0.8, 1.0]]) @ t,
+                      n_samples=800, n_warmup=400)
+    nuts_rm.sample(np.zeros(2), random_state=108)
+    chains_rm = nuts_rm.get_chains()
+    st.check("MCMC: NUTS on a correlated 2-D Gaussian mixes well",
+             0.5 < nuts_rm.acceptance_rate_ < 0.98
+             and abs(np.cov(nuts_rm.get_samples().T)[0, 1] - 0.8) < 0.25)
+
+    iid_rm = np.random.default_rng(109).standard_normal((4, 500, 1))
+    st.check("MCMC: R-hat of four iid chains ~ 1", abs(_AmRhat(iid_rm) - 1.0) < 0.03)
+    st.check("MCMC: ESS of iid draws ~ n", _AmESS(iid_rm, method="mean") > 0.6 * 2000)
+
+    sl_rm = _AmSlice(lambda t: -t[0] if t[0] > 0 else -np.inf, n_samples=1500, n_warmup=300)
+    sl_rm.sample(np.array([1.0]), random_state=110)
+    st.check("MCMC: slice sampler on Exp(1) has mean ~ 1",
+             abs(sl_rm.get_samples().mean() - 1.0) < 0.1)
+
+    y_rm = np.array([1.0])
+    smc_rm = _AmSMC(lambda t: -0.5 * np.sum(t ** 2), lambda t: -0.5 * np.sum(((t - y_rm) / 0.5) ** 2),
+                    lambda n, r: r.standard_normal((n, 1)), n_particles=1500, n_mcmc=3)
+    smc_rm.sample(random_state=111)
+    logZ_true_rm = -0.5 * np.log(2 * np.pi * 1.25) - 0.5 * y_rm[0] ** 2 / 1.25
+    st.check("MCMC: SMC log evidence matches the Gaussian closed form",
+             abs(smc_rm.log_evidence_ - logZ_true_rm) < 0.3)
+
+    mfvi_rm = _AmMFVI(lambda t: -0.5 * ((t[0] - 2.0) / 1.0) ** 2, 1, n_iter=800, n_mc=16)
+    mfvi_rm.fit(random_state=112)
+    st.check("MCMC: mean-field VI locates N(2, 1)", abs(mfvi_rm.mean_[0] - 2.0) < 0.2)
+
+    rng_ar1 = np.random.default_rng(113)
+    ar1_rm = np.zeros(20000)
+    for t in range(1, 20000):
+        ar1_rm[t] = 0.5 * ar1_rm[t - 1] + rng_ar1.standard_normal()
+    tau_rm = _am_autocorr_time(ar1_rm)
+    st.check("MCMC: autocorr_time of AR(1) phi=0.5 ~ 3", 2.0 < tau_rm < 4.5)
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

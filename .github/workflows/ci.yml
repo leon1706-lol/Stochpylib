@@ -51,6 +51,7 @@ jobs:
           - financial_stochastics
           - statistics
           - random_matrix
+          - advanced_mcmc
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
