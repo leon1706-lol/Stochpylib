@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 569 / 794 public names implemented.**
+**Progress: 597 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -490,42 +490,42 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [ ] `SpatialAutocorrelation()`
     - [ ] `NNDistanceTest()`
 
-## [robust_statistics](../Stochpylib-Obsidian-Vault/Modules/robust_statistics.md) — Outlier-resistant estimators (0/28)
+## [robust_statistics](../Stochpylib-Obsidian-Vault/Modules/robust_statistics.md) — Outlier-resistant estimators (28/28)
 
-- [ ] **stochpylib.robust_statistics** module overall
-  - [ ] `robust_statistics.location`
-    - [ ] `TrimmedMean`
-    - [ ] `WinsorizedMean`
-    - [ ] `Median`
-    - [ ] `HodgesLehmann`
-    - [ ] `L_Estimator`
-    - [ ] `M_Estimator`
-    - [ ] `R_Estimator`
-  - [ ] `robust_statistics.scale`
-    - [ ] `MedianAbsoluteDeviation`
-    - [ ] `Qn_Estimator`
-    - [ ] `Sn_Estimator`
-    - [ ] `RobustStd`
-    - [ ] `IQR_Scale`
-  - [ ] `robust_statistics.regression`
-    - [ ] `TheilSenRegression`
-    - [ ] `RANSACRegression`
-    - [ ] `LTS_Regression`
-    - [ ] `MMRegression`
-    - [ ] `HuberRegression`
-    - [ ] `SiegalRegression`
-  - [ ] `robust_statistics.covariance`
-    - [ ] `RobustCovariance`
-    - [ ] `MCD`
-    - [ ] `MVE`
-    - [ ] `OGK`
-    - [ ] `RobustCorrelation`
-    - [ ] `CovShrinkage`
-  - [ ] `robust_statistics.bootstrap`
-    - [ ] `RobustBootstrap`
-    - [ ] `WildBootstrap`
-    - [ ] `BlockBootstrap`
-    - [ ] `StationaryBootstrap`
+- [x] **stochpylib.robust_statistics** module overall
+  - [x] `robust_statistics.location`
+    - [x] `TrimmedMean`
+    - [x] `WinsorizedMean`
+    - [x] `Median`
+    - [x] `HodgesLehmann`
+    - [x] `L_Estimator`
+    - [x] `M_Estimator`
+    - [x] `R_Estimator`
+  - [x] `robust_statistics.scale`
+    - [x] `MedianAbsoluteDeviation`
+    - [x] `Qn_Estimator`
+    - [x] `Sn_Estimator`
+    - [x] `RobustStd`
+    - [x] `IQR_Scale`
+  - [x] `robust_statistics.regression`
+    - [x] `TheilSenRegression`
+    - [x] `RANSACRegression`
+    - [x] `LTS_Regression`
+    - [x] `MMRegression`
+    - [x] `HuberRegression`
+    - [x] `SiegalRegression`
+  - [x] `robust_statistics.covariance`
+    - [x] `RobustCovariance`
+    - [x] `MCD`
+    - [x] `MVE`
+    - [x] `OGK`
+    - [x] `RobustCorrelation`
+    - [x] `CovShrinkage`
+  - [x] `robust_statistics.bootstrap`
+    - [x] `RobustBootstrap`
+    - [x] `WildBootstrap`
+    - [x] `BlockBootstrap`
+    - [x] `StationaryBootstrap`
 
 ## [nonparametric](../Stochpylib-Obsidian-Vault/Modules/nonparametric.md) — Distribution-free methods (0/31)
 

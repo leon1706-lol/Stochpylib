@@ -3,7 +3,7 @@
 The installable package: one subpackage per library module behind a single
 load-bearing contract — every distribution exposes the same method set, every
 stochastic method takes `random_state=`, every Monte Carlo estimator returns a
-shared result object. Sixteen subpackages live today (569/794 spec names):
+shared result object. Seventeen subpackages live today (597/794 spec names):
 
 | Subpackage | Spec names | What it owns | Guide |
 |---|---|---|---|
@@ -23,6 +23,7 @@ shared result object. Sixteen subpackages live today (569/794 spec names):
 | `advanced_mcmc/` | 35 | MCMC samplers (MH, Gibbs, adaptive, HMC/NUTS/MALA/RMHMC/NeuTra, slice, tempering, SMC, particle, transdimensional), diagnostics, variational inference | [README](advanced_mcmc/README.md) |
 | `numerical_methods/` | 38 | Gauss quadrature & adaptive/cubature integration, ODE/SDE solvers, native linear algebra (expm/logm, eigendecomposition, SVD, QR, Schur), root finding, interpolation, PDE tools (FD/FEM/BEM/spectral, FEniCS-style adapter) | [README](numerical_methods/README.md) |
 | `bayesian/` | 25 | priors/likelihoods/posteriors, ten conjugate families, Bayesian linear/logistic regression, naive Bayes, hierarchical models, mixtures, Bayesian networks, Dirichlet processes, AIC/BIC/DIC/WAIC/PSIS-LOO/TIC & Bayes factors, Laplace/EP/VI/importance posteriors | [README](bayesian/README.md) |
+| `robust_statistics/` | 28 | trimmed/winsorized means, median, Hodges-Lehmann, L/M/R-estimators, MAD/Qn/Sn/IQR/biweight/tau scales, Theil-Sen/Siegel/RANSAC/LTS/MM/Huber regression, MCD/MVE/OGK covariance, robust correlation, Ledoit-Wolf/OAS shrinkage, robust/wild/block/stationary bootstraps | [README](robust_statistics/README.md) |
 
 Package-level files:
 
@@ -33,8 +34,8 @@ Package-level files:
   `cite` subcommands.
 - `cli_pypi.py` — offline-safe PyPI metadata access (fetch, 24 h cache,
   version parsing, install-mode detection) behind `--version` and `update`.
-- `cli_demo.py` — the sixteen live mini-examples behind `spl demo <module>`.
-- `selftest.py` — the 199-check self-check suite shipped inside the wheel,
+- `cli_demo.py` — the seventeen live mini-examples behind `spl demo <module>`.
+- `selftest.py` — the 212-check self-check suite shipped inside the wheel,
   runnable from any pip install without pytest or a source checkout.
 
 Target API for every planned module lives in the private Obsidian vault

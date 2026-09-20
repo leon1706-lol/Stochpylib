@@ -35,6 +35,7 @@ from stochpylib import (
     probability,
     queueing,
     random_matrix,
+    robust_statistics,
     statistics,
     survival,
     timeseries,
@@ -60,6 +61,7 @@ _MODULES = {
     "advanced_mcmc": advanced_mcmc,
     "numerical_methods": numerical_methods,
     "bayesian": bayesian,
+    "robust_statistics": robust_statistics,
 }
 
 # Documented public extras beyond the 229 spec names (utilities & result
@@ -90,6 +92,8 @@ _EXTRAS = {
                           "SDESolution", "Mesh"},
     "bayesian": {"Prior", "Likelihood", "ConjugateFamily", "Posterior",
                 "PosteriorApproximation", "ICResult", "EmpiricalPredictive"},
+    "robust_statistics": {"RobustEstimator", "RobustRegressor", "RobustCovarianceEstimator",
+                          "Resampler", "SiegelRegression"},
 }
 
 DISTRIBUTION_METHODS_DOC = (".pdf()/.pmf()", ".cdf()", ".ppf()", ".rvs()",
@@ -121,9 +125,10 @@ def test_total_spec_name_count():
                    "gaussian_processes", "copulas", "survival", "queueing",
                    "information_theory", "levy_processes",
                    "financial_stochastics", "statistics", "random_matrix",
-                   "advanced_mcmc", "numerical_methods", "bayesian")
+                   "advanced_mcmc", "numerical_methods", "bayesian",
+                   "robust_statistics")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 569  # 569/794 across the sixteen implemented modules
+    assert total == 597  # 597/794 across the seventeen implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -156,7 +161,7 @@ def test_top_level_package_wiring():
         "advanced_mcmc", "bayesian", "copulas", "distributions", "financial_stochastics",
         "gaussian_processes", "information_theory", "levy_processes",
         "montecarlo", "numerical_methods", "probability", "queueing",
-        "random_matrix", "statistics", "survival", "timeseries"}
+        "random_matrix", "robust_statistics", "statistics", "survival", "timeseries"}
     # version consistency, never a literal: the installed metadata and the
     # in-code __version__ must agree (a hardcoded literal here broke CI on
     # every version bump — development/Probleme.md [39])
@@ -349,6 +354,44 @@ def test_numerical_methods_pde_and_quadrature_agree_with_black_scholes():
 
     gh_price = gh.expectation(discounted_payoff, vectorized=True).value
     assert abs(gh_price - bs.call_price()) < 1e-2
+
+
+def test_robust_statistics_agrees_with_statistics_copulas_and_distributions():
+    """E2E: robust_statistics -> statistics/copulas/distributions. Huber regression on
+    clean library-Normal errors agrees with statistics.linear_regression; MM regression
+    stays close to the truth under y-outliers where OLS does not; robust_statistics'
+    Kendall correlation matches copulas.kendall_tau exactly; MCD recovers a library
+    MultivariateNormal's covariance; and RobustBootstrap returns the shared
+    statistics.EstimateResult."""
+    rng = np.random.default_rng(300)
+    x = rng.standard_normal(200)
+    err = np.asarray(distributions.Normal(0, 0.3).rvs(200, random_state=1), dtype=float)
+    y = 1.0 + 2.0 * x + err
+    hr = robust_statistics.HuberRegression().fit(x, y)
+    ols = statistics.linear_regression(x, y)
+    assert np.max(np.abs(hr.coef_ - ols.coef_)) < 3 * np.max(ols.std_errors_)
+
+    y_out = y.copy()
+    y_out[:60] += 15.0
+    mm = robust_statistics.MMRegression(random_state=0).fit(x, y_out)
+    ols_out = statistics.linear_regression(x, y_out)
+    assert abs(mm.coef_[1] - 2.0) < 0.2
+    assert abs(ols_out.coef_[1] - 2.0) > 0.3
+
+    U = rng.uniform(size=(400, 2))
+    rc = robust_statistics.RobustCorrelation(method="kendall").fit(U)
+    assert rc.correlation_[0, 1] == pytest.approx(float(copulas.kendall_tau(U)), abs=1e-12)
+
+    mu = np.array([1.0, -2.0])
+    Sigma = np.array([[2.0, 0.6], [0.6, 1.0]])
+    mvn = distributions.MultivariateNormal(mu, Sigma)
+    X = np.asarray(mvn.rvs(1000, random_state=2), dtype=float)
+    mcd = robust_statistics.MCD(random_state=0).fit(X)
+    assert np.linalg.norm(mcd.covariance_ - Sigma) / np.linalg.norm(Sigma) < 0.15
+
+    boot = robust_statistics.RobustBootstrap("median", n_boot=500, random_state=0).fit(x)
+    from stochpylib.statistics import EstimateResult
+    assert isinstance(boot.to_result(), EstimateResult)
 
 
 def test_bayesian_conjugate_agrees_with_statistics_estimator_and_mcmc():

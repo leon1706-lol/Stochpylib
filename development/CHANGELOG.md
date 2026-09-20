@@ -1160,3 +1160,67 @@ Suite: 1758 collected - 1756 passed / 2 skipped. Version 0.13.0.
   representative seeds still match `statsmodels` to ~1e-16, and a 500-seed sweep with the
   original pathological generator now returns finite coefficients throughout), and the
   test seeds via `zlib.crc32` instead. `pytest tests/statistics/` (177 tests) green.
+
+## Phase 31 — V0.14.0 robust_statistics: robust location/scale, high-breakdown regression, robust covariance, resampling (28 names)
+
+- **`robust_statistics.location`**: `TrimmedMean`/`WinsorizedMean` (Tukey-McLaughlin SE,
+  matching `scipy.stats.trim_mean`/`mstats.winsorize` exactly), `Median` (Maritz-Jarrett
+  SE, a distribution-free order-statistic confidence interval), `HodgesLehmann`
+  (one/two-sample, Hollander-Wolfe signed-rank/rank-sum interval, exact via an
+  explicit-below/bisection-above-1000 k-th-order-statistic helper on the Walsh averages),
+  `L_Estimator` (trimean/Gastwirth/midhinge/trimmed/winsorized/callable/explicit-weight
+  forms), `M_Estimator` (Huber-family IRLS matching `statsmodels.RLM` exactly for both MAD
+  and Huber-proposal-2 scale), `R_Estimator` (Wilcoxon score exactly equals
+  `HodgesLehmann`, sign score exactly equals the median, normal/van-der-Waerden scores via
+  root-finding).
+- **`robust_statistics.scale`**: `MedianAbsoluteDeviation`/`IQR_Scale` (match
+  `scipy.stats` exactly), `Qn_Estimator` (matches `statsmodels.robust.scale.qn_scale`
+  exactly), `Sn_Estimator` (Rousseeuw & Croux 1993, cross-checked against a brute-force
+  double loop), `RobustStd` (dispatcher over mad/qn/sn/iqr/huber/biweight/tau).
+- **`robust_statistics.regression`**: `TheilSenRegression` (simple regression matches
+  `scipy.stats.theilslopes` exactly including its Sen 1968 confidence interval; multiple
+  predictors via the spatial median of random subset fits), `SiegalRegression` (+
+  `SiegelRegression` alias, matches `scipy.stats.siegelslopes` exactly), `RANSACRegression`
+  (adaptive trial-count stopping, a Theil-Sen-pilot-fit residual threshold by default),
+  `LTS_Regression` (FAST-LTS, exact h-subset enumeration below 5000 subsets),
+  `MMRegression` (FAST-S start + one M-step, demonstrably higher-breakdown than
+  `HuberRegression`/OLS under bad-leverage contamination), `HuberRegression` (matches
+  `statsmodels.RLM` with `M=HuberT()` exactly, H1/H2/H3 covariance).
+- **`robust_statistics.covariance`**: `MCD`/`MVE` (exact h-subset enumeration below 5000
+  subsets, else FAST resampling with concentration/volume-shrinking steps, chi-square
+  consistency-corrected and reweighted by default), `OGK` (Maronna & Zamar 2002 pairwise
+  orthogonalization composed over `n_iter` passes), `RobustCovariance`/`RobustCorrelation`
+  (dispatchers reusing `copulas._utils`'s Kendall/Spearman estimators rather than
+  reimplementing them), `CovShrinkage` (Ledoit-Wolf toward identity/diagonal/
+  constant-correlation targets, OAS, or a fixed intensity -- the identity-target
+  Ledoit-Wolf path matches `financial_stochastics.CovarianceEstimation` exactly, to
+  ~1e-16).
+- **`robust_statistics.bootstrap`**: `RobustBootstrap` (any callable, `RobustEstimator`
+  instance, or named statistic; percentile/basic/normal/BCa intervals), `WildBootstrap`
+  (Rademacher/Mammen/normal/Webb multipliers on regression residuals, matches
+  heteroskedasticity-consistent `statistics.linear_regression(..., cov_type="HC0")` SEs to
+  ~15%), `BlockBootstrap` (moving/circular/nonoverlapping blocks), `StationaryBootstrap`
+  (Politis-Romano geometric block lengths) -- both correctly give a materially larger AR(1)
+  mean-SE than an i.i.d. bootstrap on the same series.
+- **Four real bugs surfaced and fixed while testing against oracles and breakdown
+  scenarios** (Probleme.md #94-97): `HodgesLehmann`'s even/odd branch keyed off the wrong
+  parity for ~half of even `n`; the wild bootstrap's Mammen weights had mean 1 instead of
+  0; `OGK`'s reweighted covariance was missing the same truncation-bias correction
+  `MCD`/`MVE` apply (~25% underestimate); `RANSACRegression`'s default threshold used the
+  raw response's MAD, which reflects the fitted trend's spread rather than residual noise.
+- **Every Essential-Tasks.md wrap-up item completed:** `tests/robust_statistics/tests.py`
+  (116 test functions, several parametrized, against `scipy.stats`/`statsmodels`/
+  brute-force/`scipy.integrate` oracles) and `tests/robust_statistics/e2e.py` (33
+  exercises, one per public name) both green; `selftest.py` extended 199 -> 212 checks
+  (`ROBUST:` block); `stochpylib/robust_statistics/README.md` written;
+  `development/{CHANGELOG,Probleme,Implementation-Checklist,architecture}.md` updated
+  (progress line 597/794); root `README.md` (badges, status table, Known Limitations,
+  architecture diagrams, roadmap, CLI reference counts, demo prose), `stochpylib/README.md`,
+  `tests/README.md`, `CONTRIBUTING.md`, `AGENTS.md`,
+  `development/{Development,README,project_structure,infrastructure}.md` all synced;
+  `tests/docs/tests.py` and `tests/library/tests.py` updated (spec-name conformance,
+  wiring, a cross-module integration test agreeing with `statistics.linear_regression`,
+  `copulas.kendall_tau`, and a library `MultivariateNormal`); `spl demo robust_statistics`
+  added to `cli_demo.py`; `ci.yml` `module-smoke` matrix extended.
+
+Suite: 1913 collected - 1911 passed / 2 skipped. Version 0.14.0.

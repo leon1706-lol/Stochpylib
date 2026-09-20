@@ -347,6 +347,45 @@ def _demo_bayesian():
     print(f"  sprinkler network: P(Rain=1 | WetGrass=1) = {res[1]:.4f}")
 
 
+def _demo_robust_statistics():
+    from stochpylib.robust_statistics import (
+        HodgesLehmann, MCD, Median, MedianAbsoluteDeviation, MMRegression,
+        TheilSenRegression, BlockBootstrap,
+    )
+    from stochpylib.statistics import linear_regression
+
+    print("Robust statistics - location/scale, regression, and covariance under")
+    print("contamination:")
+    rng = np.random.default_rng(11)
+    readings = np.concatenate([rng.normal(23.5, 0.8, 85), rng.uniform(-10, 60, 15)])
+    print(f"  15% contaminated sensor readings: mean={np.mean(readings):.2f}  "
+          f"median={Median().fit(readings).estimate_:.2f}  "
+          f"Hodges-Lehmann={HodgesLehmann().fit(readings).estimate_:.2f}")
+    print(f"  MAD scale={MedianAbsoluteDeviation().fit(readings).estimate_:.2f} "
+          f"vs naive std={np.std(readings, ddof=1):.2f}")
+
+    t = rng.uniform(0, 10, 100)
+    y = 1.0 + 2.0 * t + rng.normal(0, 0.3, 100)
+    y[:30] += 20.0  # 30% gross outliers
+    ols = linear_regression(t, y)
+    ts = TheilSenRegression().fit(t, y)
+    mm = MMRegression(random_state=0).fit(t, y)
+    print(f"  30% outlier regression (true slope=2.0): OLS={ols.coef_[1]:.3f}  "
+          f"Theil-Sen={ts.coef_[1]:.3f}  MM={mm.coef_[1]:.3f}")
+
+    mu = np.array([23.5, 45.2, 1013.0])
+    Sigma = np.array([[1.0, 0.3, -0.2], [0.3, 2.0, 0.1], [-0.2, 0.1, 3.0]])
+    cal = mu + rng.standard_normal((300, 3)) @ np.linalg.cholesky(Sigma).T
+    bad = rng.choice(300, 45, replace=False)
+    cal[bad] += rng.normal(0, 1, (45, 3)) * 10
+    mcd = MCD(random_state=0).fit(cal)
+    print(f"  MCD on a 15% contaminated 3-D calibration sample: "
+          f"{mcd.outliers().sum()} of 45 planted outliers flagged")
+
+    bb = BlockBootstrap(np.mean, random_state=0).fit(readings)
+    print(f"  moving-block bootstrap SE of the mean = {bb.std_error_:.3f}")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -364,6 +403,7 @@ DEMOS = {
     "advanced_mcmc": _demo_advanced_mcmc,
     "numerical_methods": _demo_numerical_methods,
     "bayesian": _demo_bayesian,
+    "robust_statistics": _demo_robust_statistics,
 }
 DEMO_MODULES = tuple(DEMOS)
 

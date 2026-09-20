@@ -13,7 +13,7 @@ advanced MCMC, numerical methods — native on NumPy/SciPy, no
 wrapper deps. Thesis: one coherent package replaces scipy.stats + statsmodels
 + lifelines + copulas.
 
-- **State:** 16 modules implemented (569 / 794 spec names), 7 remaining as spec.
+- **State:** 17 modules implemented (597 / 794 spec names), 6 remaining as spec.
 - **Runtime deps:** NumPy, SciPy (`special`/`optimize`/`integrate` only).
   **Test deps:** pytest. Nothing else, ever.
 - **Docs move with code:** a change not reflected in the relevant docs in the

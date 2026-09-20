@@ -197,6 +197,15 @@ def _implemented_overview():
             "                   networks, Dirichlet-process mixtures, AIC/BIC/DIC/WAIC/\n"
             "                   PSIS-LOO/TIC & Bayes factors, Laplace/EP/VI/importance\n"
             "                   posterior approximations",
+        "robust_statistics":
+            "robust statistics: trimmed/winsorized means, median\n"
+            "                   (Maritz-Jarrett SE), Hodges-Lehmann, L/M/R-estimators,\n"
+            "                   MAD/Qn/Sn/IQR/biweight/tau/Huber scales, Theil-Sen/Siegel/\n"
+            "                   RANSAC/FAST-LTS/FAST-S+MM/Huber regression, FAST-MCD/MVE/\n"
+            "                   OGK covariance, robust correlation (Spearman/Kendall/\n"
+            "                   Gaussian-rank/quadrant), Ledoit-Wolf/OAS/constant-\n"
+            "                   correlation shrinkage, robust/wild/block/stationary\n"
+            "                   bootstraps",
     }
 
     blocks = []
@@ -433,8 +442,8 @@ Try a live mini-example:  spl demo <module>   (bare 'spl demo' lists them)
         epilog=(
             "subcommands: update, info, show, demo, cite - run 'spl <command> --help'\n"
             "for details.\n\n"
-            "roadmap: eight more modules are planned (bayesian,\n"
-            "nonparametric, robust_statistics, spatial_statistics, optimization, ...) -\n"
+            "roadmap: six more modules are planned (nonparametric,\n"
+            "spatial_statistics, optimization, experimental_design, viz, utils) -\n"
             "see the repository README and development/Implementation-Checklist.md.\n\n"
             "docs: README.md - contributing: CONTRIBUTING.md - security: SECURITY.md"
         ),

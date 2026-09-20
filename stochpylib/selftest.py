@@ -338,6 +338,8 @@ def run(verbose=False):
                                    "MatrixExponential", "FiniteDifference"]),
         "bayesian": (25, ["posterior", "conjugate_prior", "BayesianLinear", "WAIC",
                           "LaplacePosterior"]),
+        "robust_statistics": (28, ["Median", "HuberRegression", "MCD", "TheilSenRegression",
+                                   "BlockBootstrap"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -695,6 +697,78 @@ def run(verbose=False):
     from stochpylib.bayesian import bayes_factor as _bay_bf
     bf_bay = _bay_bf(post_bay.log_evidence_, -1e9)
     st.check("BAYES: bayes_factor > 1 for the far-better model", bf_bay.value > 1.0)
+
+    # robust_statistics quick checks
+    from stochpylib.robust_statistics import (
+        HodgesLehmann as _RsHL,
+        HuberRegression as _RsHuberReg,
+        LTS_Regression as _RsLTS,
+        MCD as _RsMCD,
+        MMRegression as _RsMM,
+        Median as _RsMedian,
+        MedianAbsoluteDeviation as _RsMAD,
+        Qn_Estimator as _RsQn,
+        TheilSenRegression as _RsTheilSen,
+        TrimmedMean as _RsTrimMean,
+        BlockBootstrap as _RsBlockBoot,
+        CovShrinkage as _RsShrink,
+    )
+
+    trim_rs = _RsTrimMean(0.1).fit(np.arange(1.0, 11.0))
+    st.check("ROBUST: trimmed mean of 1..10 (p=0.1) matches hand formula",
+             abs(trim_rs.estimate_ - np.mean(np.arange(2.0, 10.0))) < 1e-10)
+
+    mad_rs = _RsMAD(n_boot=0).fit(np.array([1.0, 2.0, 3.0, 4.0, 5.0, 100.0]))
+    st.check("ROBUST: MAD resists a single gross outlier",
+             abs(mad_rs.estimate_ - 1.4826022185056018 * 1.5) < 1e-8)
+
+    qn_rs = _RsQn(n_boot=0).fit(np.arange(1.0, 11.0))
+    st.check("ROBUST: Qn of 1..10 matches the stored reference value",
+             abs(qn_rs.estimate_ - 4.438288931970152) < 1e-8)
+
+    x_rs = np.array([1.0, 2.0, 3.0, 4.0, 100.0])
+    hl_rs = _RsHL().fit(x_rs)
+    st.check("ROBUST: Hodges-Lehmann on a known small sample",
+             abs(hl_rs.estimate_ - 3.0) < 1e-8)
+
+    med_rs = _RsMedian().fit(x_rs)
+    st.check("ROBUST: Median resists a gross outlier", abs(med_rs.estimate_ - 3.0) < 1e-10)
+
+    rng_rs = np.random.default_rng(200)
+    t_rs = rng_rs.uniform(0, 10, 60)
+    y_rs = 1.0 + 2.0 * t_rs
+    ts_rs = _RsTheilSen().fit(t_rs, y_rs)
+    st.check("ROBUST: Theil-Sen recovers an exact line", abs(ts_rs.coef_[1] - 2.0) < 1e-8)
+
+    y_out_rs = y_rs + rng_rs.normal(0, 0.05, 60)
+    y_out_rs[:18] += 20.0
+    hub_rs = _RsHuberReg().fit(t_rs, y_out_rs)
+    mm_rs = _RsMM(random_state=0).fit(t_rs, y_out_rs)
+    lts_rs = _RsLTS(random_state=0).fit(t_rs, y_out_rs)
+    st.check("ROBUST: MM slope recovers truth under leverage-free y-outliers",
+             abs(mm_rs.coef_[1] - 2.0) < 0.15)
+    st.check("ROBUST: LTS slope recovers truth under leverage-free y-outliers",
+             abs(lts_rs.coef_[1] - 2.0) < 0.15)
+    st.check("ROBUST: Huber regression runs and returns finite coefficients",
+             bool(np.all(np.isfinite(hub_rs.coef_))))
+
+    rng_mcd = np.random.default_rng(201)
+    X_mcd = rng_mcd.standard_normal((300, 2))
+    out_mcd = rng_mcd.choice(300, 45, replace=False)
+    X_mcd[out_mcd] += 15.0
+    mcd_rs = _RsMCD(random_state=0).fit(X_mcd)
+    frac_flagged_rs = float(np.mean(mcd_rs.outliers()[out_mcd]))
+    st.check("ROBUST: MCD flags most planted outliers", frac_flagged_rs > 0.8)
+
+    shrink_rs = _RsShrink().fit(rng_mcd.standard_normal((50, 3)))
+    st.check("ROBUST: Ledoit-Wolf shrinkage intensity in [0, 1]",
+             0.0 <= shrink_rs.shrinkage_ <= 1.0)
+
+    x_bb_rs = rng_mcd.standard_normal(200)
+    bb_rs = _RsBlockBoot(np.mean, random_state=1).fit(x_bb_rs)
+    bb_rs2 = _RsBlockBoot(np.mean, random_state=1).fit(x_bb_rs)
+    st.check("ROBUST: block bootstrap SE finite and reproducible",
+             np.isfinite(bb_rs.std_error_) and bb_rs.std_error_ == bb_rs2.std_error_)
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

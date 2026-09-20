@@ -1,6 +1,6 @@
 # stochpylib Architecture
 
-**Status:** sixteen of 23 planned modules are implemented and tested (569/794
+**Status:** seventeen of 23 planned modules are implemented and tested (597/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state). Everything else in the module map below
 remains design spec, not shipped code.
@@ -44,6 +44,7 @@ flowchart LR
     C --> Q["stochpylib.advanced_mcmc<br/>MCMC samplers, HMC/NUTS, SMC, diagnostics, variational inference"]
     A --> R["stochpylib.numerical_methods<br/>quadrature, ODE/SDE solvers, linear algebra, roots, interpolation, PDE"]
     Q --> S["stochpylib.bayesian<br/>conjugate/grid/Laplace/VI/IS posteriors, Bayesian models, model selection"]
+    O --> T["stochpylib.robust_statistics<br/>robust location/scale, high-breakdown regression, MCD/MVE/OGK, bootstraps"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -56,6 +57,7 @@ flowchart LR
     Q --> L
     R --> L
     S --> L
+    T --> L
 ```
 
 ## Tech Stack
@@ -70,7 +72,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (199 checks)"]
+    C --> C3["spl --test embedded self-check (212 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -174,9 +176,23 @@ README per module):
   regression, naive Bayes, a hierarchical normal model, finite mixtures,
   discrete Bayesian networks (exact variable elimination), Dirichlet-process
   mixtures; AIC/BIC/DIC/WAIC/PSIS-LOO/TIC and Bayes factors.
+- `robust_statistics/` — trimmed/winsorized means, median (Maritz-Jarrett SE,
+  order-statistic CI), Hodges-Lehmann, L/M/R-estimators (M matches
+  `statsmodels.RLM` exactly); MAD/Qn/Sn/IQR scales (Qn matches
+  `statsmodels.robust.scale.qn_scale` exactly), biweight/tau/Huber M-scales;
+  Theil-Sen (Sen 1968 CI, matches `scipy.stats.theilslopes` exactly), Siegel
+  repeated medians (matches `scipy.stats.siegelslopes` exactly), RANSAC,
+  FAST-LTS, FAST-S+MM, Huber regression (matches `statsmodels.RLM` exactly);
+  FAST-MCD/MVE (exact subset enumeration below 5000 subsets, else seeded
+  resampling with concentration/volume-shrinking steps), OGK
+  (Gnanadesikan-Kettenring pairwise orthogonalization), robust correlation
+  (Spearman/Kendall reuse `copulas._utils`, Gaussian-rank, quadrant); Ledoit-
+  Wolf/OAS/constant-correlation shrinkage (identity-target Ledoit-Wolf matches
+  `financial_stochastics.CovarianceEstimation` exactly); robust/wild/moving-
+  circular-nonoverlapping-block/stationary bootstraps.
 
-Planned modules (7, in rough implementation order):
-nonparametric, robust_statistics,
+Planned modules (6, in rough implementation order):
+nonparametric,
 spatial_statistics, optimization,
 experimental_design, viz, utils — each lands with the same bar:
 native implementations, the shared conventions, full tests against independent
@@ -253,6 +269,13 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
   else Laplace/MCMC); MCMC, variational inference and SMC delegate to
   `advanced_mcmc` rather than reimplementing them, and EP's per-site moment
   matching delegates to `numerical_methods.GaussHermite`.
+- **Robust-statistics conventions** (established by `robust_statistics`):
+  location/scale estimators and regressors reuse `statistics.EstimateResult`/
+  `RegressionResult` rather than new result types; `coef_` is intercept-first;
+  randomized estimators (`MCD`/`MVE`/`LTS_Regression`/`MMRegression`/
+  `RANSACRegression`, multi-predictor `TheilSenRegression`) enumerate subsets
+  exactly below 5000 and fall back to seeded resampling above it; scale
+  estimators report the sigma-consistent value by default (`normal=True`).
 
 ## Package Layout Convention
 

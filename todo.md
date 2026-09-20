@@ -9,22 +9,21 @@ are for — see `AGENTS.md`).
 
 -----
 
-## V0.14.0 
+## V0.14.0 — done
 
-Biggest remaining module by name count is `utils` (38 names, tied with where
-`numerical_methods` started) — `viz` (35), `spatial_statistics`/`optimization` (32 each),
-`nonparametric` (31), `experimental_design` (29), `robust_statistics` (28) round out the
-rest. `utils.performance` (`GPUBackend`, `JIT_compile()`) implies optional third-party
-deps (torch/cupy/numba) that would need a lazy-import pattern to respect the "NumPy +
-SciPy, nothing else" runtime rule — worth a design pass before picking it up. Given
-`bayesian` was picked ahead of `nonparametric`/`robust_statistics` for being smallest,
-the same size-first heuristic points at `robust_statistics` (28) next, unless the owner
-prefers a different order.
+`robust_statistics` (28 names) shipped end to end: robust location/scale, high-breakdown
+regression, robust covariance, resampling. 17/23 modules, 597/794 public names, version
+0.14.0. Full test suite + e2e sweep + module-smoke CI job added; all docs synced.
 
+## Next candidate
 
-- please now start the full end to end implementation of the next biggest module end to end without deffering anything
-- than add extentsive testing and smoke github actions test
-- than do the verification tasksk as outlined in agents md without missing anything
+Same size-first heuristic as before (smallest remaining module next): `nonparametric` (31
+names) and `spatial_statistics` (32) are the two smallest of the six remaining
+(`nonparametric`, `spatial_statistics`, `optimization`, `experimental_design`, `viz`,
+`utils`) — `nonparametric` edges it out. `utils.performance` (`GPUBackend`,
+`JIT_compile()`) still implies optional third-party deps (torch/cupy/numba) needing a
+lazy-import design pass before it's picked up, same caveat as before.
+
 -----
 
 ## Blocked by environment, not by choice

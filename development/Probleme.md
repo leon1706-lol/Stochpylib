@@ -2024,3 +2024,91 @@ seeds `glm()`'s coefficients match `statsmodels.GLM` to ~1e-16 (unchanged from b
 fix, since the clip is a no-op there); a 500-seed sweep with the original pathological
 generator (previously crashing at seed 65) now returns finite coefficients for all 500.
 Full `pytest tests/statistics/` (177 tests) green.
+
+---
+
+### 94. `robust_statistics.HodgesLehmann`'s even/odd Walsh-average branch keyed off the wrong parity, silently averaging the wrong pair of order statistics for many even `n`
+
+**Severity:** 5/10 · **Status:** 🟢 `fixed` (V0.14.0)
+
+**Problem:** The one-sample estimator branches on whether the number of Walsh averages
+`M = n(n+1)/2` is odd (single middle value) or even (average the two middle values). The
+code branched on `n % 2` instead of `M % 2` -- but `M`'s parity does not track `n`'s
+parity (it cycles with period 4: `n` even can give `M` odd, e.g. `n=6 -> M=21`). For those
+`n`, the "even" branch ran and averaged two *different* order-statistic indices instead of
+returning the single true median, a few-`1e-5`-scale error that a coarse tolerance would
+have hidden.
+
+**Fix:** Branch on `M % 2` (the actual count being medianed), not `n % 2`.
+
+**Verification:** `tests/robust_statistics/tests.py::test_hodges_lehmann_one_sample_matches_brute_force`
+checks `n in (20, 21, 41, 42)` (41/42 are exactly the period-4 cases that disagree) against
+a brute-force median of all pairwise Walsh averages, matching to `1e-8` after the fix
+(previously off by ~3e-5 at `n=42`).
+
+---
+
+### 95. Wild-bootstrap Mammen two-point weights had mean 1, not 0
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.14.0)
+
+**Problem:** `WildBootstrap`'s `"mammen"` weight scheme drew the larger value
+`b = (sqrt(5)+1)/2 ~= 1.618` with the *higher* of the two probabilities and the smaller
+`a = -(sqrt(5)-1)/2 ~= -0.618` with the lower one -- the reverse of Mammen (1993)'s
+distribution, which needs the higher probability on the smaller-magnitude value to balance
+the mean to zero. The bug gave `E[v] ~= 1.0` instead of 0, which would silently bias every
+wild-bootstrap replicate's residual multiplier upward by (roughly) the residual itself.
+
+**Fix:** Swapped which value gets probability `(sqrt(5)+1)/(2*sqrt(5))`.
+
+**Verification:** A 2,000,000-draw Monte Carlo check now gives `E[v] ~= 0.0005`,
+`Var[v] ~= 1.0005`, `E[v^3] ~= 1.001` (Mammen's three defining moment conditions), vs.
+`E[v] ~= 1.0` before the fix; `tests/robust_statistics/tests.py::test_wild_weight_schemes_mean_zero_var_one`
+pins mean/variance for all four weight schemes.
+
+---
+
+### 96. `OGK`'s reweighted covariance had no truncation-bias correction, systematically underestimating variance by ~25%
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.14.0)
+
+**Problem:** The default `reweight=True` path recomputes location/covariance from the
+subset of points within a data-adaptive Mahalanobis cutoff (retaining a `beta`-fraction,
+default 90%, of the sample). Truncating a multivariate-normal sample to its central mass
+and taking the plain sample covariance of what's left systematically shrinks the estimate
+(the discarded tail carries a disproportionate share of the variance) -- exactly the effect
+`MCD`/`MVE`'s own reweighting step corrects for via a chi-square consistency factor, which
+`OGK`'s reweighting step was missing entirely. On a bivariate N(0, [[1,.6],[.6,1]]) sample
+this understated the covariance by a factor of ~0.75 (`[[0.75,.44],[.44,.72]]` instead of
+`~[[1,.6],[.6,1]]`).
+
+**Fix:** Multiply the reweighted covariance by `_chi2_consistency(beta, p)` -- the same
+correction `MCD`/`MVE` apply, generalized to `OGK`'s data-adaptive (rather than fixed
+97.5%) cutoff fraction.
+
+**Verification:** The bivariate case above now recovers `[[1.007,.590],[.590,.973]]`
+(matches truth to within Monte Carlo noise at n=5000); a 3-D clean-data recovery test and a
+15%-contaminated version both hold relative Frobenius error under the documented 15%/30%
+tolerances in `tests/robust_statistics/tests.py::test_ogk_clean_and_contaminated_recovery`.
+
+---
+
+### 97. `RANSACRegression`'s default residual threshold used the raw response's MAD, which reflects the regression's own slope spread, not residual noise
+
+**Severity:** 5/10 · **Status:** 🟢 `fixed` (V0.14.0)
+
+**Problem:** Following the common (scikit-learn) convention, the default
+`residual_threshold` was `MAD(y)` (unscaled). For data where the response's *range* is
+dominated by the fitted trend rather than noise (e.g. `y = 1 + 2x` over `x in [0, 10]` with
+sigma=0.5 noise), `MAD(y)` reflects that ~20-unit trend spread, not the ~0.5 noise scale --
+a threshold nearly 15x too loose. Under 40% gross y-outliers this let RANSAC accept a
+consensus set containing a substantial share of outliers, biasing the final fit (observed
+error 0.39 against a true slope of 2.0, vs. the intended sub-0.1 recovery).
+
+**Fix:** Default `residual_threshold` now comes from the MAD of residuals around a
+Theil-Sen pilot fit (median-of-slopes, ~29% breakdown) instead of `MAD(y)` directly --
+scale-appropriate to the actual noise regardless of the predictors' range.
+
+**Verification:** The same 40%-outlier scenario now recovers the slope to within 0.03-0.07
+across representative seeds (`tests/robust_statistics/tests.py::test_ransac_recovers_line_under_40pct_outliers`),
+flagging ≥ 90% of the planted outliers.

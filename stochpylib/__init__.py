@@ -12,6 +12,7 @@ from stochpylib import (
     probability,
     queueing,
     random_matrix,
+    robust_statistics,
     statistics,
     survival,
     timeseries,
@@ -31,9 +32,10 @@ __all__ = [
     "probability",
     "queueing",
     "random_matrix",
+    "robust_statistics",
     "statistics",
     "survival",
     "timeseries",
 ]
 
-__version__ = "0.13.0"
+__version__ = "0.14.0"
