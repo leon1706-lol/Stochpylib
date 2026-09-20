@@ -1986,3 +1986,41 @@ hundreds).
 
 **Verification:** Matches `scipy.stats.betabinom.pmf` exactly, including at `a=655,
 b=947` (the case that first surfaced the bug), with `pmf` summing to 1 over the support.
+
+---
+
+### 93. `glm()`'s IRLS could step `eta` out of a link's valid domain, crashing `lstsq` with an unhandled `LinAlgError` — and the test seed that surfaced it wasn't actually fixed
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.13.0)
+
+**Problem:** Two compounding bugs, found from a red CI run (`test (3.10, ubuntu-latest)`)
+after V0.13.0 was pushed:
+1. `glm()`'s IRLS loop fed the raw, unconstrained linear predictor `eta` straight into
+   `inv_link(eta + off)` every iteration. For `link="inverse_squared"` (`mu = 1/sqrt(eta)`,
+   the canonical link for `family="inverse_gaussian"`) and `link="inverse"`
+   (`mu = 1/eta`), a step landing at `eta <= 0` produces `NaN`/`inf`, which then poisons
+   the weighted design matrix and makes `np.linalg.lstsq`'s SVD fail to converge with an
+   unhandled `LinAlgError` instead of the fit failing gracefully or recovering.
+2. `tests/statistics/tests.py::test_glm_family_link_vs_statsmodels` seeded its RNG with
+   `hash((fam, link)) % 2**31` — Python's builtin `hash()` on `str`/`tuple` is salted per
+   process (`PYTHONHASHSEED`) unless explicitly disabled, so this was never actually a
+   fixed seed across runs, violating the project's "deterministic everywhere" testing
+   convention (`tests/README.md`). One particular process's random hash happened to land
+   on data that triggers bug #1 for `inverse_gaussian`/`inverse_squared` — confirmed the
+   data itself is genuinely pathological for unregularized IRLS: `statsmodels.GLM` with
+   the same family/link fails on the identical data with its own
+   `"NaN, inf or invalid value detected in weights"` error.
+
+**Fix:** (1) Added `_ETA_BOUNDS` per link and clip `eta + off` into it before every
+`inv_link` call, so the iteration can never evaluate a link function outside its domain
+(a no-op for links that are total on R; for `inverse`/`inverse_squared` it keeps `eta`
+positive). (2) Replaced the test's seed with `zlib.crc32(f"{fam}|{link}".encode()) %
+2**31` — a stable hash, actually fixed across processes/machines.
+
+**Verification:** All 9 `family`/`link` combinations in
+`test_glm_family_link_vs_statsmodels` pass deterministically now (was flaky depending on
+`PYTHONHASHSEED`). The fix changes nothing for well-behaved data: across 5 representative
+seeds `glm()`'s coefficients match `statsmodels.GLM` to ~1e-16 (unchanged from before the
+fix, since the clip is a no-op there); a 500-seed sweep with the original pathological
+generator (previously crashing at seed 65) now returns finite coefficients for all 500.
+Full `pytest tests/statistics/` (177 tests) green.

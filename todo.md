@@ -9,38 +9,7 @@ are for — see `AGENTS.md`).
 
 -----
 
-## V0.13.0 — done, pending commit approval
-
-`bayesian` module implemented end to end: 25/25 spec names (32 public names total), full
-oracle test suite (`tests/bayesian/tests.py`, ~55 test functions) + e2e sweep
-(`tests/bayesian/e2e.py`, 32 exercises), CI/selftest/CLI wiring, all docs synced (repo +
-vault). See `development/CHANGELOG.md` Phase 30 for the full summary.
-`bayesian.computation.MFVariational` delegates to `advanced_mcmc.MeanFieldVI`/`ADVI` per
-the Ratings.md suggestion, instead of duplicating VI. Two real numerical bugs found and
-fixed in existing distributions along the way (`NegBinomial.pmf`/`Gamma.pdf`/
-`BetaBinomial.pmf` all overflowed to `NaN` for the large shape/rate parameters a
-conjugate posterior naturally produces after a few hundred observations —
-Probleme.md #90-92).
-
-Verified: `tests/bayesian/` (81 passed), `tests/library tests/cli` (104 passed),
-`tests/docs` (16 passed), `spl --test` (199 checks, was 187), `pytest --collect-only -q
-tests/` (1758 collected, was 1673) → README says 1756 passed/2 skipped, `spec_names.json`
-regeneration byte-identical (no drift), CLI surfaces (`--help`/`show`/`info`/`demo`) spot
-checked. A regression batch of `statistics/advanced_mcmc/distributions/numerical_methods`
-(567 passed, 2 known skips) confirms the two touched existing distributions
-(`Gamma.pdf`, `NegBinomial.pmf`/`BetaBinomial.pmf`) are still correct. A second batch
-(`probability/montecarlo/timeseries/gaussian_processes/copulas/survival`) was killed by
-the harness for low system memory partway through — not a test failure, and per harness
-instruction not restarted; these modules don't import `bayesian` and weren't touched, so
-there's no specific reason to suspect a regression there, but it's the one remaining gap
-in this round's verification if someone wants to re-run it when the sandbox is freer.
-Vault regen scripts run (`generate_code_graph.py`, `regenerate_vault.py`) and a manual
-`HANDOFF.MD` entry appended.
-
-Not yet done: the git commit itself (proposed message given to the owner, awaiting
-approval — see AGENTS.md §5 step 6, "ask, don't act").
-
-## V0.14.0: next module per the README roadmap
+## V0.14.0 
 
 Biggest remaining module by name count is `utils` (38 names, tied with where
 `numerical_methods` started) — `viz` (35), `spatial_statistics`/`optimization` (32 each),
@@ -52,6 +21,10 @@ SciPy, nothing else" runtime rule — worth a design pass before picking it up. 
 the same size-first heuristic points at `robust_statistics` (28) next, unless the owner
 prefers a different order.
 
+
+- please now start the full end to end implementation of the next biggest module end to end without deffering anything
+- than add extentsive testing and smoke github actions test
+- than do the verification tasksk as outlined in agents md without missing anything
 -----
 
 ## Blocked by environment, not by choice

@@ -126,6 +126,17 @@ _DEFAULT_LINK = {
     "gamma": "inverse", "inverse_gaussian": "inverse_squared", "negative_binomial": "log",
 }
 
+# eta = X @ beta is an unconstrained IRLS iterate; most inv_link functions are total on
+# R, but "inverse" (1/eta) and "inverse_squared" (1/sqrt(eta)) are undefined at/near 0
+# and negative respectively -- an IRLS step landing there poisons mu with NaN/Inf, which
+# then propagates into the weighted design matrix and makes lstsq's SVD fail to converge
+# (see development/Probleme.md). Clip eta into each link's domain before inv_link.
+_ETA_BOUNDS = {
+    "identity": (-np.inf, np.inf), "log": (-np.inf, np.inf), "logit": (-np.inf, np.inf),
+    "probit": (-np.inf, np.inf), "cloglog": (-np.inf, np.inf), "sqrt": (-np.inf, np.inf),
+    "inverse": (1e-6, np.inf), "inverse_squared": (1e-6, np.inf),
+}
+
 
 def _variance_fn(family, alpha=1.0):
     if family == "gaussian":
@@ -216,6 +227,7 @@ def glm(X, y, family="gaussian", link=None, weights=None, offset=None, alpha=1.0
     link_fn, inv_link, deta_dmu_fn = _LINKS[link]  # deta_dmu_fn(mu) = d(eta)/d(mu)
     var_fn = _variance_fn(family, alpha)
     lo, hi = _mu_bounds(family, link)
+    eta_lo, eta_hi = _ETA_BOUNDS[link]
 
     Xd = _design(X, fit_intercept)
     y = _as_1d(y, "y")
@@ -229,7 +241,7 @@ def glm(X, y, family="gaussian", link=None, weights=None, offset=None, alpha=1.0
     beta = np.zeros(p)
 
     for _ in range(max_iter):
-        mu = np.clip(inv_link(eta + off), lo, hi)
+        mu = np.clip(inv_link(np.clip(eta + off, eta_lo, eta_hi)), lo, hi)
         deta_dmu = deta_dmu_fn(mu)
         var = var_fn(mu)
         W = w_prior / (deta_dmu ** 2 * var)
@@ -244,7 +256,7 @@ def glm(X, y, family="gaussian", link=None, weights=None, offset=None, alpha=1.0
             break
         beta, eta = beta_new, eta_new
 
-    mu = np.clip(inv_link(eta + off), lo, hi)
+    mu = np.clip(inv_link(np.clip(eta + off, eta_lo, eta_hi)), lo, hi)
     deta_dmu = deta_dmu_fn(mu)
     var = var_fn(mu)
     W = w_prior / (deta_dmu ** 2 * var)

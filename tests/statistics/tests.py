@@ -9,6 +9,7 @@ oracle -- e.g. the quantile-regression median, or two-sample KS asymptotics).
 """
 
 import math
+import zlib
 
 import numpy as np
 import pytest
@@ -756,7 +757,12 @@ _GLM_FAMILY_LINK = [
 
 @pytest.mark.parametrize("fam,link", _GLM_FAMILY_LINK)
 def test_glm_family_link_vs_statsmodels(fam, link):
-    rng = np.random.default_rng(hash((fam, link)) % (2 ** 31))
+    # a stable hash, not the builtin hash() -- str/tuple hashing is salted per process
+    # (PYTHONHASHSEED) unless explicitly disabled, so hash() here was not actually a
+    # fixed seed across runs, occasionally landing on IRLS-pathological data that even
+    # statsmodels' own GLM can't fit either (see development/Probleme.md).
+    seed = zlib.crc32(f"{fam}|{link}".encode()) % (2 ** 31)
+    rng = np.random.default_rng(seed)
     n = 300
     X = rng.normal(size=(n, 3))
     if fam == "gaussian":

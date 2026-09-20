@@ -1147,3 +1147,16 @@ Suite: 1673 collected - 1671 passed / 2 skipped. Version 0.12.0.
   added to `cli_demo.py`; `ci.yml` `module-smoke` matrix extended.
 
 Suite: 1758 collected - 1756 passed / 2 skipped. Version 0.13.0.
+
+- **Post-push CI fix (same phase, unreleased):** `test (3.10, ubuntu-latest)` came back
+  red on GitHub Actions with `numpy.linalg.LinAlgError: SVD did not converge` in
+  `test_glm_family_link_vs_statsmodels[inverse_gaussian-inverse_squared]` — traced to two
+  compounding bugs unrelated to `bayesian` (Probleme.md #93): `glm()`'s IRLS could step
+  its linear predictor out of a link's valid domain (`inverse`/`inverse_squared` need
+  `eta > 0`), and the test's `hash((fam, link))`-based seed was never actually fixed
+  across processes (`PYTHONHASHSEED` salting), so it occasionally landed on data
+  `statsmodels.GLM` itself also fails to fit. Fixed both: `glm()` now clips `eta` into
+  each link's domain before every `inv_link` call (a no-op for well-behaved data — 5
+  representative seeds still match `statsmodels` to ~1e-16, and a 500-seed sweep with the
+  original pathological generator now returns finite coefficients throughout), and the
+  test seeds via `zlib.crc32` instead. `pytest tests/statistics/` (177 tests) green.
