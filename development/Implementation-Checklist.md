@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 544 / 794 public names implemented.**
+**Progress: 569 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -706,38 +706,38 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `reliability_mc()`
     - [x] `sensitivity_analysis()`
 
-## [bayesian](../Stochpylib-Obsidian-Vault/Modules/bayesian.md) — Bayesian inference framework (0/25)
+## [bayesian](../Stochpylib-Obsidian-Vault/Modules/bayesian.md) — Bayesian inference framework (25/25)
 
-- [ ] **stochpylib.bayesian** module overall
-  - [ ] `bayesian.core`
-    - [ ] `prior()`
-    - [ ] `likelihood()`
-    - [ ] `posterior()`
-    - [ ] `bayes_update()`
-    - [ ] `conjugate_prior()`
-    - [ ] `posterior_predictive()`
-    - [ ] `evidence()`
-  - [ ] `bayesian.models`
-    - [ ] `BayesianLinear`
-    - [ ] `BayesianLogistic`
-    - [ ] `NaiveBayes`
-    - [ ] `HierarchicalModel`
-    - [ ] `MixtureModel`
-    - [ ] `BayesianNetwork`
-    - [ ] `DirichletProcess`
-  - [ ] `bayesian.selection`
-    - [ ] `bayes_factor()`
-    - [ ] `BIC()`
-    - [ ] `AIC()`
-    - [ ] `DIC()`
-    - [ ] `WAIC()`
-    - [ ] `LOO_CV()`
-    - [ ] `TICfit()`
-  - [ ] `bayesian.computation`
-    - [ ] `LaplacePosterior()`
-    - [ ] `EP_Posterior()`
-    - [ ] `MFVariational()`
-    - [ ] `ImportanceSamplingPosterior()`
+- [x] **stochpylib.bayesian** module overall
+  - [x] `bayesian.core`
+    - [x] `prior()`
+    - [x] `likelihood()`
+    - [x] `posterior()`
+    - [x] `bayes_update()`
+    - [x] `conjugate_prior()`
+    - [x] `posterior_predictive()`
+    - [x] `evidence()`
+  - [x] `bayesian.models`
+    - [x] `BayesianLinear`
+    - [x] `BayesianLogistic`
+    - [x] `NaiveBayes`
+    - [x] `HierarchicalModel`
+    - [x] `MixtureModel`
+    - [x] `BayesianNetwork`
+    - [x] `DirichletProcess`
+  - [x] `bayesian.selection`
+    - [x] `bayes_factor()`
+    - [x] `BIC()`
+    - [x] `AIC()`
+    - [x] `DIC()`
+    - [x] `WAIC()`
+    - [x] `LOO_CV()`
+    - [x] `TICfit()`
+  - [x] `bayesian.computation`
+    - [x] `LaplacePosterior()`
+    - [x] `EP_Posterior()`
+    - [x] `MFVariational()`
+    - [x] `ImportanceSamplingPosterior()`
 
 ## [optimization](../Stochpylib-Obsidian-Vault/Modules/optimization.md) — Stochastic & numerical optimization (0/32)
 

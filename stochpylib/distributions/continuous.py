@@ -213,8 +213,11 @@ class Gamma(Distribution):
     def pdf(self, x):
         x = np.asarray(x, dtype=float)
         k, theta = self.shape, self.scale
-        out = x ** (k - 1) * np.exp(-x / theta) / (special.gamma(k) * theta**k)
-        return np.where(x >= 0, out, 0.0)
+        # log-space: x**(k-1)/theta**k overflows for large k (e.g. a conjugate
+        # Poisson-Gamma posterior with a large sample size) -- see development/Probleme.md.
+        with np.errstate(divide="ignore", invalid="ignore"):
+            log_pdf = special.xlogy(k - 1, x) - x / theta - special.gammaln(k) - k * np.log(theta)
+        return np.where(x >= 0, np.exp(log_pdf), 0.0)
 
     def cdf(self, x):
         x = np.asarray(x, dtype=float)

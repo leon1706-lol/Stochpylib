@@ -336,6 +336,8 @@ def run(verbose=False):
         "advanced_mcmc": (35, ["MetropolisHastings", "NoUTurnSampler", "Rhat", "ESS"]),
         "numerical_methods": (38, ["GaussLegendre", "DormandPrince", "Brent",
                                    "MatrixExponential", "FiniteDifference"]),
+        "bayesian": (25, ["posterior", "conjugate_prior", "BayesianLinear", "WAIC",
+                          "LaplacePosterior"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -607,6 +609,92 @@ def run(verbose=False):
     du_nm = sm_nm.fourier_derivative(np.sin(2 * x_nm), 2 * np.pi)
     st.check("NUM: Fourier spectral derivative of sin(2x) matches 2cos(2x)",
              bool(np.max(np.abs(du_nm - 2 * np.cos(2 * x_nm))) < 1e-10))
+
+    # bayesian quick checks
+    from stochpylib.bayesian import (
+        prior as _bay_prior,
+        likelihood as _bay_lik,
+        posterior as _bay_post,
+        posterior_predictive as _bay_pred,
+        evidence as _bay_ev,
+        BayesianLinear as _BayLinear,
+        BayesianNetwork as _BayNet,
+        LaplacePosterior as _BayLaplace,
+        WAIC as _BayWAIC,
+        DirichletProcess as _BayDP,
+        NaiveBayes as _BayNB,
+    )
+    from stochpylib.distributions import Beta as _BayBeta
+
+    rng_bay = np.random.default_rng(120)
+    x_bay = rng_bay.binomial(1, 0.4, 300)
+    post_bay = _bay_post(_bay_prior(_BayBeta(2, 3)), _bay_lik("bernoulli", data=x_bay),
+                          method="conjugate")
+    s_bay, n_bay = float(x_bay.sum()), len(x_bay)
+    st.check("BAYES: conjugate beta posterior params",
+             abs(post_bay.dist.a - (2 + s_bay)) < _TOL and abs(post_bay.dist.b - (3 + n_bay - s_bay)) < _TOL)
+    post_grid_bay = _bay_post(_bay_prior(_BayBeta(2, 3)), _bay_lik("bernoulli", data=x_bay),
+                               method="grid", n_grid=2001)
+    st.check("BAYES: grid posterior mean matches conjugate",
+             abs(post_grid_bay.mean()[0] - post_bay.mean()[0]) < 1e-3)
+    ev_conj_bay = _bay_ev(_bay_prior(_BayBeta(2, 3)), _bay_lik("bernoulli", data=x_bay), method="conjugate")
+    ev_grid_bay = _bay_ev(_bay_prior(_BayBeta(2, 3)), _bay_lik("bernoulli", data=x_bay), method="grid",
+                           n_grid=2001)
+    st.check("BAYES: conjugate evidence matches grid evidence", abs(ev_conj_bay - ev_grid_bay) < 1e-3)
+    pred_bay = _bay_pred(post_bay)
+    st.check("BAYES: beta-binomial predictive mean matches posterior mean",
+             abs(pred_bay.mean() - post_bay.mean()[0]) < _TOL)
+
+    X_bay = rng_bay.standard_normal((100, 2))
+    beta_true_bay = np.array([1.0, 2.0, -1.0])
+    y_bay = beta_true_bay[0] + X_bay @ beta_true_bay[1:] + rng_bay.normal(0, 0.1, 100)
+    lin_bay = _BayLinear(prior_precision=1e-10, a0=1e-8, b0=1e-8).fit(X_bay, y_bay)
+    ols_bay = np.linalg.lstsq(np.column_stack([np.ones(100), X_bay]), y_bay, rcond=None)[0]
+    st.check("BAYES: BayesianLinear matches OLS with a near-flat prior",
+             bool(np.max(np.abs(lin_bay.coef_ - ols_bay)) < 1e-6))
+
+    lap_bay = _BayLaplace(lambda t: -0.5 * t[0] ** 2, np.array([1.0]))
+    st.check("BAYES: LaplacePosterior exact on a standard Gaussian target",
+             abs(lap_bay.mean_[0]) < 1e-3 and abs(lap_bay.cov_[0, 0] - 1.0) < 1e-3)
+
+    ll_bay = np.array([[0.0, -1.0], [-0.5, -0.5], [-1.0, 0.0]])
+    waic_bay = _BayWAIC(ll_bay)
+    from scipy.special import logsumexp as _lse_bay
+    lppd_bay = _lse_bay(ll_bay, axis=0) - np.log(3)
+    pwaic_bay = np.var(ll_bay, axis=0, ddof=1)
+    st.check("BAYES: WAIC matches its own hand formula",
+             abs(waic_bay.value - (-2 * np.sum(lppd_bay - pwaic_bay))) < 1e-8)
+
+    bn_bay = _BayNet()
+    for name_bay in ("Cloudy", "Sprinkler", "Rain", "WetGrass"):
+        bn_bay.add_node(name_bay, [0, 1])
+    bn_bay.add_edge("Cloudy", "Sprinkler")
+    bn_bay.add_edge("Cloudy", "Rain")
+    bn_bay.add_edge("Sprinkler", "WetGrass")
+    bn_bay.add_edge("Rain", "WetGrass")
+    bn_bay.set_cpt("Cloudy", [0.5, 0.5])
+    bn_bay.set_cpt("Sprinkler", [[0.5, 0.5], [0.9, 0.1]])
+    bn_bay.set_cpt("Rain", [[0.8, 0.2], [0.2, 0.8]])
+    wg_bay = np.zeros((2, 2, 2))
+    wg_bay[0, 0] = [1.0, 0.0]; wg_bay[0, 1] = [0.1, 0.9]
+    wg_bay[1, 0] = [0.1, 0.9]; wg_bay[1, 1] = [0.01, 0.99]
+    bn_bay.set_cpt("WetGrass", wg_bay)
+    res_bay = bn_bay.query(["Rain"], {"WetGrass": 1})
+    st.check("BAYES: sprinkler network P(Rain=1|WetGrass=1)", abs(res_bay[1] - 0.70792768) < 1e-3)
+
+    dp_bay = _BayDP(alpha=2.0)
+    st.check("BAYES: DirichletProcess expected_clusters closed form",
+             abs(dp_bay.expected_clusters(10) - sum(2.0 / (2.0 + i) for i in range(10))) < 1e-10)
+
+    Xnb_bay = np.array([[0.0, 0.0], [0.1, -0.1], [5.0, 5.0], [5.1, 4.9]])
+    ynb_bay = np.array([0, 0, 1, 1])
+    nb_bay = _BayNB("gaussian").fit(Xnb_bay, ynb_bay)
+    st.check("BAYES: NaiveBayes separates two well-separated blobs",
+             bool(np.all(nb_bay.predict(Xnb_bay) == ynb_bay)))
+
+    from stochpylib.bayesian import bayes_factor as _bay_bf
+    bf_bay = _bay_bf(post_bay.log_evidence_, -1e9)
+    st.check("BAYES: bayes_factor > 1 for the far-better model", bf_bay.value > 1.0)
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

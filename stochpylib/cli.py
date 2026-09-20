@@ -188,6 +188,15 @@ def _implemented_overview():
             "                   finding; splines/PCHIP/barycentric/Chebyshev/NURBS interpolation;\n"
             "                   finite-difference/finite-element/boundary-element/spectral PDE\n"
             "                   solvers plus a FEniCS-style adapter with a native fallback",
+        "bayesian":
+            "Bayesian inference: priors/likelihoods/posteriors (conjugate,\n"
+            "                   grid, Laplace, VI, importance sampling, SMC, MCMC via\n"
+            "                   advanced_mcmc), ten conjugate families with predictives &\n"
+            "                   evidence, Bayesian linear/logistic regression, naive Bayes,\n"
+            "                   hierarchical normal model, finite mixtures, discrete Bayesian\n"
+            "                   networks, Dirichlet-process mixtures, AIC/BIC/DIC/WAIC/\n"
+            "                   PSIS-LOO/TIC & Bayes factors, Laplace/EP/VI/importance\n"
+            "                   posterior approximations",
     }
 
     blocks = []

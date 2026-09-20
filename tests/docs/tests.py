@@ -32,6 +32,7 @@ IMPLEMENTED = (
     "gaussian_processes", "copulas", "survival", "queueing",
     "information_theory", "levy_processes", "financial_stochastics",
     "statistics", "random_matrix", "advanced_mcmc", "numerical_methods",
+    "bayesian",
 )
 
 
@@ -186,7 +187,9 @@ def test_no_stale_claims_in_readme():
                   r"\b1447 passed\b", r"\b1447 passing\b", r"\b168 checks\b",
                   r"\b168-check\b", r"\bthirteen modules\b", r"\b506\b",
                   r"\b1538 passed\b", r"\b1538 passing\b", r"\b177 checks\b",
-                  r"\b177-check\b", r"\bfourteen modules\b"):
+                  r"\b177-check\b", r"\bfourteen modules\b", r"\b544\b",
+                  r"\b1671 passed\b", r"\b1671 passing\b", r"\b187 checks\b",
+                  r"\b187-check\b", r"\bfifteen modules\b"):
         assert not re.search(stale, readme), f"stale claim survived: {stale}"
 
 
@@ -215,7 +218,7 @@ def test_implementation_checklist_progress_line_matches_reality():
     expected_total = sum(
         len(spec[n]) + (13 if n == "distributions" else 0) for n in IMPLEMENTED
     )
-    assert total_done == expected_total == 544, (
+    assert total_done == expected_total == 569, (
         f"checklist progress {total_done} != true spec total {expected_total}"
     )
 

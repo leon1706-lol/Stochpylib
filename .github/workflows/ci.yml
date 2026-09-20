@@ -53,6 +53,7 @@ jobs:
           - random_matrix
           - advanced_mcmc
           - numerical_methods
+          - bayesian
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

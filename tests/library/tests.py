@@ -23,6 +23,7 @@ from scipy import stats
 import stochpylib
 from stochpylib import (
     advanced_mcmc,
+    bayesian,
     copulas,
     distributions,
     financial_stochastics,
@@ -58,6 +59,7 @@ _MODULES = {
     "information_theory": information_theory,
     "advanced_mcmc": advanced_mcmc,
     "numerical_methods": numerical_methods,
+    "bayesian": bayesian,
 }
 
 # Documented public extras beyond the 229 spec names (utilities & result
@@ -86,6 +88,8 @@ _EXTRAS = {
     "advanced_mcmc": {"LogDensity", "MCMCSampler", "RafteryLewisResult"},
     "numerical_methods": {"QuadratureResult", "RootResult", "ODESolution",
                           "SDESolution", "Mesh"},
+    "bayesian": {"Prior", "Likelihood", "ConjugateFamily", "Posterior",
+                "PosteriorApproximation", "ICResult", "EmpiricalPredictive"},
 }
 
 DISTRIBUTION_METHODS_DOC = (".pdf()/.pmf()", ".cdf()", ".ppf()", ".rvs()",
@@ -117,9 +121,9 @@ def test_total_spec_name_count():
                    "gaussian_processes", "copulas", "survival", "queueing",
                    "information_theory", "levy_processes",
                    "financial_stochastics", "statistics", "random_matrix",
-                   "advanced_mcmc", "numerical_methods")
+                   "advanced_mcmc", "numerical_methods", "bayesian")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 544  # 544/794 across the fifteen implemented modules
+    assert total == 569  # 569/794 across the sixteen implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -149,7 +153,7 @@ def test_every_distribution_class_exposes_common_interface():
 
 def test_top_level_package_wiring():
     assert set(stochpylib.__all__) == {
-        "advanced_mcmc", "copulas", "distributions", "financial_stochastics",
+        "advanced_mcmc", "bayesian", "copulas", "distributions", "financial_stochastics",
         "gaussian_processes", "information_theory", "levy_processes",
         "montecarlo", "numerical_methods", "probability", "queueing",
         "random_matrix", "statistics", "survival", "timeseries"}
@@ -345,3 +349,26 @@ def test_numerical_methods_pde_and_quadrature_agree_with_black_scholes():
 
     gh_price = gh.expectation(discounted_payoff, vectorized=True).value
     assert abs(gh_price - bs.call_price()) < 1e-2
+
+
+def test_bayesian_conjugate_agrees_with_statistics_estimator_and_mcmc():
+    """E2E: bayesian -> statistics/advanced_mcmc. The conjugate beta-bernoulli posterior
+    exactly matches statistics.bayesian_estimator's own conjugate path, and an MCMC
+    posterior (delegated to advanced_mcmc) recovers the same mean within its MCSE."""
+    rng = np.random.default_rng(200)
+    x = rng.binomial(1, 0.4, 300)
+    post = bayesian.posterior(bayesian.prior(distributions.Beta(1, 1)),
+                               bayesian.likelihood("bernoulli", data=x), method="conjugate")
+    est = statistics.bayesian_estimator("bernoulli", x, prior=(1.0, 1.0))
+    assert post.dist.a == pytest.approx(est.extras["posterior"].a)
+    assert post.dist.b == pytest.approx(est.extras["posterior"].b)
+
+    pm = bayesian.posterior(bayesian.prior(distributions.Beta(1, 1)),
+                             bayesian.likelihood("bernoulli", data=x), method="mcmc",
+                             sampler="slice", n_samples=2000, n_warmup=500,
+                             theta0=np.array([0.4]), random_state=1)
+    from stochpylib.advanced_mcmc import ESS, MCMCSampler
+    assert isinstance(pm.extras["sampler"], MCMCSampler)
+    ess = float(ESS(pm.samples_.T[:, :, None], method="mean"))
+    se = pm.samples_.std() / np.sqrt(ess)
+    assert abs(pm.samples_.mean() - post.mean()[0]) < 5 * se

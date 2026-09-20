@@ -200,8 +200,14 @@ class NegBinomial(Distribution):
         k = np.asarray(k)
         valid = (k >= 0) & (k == np.round(k))
         kk = np.clip(k, 0, None)
-        coef = special.gamma(kk + self.r) / (special.gamma(self.r) * special.gamma(kk + 1))
-        return np.where(valid, coef * self.p**self.r * (1 - self.p) ** kk, 0.0)
+        # log-space: special.gamma(kk + r) overflows to inf for large r (e.g. a
+        # conjugate Poisson posterior predictive with a large sample size), turning
+        # inf/inf into a silent NaN -- see development/Probleme.md.
+        with np.errstate(divide="ignore"):
+            log_coef = (special.gammaln(kk + self.r) - special.gammaln(self.r)
+                        - special.gammaln(kk + 1))
+            log_pmf = log_coef + self.r * np.log(self.p) + special.xlog1py(kk, -self.p)
+        return np.where(valid, np.exp(log_pmf), 0.0)
 
     pdf = pmf
 
@@ -437,8 +443,11 @@ class BetaBinomial(Distribution):
         k = np.asarray(k)
         valid = (k >= 0) & (k <= self.n) & (k == np.round(k))
         kk = np.clip(k, 0, self.n)
-        out = special.comb(self.n, kk) * special.beta(kk + self.a, self.n - kk + self.b) / special.beta(self.a, self.b)
-        return np.where(valid, out, 0.0)
+        # log-space betaln: special.beta(...) overflows for large a/b (e.g. a conjugate
+        # Beta-Binomial posterior predictive with a large sample size) -- see Probleme.md.
+        log_pmf = (np.log(special.comb(self.n, kk))
+                   + special.betaln(kk + self.a, self.n - kk + self.b) - special.betaln(self.a, self.b))
+        return np.where(valid, np.exp(log_pmf), 0.0)
 
     pdf = pmf
 

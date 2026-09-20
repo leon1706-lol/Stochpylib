@@ -303,6 +303,50 @@ def _demo_numerical_methods():
     print(f"  3-state CTMC transition matrix expm(Q) row sums = {np.round(P.sum(axis=1), 6)}")
 
 
+def _demo_bayesian():
+    from stochpylib.bayesian import (
+        BayesianLinear, BayesianNetwork, WAIC, bayes_factor, likelihood, posterior, prior,
+    )
+    from stochpylib.distributions import Beta
+
+    print("Bayesian inference - conjugate posterior, linear regression, model selection:")
+    rng = np.random.default_rng(7)
+    flips = rng.binomial(1, 0.7, 10)
+    post = posterior(prior(Beta(2, 2)), likelihood("bernoulli", data=flips))
+    lo, hi = post.credible_interval(0.95)
+    print(f"  coin flips (7/10 heads): posterior mean={float(post.mean()[0]):.3f}, "
+          f"95% CI=({lo:.3f}, {hi:.3f})")
+
+    X = rng.standard_normal((60, 1))
+    y = 2.0 * X[:, 0] + 1.0 + rng.normal(0, 0.5, 60)
+    model = BayesianLinear().fit(X, y)
+    beta_s, sigma2_s = model.sample(1000, random_state=0)
+    w = WAIC(model.pointwise_log_lik((beta_s, sigma2_s)))
+    print(f"  linear regression: coef={np.round(model.coef_, 3)}, WAIC={w.value:.2f}")
+
+    null_model = BayesianLinear().fit(X * 0.0, y)
+    bf = bayes_factor(model, null_model)
+    print(f"  Bayes factor (slope model vs intercept-only) = {bf.value:.3g} "
+          f"({bf.extras['jeffreys']})")
+
+    bn = BayesianNetwork()
+    for name in ("Cloudy", "Sprinkler", "Rain", "WetGrass"):
+        bn.add_node(name, [0, 1])
+    bn.add_edge("Cloudy", "Sprinkler")
+    bn.add_edge("Cloudy", "Rain")
+    bn.add_edge("Sprinkler", "WetGrass")
+    bn.add_edge("Rain", "WetGrass")
+    bn.set_cpt("Cloudy", [0.5, 0.5])
+    bn.set_cpt("Sprinkler", [[0.5, 0.5], [0.9, 0.1]])
+    bn.set_cpt("Rain", [[0.8, 0.2], [0.2, 0.8]])
+    wg = np.zeros((2, 2, 2))
+    wg[0, 0] = [1.0, 0.0]; wg[0, 1] = [0.1, 0.9]
+    wg[1, 0] = [0.1, 0.9]; wg[1, 1] = [0.01, 0.99]
+    bn.set_cpt("WetGrass", wg)
+    res = bn.query(["Rain"], {"WetGrass": 1})
+    print(f"  sprinkler network: P(Rain=1 | WetGrass=1) = {res[1]:.4f}")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -319,6 +363,7 @@ DEMOS = {
     "random_matrix": _demo_random_matrix,
     "advanced_mcmc": _demo_advanced_mcmc,
     "numerical_methods": _demo_numerical_methods,
+    "bayesian": _demo_bayesian,
 }
 DEMO_MODULES = tuple(DEMOS)
 

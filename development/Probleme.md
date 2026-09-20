@@ -1932,3 +1932,57 @@ the same newline treatment as longer ones.
 **Verification:** `spl --help` now prints `numerical_methods` on its own line followed
 by its summary on the next, matching every other module's formatting;
 `tests/cli/tests.py::test_help_inventory_covers_all_modules_with_counts` still passes.
+
+---
+
+### 90. `NegBinomial.pmf()` overflowed to `NaN` for large `r` (a real conjugate-Poisson posterior predictive)
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.13.0)
+
+**Problem:** `NegBinomial.pmf()` computed `special.gamma(k + r) / (special.gamma(r) *
+special.gamma(k + 1))` directly. `bayesian.core`'s Poisson-Gamma conjugate predictive
+returns a `NegBinomial` with `r` = the posterior shape (grows with sample size, e.g.
+`r ~ 1184` on 300 observations); `special.gamma(1184)` overflows to `inf`, and `inf/inf`
+silently becomes `NaN` — a wrong-numbers-silently-shipped case (no exception, no warning
+surfaced to the caller beyond a `RuntimeWarning`).
+
+**Fix:** Compute the coefficient in log-space (`special.gammaln`) and the `p`/`(1-p)`
+powers via `special.xlog1py` (handles the `k=0`, `p=1` edge without a `0 * -inf` NaN),
+then exponentiate once at the end.
+
+**Verification:** Matches `scipy.stats.nbinom.pmf` exactly (`atol=1e-12`) across normal
+and large-`r` parameter ranges; `tests/bayesian/tests.py` exercises the large-`r` path via
+the Poisson conjugate predictive.
+
+---
+
+### 91. `Gamma.pdf()` overflowed to `NaN` for large shape (a real conjugate-Poisson posterior)
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.13.0)
+
+**Problem:** `Gamma.pdf()` computed `x**(k-1) * exp(-x/theta) / (special.gamma(k) *
+theta**k)` directly; for `k` in the hundreds (the same conjugate-Poisson posterior shape
+as #90), `theta**k` and `special.gamma(k)` both overflow, giving `NaN`.
+
+**Fix:** Log-space via `special.xlogy(k-1, x) - x/theta - special.gammaln(k) -
+k*np.log(theta)`, exponentiated once at the end; matches scipy for `k=1` (`x=0` edge) and
+`k<1` (divergent density at `x=0`) too.
+
+**Verification:** Matches `scipy.stats.gamma.pdf` exactly across normal and large-shape
+ranges, including the boundary cases.
+
+---
+
+### 92. `BetaBinomial.pmf()` overflowed to `NaN` for large `a`/`b` (a real conjugate-Binomial posterior predictive)
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.13.0)
+
+**Problem:** Same overflow class as #90/#91: `special.beta(kk + a, n - kk + b) /
+special.beta(a, b)` overflows for the large `a`/`b` a conjugate Beta-Binomial posterior
+predictive naturally produces (hundreds of observations pushing `a`/`b` into the
+hundreds).
+
+**Fix:** Log-space via `special.betaln`.
+
+**Verification:** Matches `scipy.stats.betabinom.pmf` exactly, including at `a=655,
+b=947` (the case that first surfaced the bug), with `pmf` summing to 1 over the support.

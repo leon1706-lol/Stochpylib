@@ -1082,3 +1082,68 @@ now a first-class module with native implementations across six submodules.
   numerical_methods` added to `cli_demo.py`; `ci.yml` `module-smoke` matrix extended.
 
 Suite: 1673 collected - 1671 passed / 2 skipped. Version 0.12.0.
+
+## Phase 30 — V0.13.0 bayesian: priors/posteriors, conjugate engine, Bayesian models, model selection, posterior approximations (25 names)
+
+- **`bayesian.core`**: `Prior`/`prior()` (a library distribution, a product-prior list,
+  `"flat"` improper, or custom logpdf/sampler) and `Likelihood`/`likelihood()` (ten
+  built-in exponential families — bernoulli/binomial/poisson/exponential/gamma/normal/
+  normal_variance/normal_unknown_var/categorical/mvnormal — or a custom `loglik`).
+  `ConjugateFamily`/`conjugate_prior()` implement closed-form update/predictive/evidence
+  for all ten families, each cross-checked against `scipy.stats` or a fine numerical
+  grid. `posterior()`/`evidence()` default to `method="auto"` (conjugate when the pair
+  matches, else a numerical grid for dim <= 2, else Laplace/MCMC), with `"laplace"`,
+  `"vi"`, `"importance"`, `"smc"`, and `"mcmc"` (slice/NUTS/adaptive-Metropolis, via
+  `advanced_mcmc`) as explicit alternatives. `bayes_update()` is sequential-equals-batch
+  conjugate updating; `posterior_predictive()` is closed form when conjugate, else a
+  Monte Carlo `EmpiricalPredictive` (a posterior-predictive distribution satisfying the
+  full 13-method distribution contract via a Gaussian KDE).
+- **`bayesian.computation`**: `LaplacePosterior` (MAP + inverse-negative-Hessian
+  covariance), `EP_Posterior` (Gaussian expectation propagation with Gauss-Hermite
+  moment matching per site — works for *any* analytically evaluable site, not only
+  Gaussian-conjugate ones, verified exact on a linear-Gaussian model and matching a long
+  NUTS run on a probit/logistic model), `ImportanceSamplingPosterior` (self-normalized
+  IS with Pareto-smoothed weights, a default Laplace-centred multivariate-t proposal).
+  `MFVariational` **delegates to `advanced_mcmc.MeanFieldVI`/`ADVI`** instead of
+  reimplementing VI, resolving the design-scorecard note that `bayesian.computation`'s
+  variational inference was thin relative to `advanced_mcmc.variational` (Ratings.md).
+- **`bayesian.selection`**: `AIC`/`BIC` (+ AICc, matched to `statsmodels.OLS` exactly),
+  `DIC`, `WAIC`, `LOO_CV` (Pareto-smoothed importance sampling by default — a native
+  Zhang-Stephens 2009 generalized-Pareto fit plus the Vehtari/Simpson/Gelman/Yao/Gabry
+  smoothing recipe — cross-checked against exact leave-one-out refits of a conjugate
+  model), `TICfit` (the sandwich-covariance generalization of AIC), and `bayes_factor`
+  (from log-evidences, `(prior, likelihood)` tuples, or `method="bic"` on two fitted
+  models, statsmodels results included) — all return the shared `ICResult`.
+- **`bayesian.models`**: `BayesianLinear` (conjugate Normal-Inverse-Gamma regression,
+  matching OLS exactly under a near-flat prior, its log-evidence formula verified
+  against a fine-grid numerical integral), `BayesianLogistic` (`method=`
+  laplace/ep/mcmc/vi, MAP matching `statsmodels.Logit` to 1e-4), `NaiveBayes`
+  (gaussian/bernoulli/multinomial posterior-mean parameters), `HierarchicalModel`
+  (normal-normal Gibbs, known-per-group or shared-unknown-sigma modes, half-Cauchy/
+  inverse-gamma/fixed tau priors), `MixtureModel` (collapsed-Gibbs Bayesian mixtures,
+  gaussian NIG/NIW or 1-D poisson-gamma), `BayesianNetwork` (discrete, exact variable
+  elimination, ancestral sampling, Dirichlet-smoothed MLE fit, BDeu structure score),
+  `DirichletProcess` (stick-breaking, CRP, and a Neal-2000-Algorithm-3 collapsed-Gibbs
+  DP mixture).
+- **Two real numerical bugs surfaced and fixed in existing distributions** while testing
+  conjugate posteriors with realistic sample sizes (Probleme.md #90-92): `NegBinomial.pmf`,
+  `Gamma.pdf`, and `BetaBinomial.pmf` all overflowed to `NaN` for the large shape/rate
+  parameters a conjugate posterior naturally produces after a few hundred observations —
+  fixed by moving each to log-space (`gammaln`/`betaln`/`xlog1py`) before exponentiating.
+- **`tests/bayesian/tests.py` (~55 test functions, several parametrized):** `scipy.stats`
+  (beta/gamma/nbinom/betabinom/t/invgamma/lomax/multivariate_normal), `statsmodels`
+  (OLS/Logit), brute-force enumeration (the sprinkler `BayesianNetwork` example), fine
+  numerical grids/1-D quadrature, and long `advanced_mcmc` runs as independent oracles.
+- **Every Essential-Tasks.md wrap-up item completed:** `tests/bayesian/e2e.py` (32
+  exercises, one per public name); `selftest.py` extended 187 -> 199 checks (`BAYES:`
+  block); `stochpylib/bayesian/README.md` written; `development/{CHANGELOG,Probleme,
+  Implementation-Checklist,architecture}.md` updated (progress line 569/794); root
+  `README.md` (badges, status table, Known Limitations, architecture diagrams, roadmap,
+  CLI reference counts, demo prose), `stochpylib/README.md`, `tests/README.md`,
+  `CONTRIBUTING.md`, `AGENTS.md`, `development/{Development,README,project_structure}.md`
+  all synced; `tests/docs/tests.py` and `tests/library/tests.py` updated (spec-name
+  conformance, wiring, a cross-module integration test agreeing with
+  `statistics.bayesian_estimator` and an `advanced_mcmc` sampler); `spl demo bayesian`
+  added to `cli_demo.py`; `ci.yml` `module-smoke` matrix extended.
+
+Suite: 1758 collected - 1756 passed / 2 skipped. Version 0.13.0.

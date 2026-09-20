@@ -1,6 +1,6 @@
 # stochpylib Architecture
 
-**Status:** fifteen of 23 planned modules are implemented and tested (544/794
+**Status:** sixteen of 23 planned modules are implemented and tested (569/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state). Everything else in the module map below
 remains design spec, not shipped code.
@@ -43,6 +43,7 @@ flowchart LR
     C --> P["stochpylib.random_matrix<br/>ensembles, limit laws, Haar rotations, spectral statistics"]
     C --> Q["stochpylib.advanced_mcmc<br/>MCMC samplers, HMC/NUTS, SMC, diagnostics, variational inference"]
     A --> R["stochpylib.numerical_methods<br/>quadrature, ODE/SDE solvers, linear algebra, roots, interpolation, PDE"]
+    Q --> S["stochpylib.bayesian<br/>conjugate/grid/Laplace/VI/IS posteriors, Bayesian models, model selection"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -54,6 +55,7 @@ flowchart LR
     P --> L
     Q --> L
     R --> L
+    S --> L
 ```
 
 ## Tech Stack
@@ -68,7 +70,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (187 checks)"]
+    C --> C3["spl --test embedded self-check (199 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -163,8 +165,17 @@ README per module):
   Lagrange, Chebyshev series, NURBS; finite-difference/finite-element/
   boundary-element/spectral PDE solvers plus a FEniCS-style adapter that
   solves natively by default and only lazily imports a real FEniCS install.
+- `bayesian/` — priors/likelihoods (ten built-in exponential families) with
+  conjugate posteriors/predictives/evidence in closed form, `posterior()`/
+  `evidence()` falling back to a numerical grid (dim <= 2), Laplace, VI (via
+  `advanced_mcmc.MeanFieldVI`/`ADVI`), importance sampling, SMC, or MCMC (via
+  `advanced_mcmc` samplers); expectation propagation (Gauss-Hermite moment
+  matching, via `numerical_methods.GaussHermite`); Bayesian linear/logistic
+  regression, naive Bayes, a hierarchical normal model, finite mixtures,
+  discrete Bayesian networks (exact variable elimination), Dirichlet-process
+  mixtures; AIC/BIC/DIC/WAIC/PSIS-LOO/TIC and Bayes factors.
 
-Planned modules (8, in rough implementation order): bayesian,
+Planned modules (7, in rough implementation order):
 nonparametric, robust_statistics,
 spatial_statistics, optimization,
 experimental_design, viz, utils — each lands with the same bar:
@@ -234,6 +245,14 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
   `tests/<module>/e2e.py` — one realistic exercise per name in `__all__`, run as
   its own pytest case, with a guard that fails when a name has no exercise. A
   module is not done until both `tests.py` (oracles) and `e2e.py` exist.
+- **Bayesian conventions** (established by `bayesian`): posteriors/posterior
+  approximations/model-selection criteria return the shared `Posterior` /
+  `PosteriorApproximation` / `ICResult` objects (`float(ICResult)` coerces to
+  the criterion value); `posterior()`/`evidence()` default to `method="auto"`
+  (conjugate when the prior/likelihood pair matches, else a grid for dim <= 2,
+  else Laplace/MCMC); MCMC, variational inference and SMC delegate to
+  `advanced_mcmc` rather than reimplementing them, and EP's per-site moment
+  matching delegates to `numerical_methods.GaussHermite`.
 
 ## Package Layout Convention
 
