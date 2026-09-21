@@ -18,12 +18,12 @@ Stochpylib/
 │   ├── ISSUE_TEMPLATE/          # bug report + feature request YAML forms (spl --version pre-flight)
 │   └── PULL_REQUEST_TEMPLATE.md # checklist mirroring the wrap-up rules
 ├── stochpylib/                  # the installable package (guide: stochpylib/README.md)
-│   ├── __init__.py              # re-exports all seventeen subpackages; __version__
+│   ├── __init__.py              # re-exports all eighteen subpackages; __version__
 │   ├── cli.py                   # the spl console command: --help inventory, --version [--list],
 │   │                            #   --test, and the update/info/show/demo/cite subcommands
 │   ├── cli_pypi.py              # PyPI metadata access behind spl --version/update (cache, offline-safe)
-│   ├── cli_demo.py              # the seventeen live mini-examples behind spl demo
-│   ├── selftest.py              # embedded 212-check self-check suite shipped in the wheel
+│   ├── cli_demo.py              # the eighteen live mini-examples behind spl demo
+│   ├── selftest.py              # embedded 222-check self-check suite shipped in the wheel
 │   ├── probability/             # sample spaces, Bayes, exact combinatorics, independence
 │   ├── distributions/           # 47 classes behind the common interface (_base.py fallbacks)
 │   ├── montecarlo/              # QMC sequences, estimators, variance reduction, applications
@@ -40,10 +40,11 @@ Stochpylib/
 │   ├── advanced_mcmc/           # MCMC samplers (MH..NUTS/RMHMC), slice/tempering/SMC/particle/transdimensional, diagnostics, variational inference
 │   ├── numerical_methods/       # quadrature, ODE/SDE solvers, linear algebra, root finding, interpolation, PDE (FD/FEM/BEM/spectral, FEniCS adapter)
 │   ├── bayesian/                # priors/likelihoods/posteriors, conjugate engine, models, selection, computation
-│   └── robust_statistics/       # robust location/scale, Theil-Sen/RANSAC/LTS/MM/Huber regression, MCD/MVE/OGK covariance, bootstraps
+│   ├── robust_statistics/       # robust location/scale, Theil-Sen/RANSAC/LTS/MM/Huber regression, MCD/MVE/OGK covariance, bootstraps
+│   └── nonparametric/           # KDE/kNN/orthogonal-series/log-spline density, empirical dist/CDF/cf, resampling/rank tests, dependence, local regression
 ├── tests/                       # test suite OUTSIDE the package on purpose (guide: tests/README.md)
 │   ├── __init__.py              # anchors every suite's import at the repo root (tests.<module>.tests)
-│   ├── <module>/tests.py        # one deterministic oracle suite per implemented module (seventeen)
+│   ├── <module>/tests.py        # one deterministic oracle suite per implemented module (eighteen)
 │   ├── <module>/e2e.py          # end-to-end API sweep: one exercise per public name, guarded against gaps
 │   ├── library/                 # cross-module suite: spec conformance, pinned extras, workflows
 │   │   ├── _extract_spec_names.py   # generates conformance lists from the checklist
@@ -57,7 +58,7 @@ Stochpylib/
 │   ├── Development.md           # layout decisions & workflow notes
 │   ├── CHANGELOG.md             # append-only per-phase build history
 │   ├── Probleme.md              # bug audit log (Problem → Fix → Verification, severity, status)
-│   ├── Implementation-Checklist.md  # every planned public name as a checkbox (597/794 done)
+│   ├── Implementation-Checklist.md  # every planned public name as a checkbox (628/794 done)
 │   └── logo.png                 # project logo, referenced by the README banner
 ├── build/  dist/  *.egg-info/   # local build artifacts (gitignored, never edited by hand)
 └── Stochpylib-Obsidian-Vault/   # the full design-spec vault (private, not part of the repo)

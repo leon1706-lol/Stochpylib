@@ -2112,3 +2112,82 @@ scale-appropriate to the actual noise regardless of the predictors' range.
 **Verification:** The same 40%-outlier scenario now recovers the slope to within 0.03-0.07
 across representative seeds (`tests/robust_statistics/tests.py::test_ransac_recovers_line_under_40pct_outliers`),
 flagging ≥ 90% of the planted outliers.
+
+---
+
+### 98. `nonparametric.CramerVonMises`'s two-sample statistic ranked the unsorted pooled sample, giving a statistic off by orders of magnitude
+
+**Severity:** 8/10 · **Status:** 🟢 `fixed` (V0.15.0)
+
+**Problem:** The two-sample Cramer-von Mises formula compares each sample's own sorted
+order statistics to their expected pooled rank (`sum((r_x_i - i)^2)` for `i = 1..n_x`,
+sorted `x` paired against `1..n_x`). The implementation ranked `concatenate([x, y])`
+*without* sorting `x` and `y` individually first, so `rx`/`ry` were the pooled ranks of
+the samples in their **original** (arbitrary) order — an essentially meaningless pairing
+against `1..n_x`. On a representative scipy-matched comparison this gave a statistic of
+27.9 (p ~= 2e-9) instead of the correct 0.067 (p ~= 0.78) for the *same* two samples.
+
+**Fix:** Sort `x` and `y` individually before concatenating and ranking, matching
+`scipy.stats.cramervonmises_2samp`'s own `xa = sort(x); ya = sort(y)` construction.
+
+**Verification:** `tests/nonparametric/tests.py::test_cramer_von_mises_two_sample_matches_scipy_asymptotic`
+now matches `scipy.stats.cramervonmises_2samp(method="asymptotic")`'s statistic and
+p-value to machine precision.
+
+---
+
+### 99. `nonparametric.RankCorrelation(method="somers_d")` excluded ties in the wrong variable
+
+**Severity:** 5/10 · **Status:** 🟢 `fixed` (V0.15.0)
+
+**Problem:** Somers' D(Y|X) (`scipy.stats.somersd(x, y)`'s convention) is
+`tau_a(X,Y) / tau_a(X,X)`, whose denominator excludes ties in `x`, the independent/row
+variable. The implementation instead subtracted the tie term for `y` from the
+denominator, giving 0.6701 instead of the correct 0.6735 on a representative tied sample.
+
+**Fix:** Subtract the `x` tie term (`tx`) from the pair-count denominator instead of `ty`.
+
+**Verification:** `tests/nonparametric/tests.py::test_rank_correlation_dispatcher_matches_scipy_somersd`
+matches `scipy.stats.somersd` exactly.
+
+---
+
+### 100. `nonparametric.PermutationTest`'s two-sided p-value used a symmetric `|null| >= |obs|` count instead of scipy's own convention
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.15.0)
+
+**Problem:** `scipy.stats.permutation_test`'s two-sided p-value is
+`2 * min(p_greater, p_less)` (each computed with its own `>=`/`<=` count), not a single
+symmetric `mean(|null| >= |obs|)`. The two conventions agree only when the null
+distribution is itself symmetric; for unequal group sizes (the exact test case in the
+suite: n1=6, n2=5) they differ materially (0.1126 vs the correct 0.1082).
+
+**Fix:** Compute `p_greater`/`p_less` separately (with the `(count + 1) / (B + 1)`
+correction in the Monte Carlo branch) and take `min(1, 2 * min(p_greater, p_less))` for
+the two-sided case, matching scipy exactly.
+
+**Verification:** `tests/nonparametric/tests.py::test_permutation_test_exact_matches_scipy`
+matches `scipy.stats.permutation_test(n_resamples=np.inf)` to machine precision on the
+exact-enumeration path.
+
+---
+
+### 101. `nonparametric.KendallTau`'s tau-a/tau-c/exact-test concordant-discordant count mishandled tied-x groups
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.15.0)
+
+**Problem:** The first implementation re-derived `nc - nd` for `KendallTau`'s tau-a/tau-c
+variants and the exact small-sample test via its own Fenwick-tree inversion count over
+`argsort(rx)`, but processed points one at a time instead of batching tied-`x` groups
+(the pattern `copulas._utils.kendall_tau_estimate` uses to correctly exclude
+intra-tie-group pairs) — so pairs tied on `x` were miscounted as concordant/discordant
+based on arbitrary stable-sort tie-breaking rather than excluded, as they should be.
+
+**Fix:** Recover `nc - nd` algebraically from the already tie-corrected `tau_b` returned
+by `kendall_tau_estimate` (`nc - nd = tau_b * sqrt((N - tx)(N - ty))`) instead of
+re-deriving the inversion count from scratch — reuses code already validated against
+`scipy.stats.kendalltau`, and removes ~40 lines of duplicated, subtly-wrong logic.
+
+**Verification:** `tests/nonparametric/tests.py::test_kendall_tau_variants_a_and_c` and
+`test_kendall_tau_exact_matches_scipy_no_ties` pass; the tau-a-equals-tau-b (no ties)
+identity and the exact-test p-value both match `scipy.stats.kendalltau` exactly.

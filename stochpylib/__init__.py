@@ -8,6 +8,7 @@ from stochpylib import (
     information_theory,
     levy_processes,
     montecarlo,
+    nonparametric,
     numerical_methods,
     probability,
     queueing,
@@ -28,6 +29,7 @@ __all__ = [
     "information_theory",
     "levy_processes",
     "montecarlo",
+    "nonparametric",
     "numerical_methods",
     "probability",
     "queueing",
@@ -38,4 +40,4 @@ __all__ = [
     "timeseries",
 ]
 
-__version__ = "0.14.0"
+__version__ = "0.15.0"

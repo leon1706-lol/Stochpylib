@@ -31,6 +31,7 @@ from stochpylib import (
     information_theory,
     levy_processes,
     montecarlo,
+    nonparametric,
     numerical_methods,
     probability,
     queueing,
@@ -62,6 +63,7 @@ _MODULES = {
     "numerical_methods": numerical_methods,
     "bayesian": bayesian,
     "robust_statistics": robust_statistics,
+    "nonparametric": nonparametric,
 }
 
 # Documented public extras beyond the 229 spec names (utilities & result
@@ -94,6 +96,8 @@ _EXTRAS = {
                 "PosteriorApproximation", "ICResult", "EmpiricalPredictive"},
     "robust_statistics": {"RobustEstimator", "RobustRegressor", "RobustCovarianceEstimator",
                           "Resampler", "SiegelRegression"},
+    "nonparametric": {"NonparametricDensity", "NonparametricTest", "DependenceMeasure",
+                      "NonparametricRegressor", "AndersonDarling"},
 }
 
 DISTRIBUTION_METHODS_DOC = (".pdf()/.pmf()", ".cdf()", ".ppf()", ".rvs()",
@@ -126,9 +130,9 @@ def test_total_spec_name_count():
                    "information_theory", "levy_processes",
                    "financial_stochastics", "statistics", "random_matrix",
                    "advanced_mcmc", "numerical_methods", "bayesian",
-                   "robust_statistics")
+                   "robust_statistics", "nonparametric")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 597  # 597/794 across the seventeen implemented modules
+    assert total == 628  # 628/794 across the eighteen implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -160,7 +164,7 @@ def test_top_level_package_wiring():
     assert set(stochpylib.__all__) == {
         "advanced_mcmc", "bayesian", "copulas", "distributions", "financial_stochastics",
         "gaussian_processes", "information_theory", "levy_processes",
-        "montecarlo", "numerical_methods", "probability", "queueing",
+        "montecarlo", "nonparametric", "numerical_methods", "probability", "queueing",
         "random_matrix", "robust_statistics", "statistics", "survival", "timeseries"}
     # version consistency, never a literal: the installed metadata and the
     # in-code __version__ must agree (a hardcoded literal here broke CI on
@@ -415,3 +419,37 @@ def test_bayesian_conjugate_agrees_with_statistics_estimator_and_mcmc():
     ess = float(ESS(pm.samples_.T[:, :, None], method="mean"))
     se = pm.samples_.std() / np.sqrt(ess)
     assert abs(pm.samples_.mean() - post.mean()[0]) < 5 * se
+
+
+def test_nonparametric_agrees_with_statistics_copulas_and_gaussian_processes():
+    """E2E: nonparametric -> statistics/copulas/gaussian_processes. KendallTau matches
+    copulas.kendall_tau exactly; KruskalWallis returns the shared statistics.TestResult;
+    GPR_Nonparametric (optimize=False) reproduces gaussian_processes.GPRegression exactly
+    on the same kernel; KernelDensityEstimate's ks_test recovers a library Normal sample."""
+    rng = np.random.default_rng(400)
+    x = rng.standard_normal(150)
+    y = x + rng.normal(0, 0.5, 150)
+    kt = nonparametric.KendallTau().fit(x, y)
+    assert kt.estimate_ == pytest.approx(float(copulas.kendall_tau(np.column_stack([x, y]))),
+                                          abs=1e-10)
+
+    from stochpylib.statistics import TestResult
+    g1, g2, g3 = rng.normal(0, 1, 30), rng.normal(0, 1, 30), rng.normal(2, 1, 30)
+    kw = nonparametric.KruskalWallis().fit(g1, g2, g3)
+    assert isinstance(kw.to_result(), TestResult)
+
+    from stochpylib.gaussian_processes import GPRegression
+    from stochpylib.gaussian_processes.kernels import RBFKernel, WhiteNoiseKernel
+    t = np.sort(rng.uniform(0, 10, 60))
+    z = np.sin(t) + rng.normal(0, 0.1, 60)
+    kernel = RBFKernel(length_scale=float(np.std(t)), variance=float(np.var(z))) + \
+        WhiteNoiseKernel(0.1)
+    gpr_np = nonparametric.GPR_Nonparametric(kernel=kernel, noise=0.1, optimize=False).fit(t, z)
+    gpr_ref = GPRegression(kernel=kernel, noise=0.1).fit(t[:, None], z)
+    q = np.array([2.0, 5.0, 8.0])[:, None]
+    assert np.allclose(gpr_np.predict(q), gpr_ref.predict(q)[0])
+
+    x_lib = np.asarray(distributions.Normal(3, 1).rvs(500, random_state=1), dtype=float)
+    kde = nonparametric.KernelDensityEstimate().fit(x_lib)
+    d, p = kde.ks_test(x_lib)
+    assert p > 0.01

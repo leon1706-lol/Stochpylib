@@ -1224,3 +1224,99 @@ Suite: 1758 collected - 1756 passed / 2 skipped. Version 0.13.0.
   added to `cli_demo.py`; `ci.yml` `module-smoke` matrix extended.
 
 Suite: 1913 collected - 1911 passed / 2 skipped. Version 0.14.0.
+
+## Phase 32 — V0.15.0 nonparametric: density estimation, empirical/likelihood, resampling & rank tests, dependence measures, local regression (31 names)
+
+- **`nonparametric.density`**: `KernelDensityEstimate` (1-D exact cdf via integrated
+  kernels, closed-form mean/var/mgf/cf, proper rejection-sampled `rvs`; d>1 diagonal
+  product-kernel `pdf`/`rvs`; `scott`/`silverman` bandwidths match
+  `scipy.stats.gaussian_kde`'s own factors exactly), `AdaptiveKDE` (Abramson two-stage
+  local bandwidths, `alpha=0` exactly equals `KernelDensityEstimate`),
+  `NearestNeighborDensity` (k-NN density, truncated-and-renormalized for the distribution
+  contract), `OrthogonalSeriesDensity` (cosine-basis series, Kronmal-Tarter term
+  selection), `LogsplineEstimator` (Kooperberg-Stone log-spline MLE, Newton + Gauss-grid
+  quadrature for the normalizing constant). Every class subclasses the new
+  `NonparametricDensity(distributions.Distribution)` base, so density estimators satisfy
+  the library's full 13-method distribution contract (`fit` is a fluent instance method,
+  the one documented deviation from `Distribution.fit`'s classmethod contract).
+- **`nonparametric.empirical`**: `EmpiricalDistribution` (full distribution contract over
+  sample atoms), `EmpiricalCDF` (fluent step function + DKW band), `EmpiricalCharFn`
+  (empirical characteristic function + distance to a reference cf), `GlivenkoCantelli`
+  (sup-norm distance = the KS statistic, DKW bound, convergence-rate helper),
+  `EmpiricalLikelihood` (Owen's EL for a vector mean via Newton on the dual, matching
+  `statsmodels.emplike.DescStat` exactly on both the LLR statistic and the 1-D confidence
+  interval).
+- **`nonparametric.tests`**: `PermutationTest` (independent/pairings/samples types, exact
+  enumeration below 20000 permutations else Monte Carlo, `2 * min(p_greater, p_less)`
+  two-sided p-value matching `scipy.stats.permutation_test` exactly), `BootstrapTest`
+  (Efron-Tibshirani recentered bootstrap), `MoodTest` (scale/median, match
+  `scipy.stats.mood`/`median_test` exactly), `KruskalWallis` (+ `posthoc_dunn`, matches
+  `scipy.stats.kruskal` exactly), `FriedmanTest` (matches `scipy.stats.friedmanchisquare`
+  exactly, tie-corrected), `SignTest`, `RunsTest`/`WaldWolfowitz` (match
+  `statsmodels.sandbox.stats.runs` exactly), `AndersenDarling` (`dist="norm"`/`"expon"`
+  match `scipy.stats.anderson` exactly; a fully-specified reference distribution uses an
+  approximate case-0 critical-value table; `k_sample=True` matches
+  `scipy.stats.anderson_ksamp(variant="midrank")` exactly, the full Scholz-Stephens 1987
+  sigma^2/critical-value machinery reimplemented natively), `CramerVonMises` (one-sample
+  statistic matches `scipy.stats.cramervonmises` exactly with an asymptotic p-value via a
+  native Bessel-function series; two-sample matches
+  `scipy.stats.cramervonmises_2samp(method="asymptotic")` exactly). `AndersonDarling` is
+  the correctly-spelled alias of the spec's own `AndersenDarling` spelling.
+- **`nonparametric.correlation`**: `SpearmanCorrelation`/`KendallTau` (reuse
+  `copulas._utils`'s rank estimators; match `scipy.stats` exactly including the exact
+  small-sample Kendall test), `RankCorrelation` (dispatcher + Goodman-Kruskal gamma +
+  Somers' D matching `scipy.stats.somersd` exactly), `DistanceCorrelation` (Szekely-Rizzo,
+  biased or U-centered unbiased estimator, permutation p-value), `BrownianCorrelation`
+  (fractional-BM generalization, `hurst=0.5` exactly equals `DistanceCorrelation`),
+  `HoeffdingD` (Hollander-Wolfe/Hmisc formula, 1 for a perfectly monotone relation).
+- **`nonparametric.regression`**: `LocalPolynomialReg` (degree 0/1 = Nadaraya-Watson/
+  local-linear, matches `statsmodels.nonparametric.kernel_regression.KernelReg` exactly at
+  a fixed bandwidth; GCV bandwidth selection), `IsotonicRegression` (weighted PAVA,
+  matches `scipy.optimize.isotonic_regression` exactly), `SplineRegression`
+  (`"pspline"`: B-spline + 2nd-difference penalty with GCV `lam`; `"smoothing"`: matches
+  `scipy.interpolate.make_smoothing_spline` exactly), `GPR_Nonparametric` (facade over
+  `gaussian_processes.GPRegression`), `QuantileRegression` (`"local"`: kernel-weighted
+  check-loss LP with relative-weight truncation for tractable per-query cost; `"linear"`
+  delegates to `statistics.quantile_regression`, exact at a huge bandwidth).
+- **Four bugs caught during the manual debug session and testing, fixed before shipping**
+  (Probleme.md #98-101): the two-sample Cramer-von Mises statistic ranked the *unsorted*
+  pooled sample instead of ranking each side's own sorted order statistics against their
+  expected pooled rank (off by orders of magnitude — 27.9 instead of 0.067 on a matched
+  scipy comparison); `RankCorrelation(method="somers_d")` excluded ties in the wrong
+  variable (denominator should exclude ties in the independent/row variable `x`, not
+  `y`); `PermutationTest`'s two-sided p-value used a symmetric `|null| >= |obs|` count
+  instead of `scipy.stats.permutation_test`'s own `2 * min(p_greater, p_less)` convention
+  (these differ whenever the null distribution is itself asymmetric, e.g. unequal group
+  sizes); `KendallTau`'s tau-a/tau-c/exact-test machinery originally re-derived the
+  concordant-minus-discordant count via a naive Fenwick-tree walk that mishandled tied-x
+  groups — replaced by recovering the exact count algebraically from the already
+  tie-corrected `kendall_tau_estimate` output instead of re-deriving it.
+- **Manual debug session (all checks against live scipy.stats/statsmodels/scipy.optimize
+  oracles, side by side):** KDE pdf/cdf/full contract vs `gaussian_kde`, all five density
+  estimators' pdf-integrates-to-1 and shape checks, `EmpiricalLikelihood` vs
+  `statsmodels.emplike`, every resampling/rank test vs its scipy/statsmodels oracle,
+  Anderson-Darling norm/expon/k-sample vs `scipy.stats.anderson`/`anderson_ksamp`,
+  Cramer-von Mises one/two-sample vs `scipy.stats.cramervonmises`/`cramervonmises_2samp`,
+  every correlation/dependence measure vs its oracle (Somers' D caught here),
+  `LocalPolynomialReg`/`IsotonicRegression`/`SplineRegression` vs
+  `statsmodels.KernelReg`/`scipy.optimize.isotonic_regression`/
+  `scipy.interpolate.make_smoothing_spline`, `GPR_Nonparametric` vs a direct
+  `GPRegression` call, `QuantileRegression` local-vs-linear exactness at a huge bandwidth
+  plus empirical coverage at q=0.9.
+- **Every Essential-Tasks.md wrap-up item completed:** `tests/nonparametric/tests.py` (64
+  test functions against scipy.stats/statsmodels/scipy.optimize/scipy.interpolate oracles
+  and brute-force checks) and `tests/nonparametric/e2e.py` (36 exercises, one per public
+  name) both green; `selftest.py` extended 212 -> 222 checks (`NONPAR:` block);
+  `stochpylib/nonparametric/README.md` written; `development/{CHANGELOG,Probleme,
+  Implementation-Checklist,architecture}.md` updated (progress line 628/794); root
+  `README.md` (badges, status table, Known Limitations, architecture diagrams, roadmap,
+  CLI reference counts, demo prose), `stochpylib/README.md`, `tests/README.md`,
+  `CONTRIBUTING.md`, `AGENTS.md`, `development/{Development,README,project_structure,
+  infrastructure}.md` all synced; `tests/docs/tests.py` and `tests/library/tests.py`
+  updated (spec-name conformance, wiring, a cross-module integration test agreeing with
+  `copulas.kendall_tau`, `statistics.TestResult`, and `gaussian_processes.GPRegression`);
+  `spl demo nonparametric` added to `cli_demo.py`; `ci.yml` `module-smoke` matrix
+  extended; vault `Modules/nonparametric.md`, `Quickstart-Examples.md`, `Module-Map.md`,
+  `README.md`, `ARCHITECTURE.md` updated.
+
+Suite: 2018 collected - 2016 passed / 2 skipped. Version 0.15.0.

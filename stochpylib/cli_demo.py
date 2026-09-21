@@ -386,6 +386,45 @@ def _demo_robust_statistics():
     print(f"  moving-block bootstrap SE of the mean = {bb.std_error_:.3f}")
 
 
+def _demo_nonparametric():
+    from stochpylib.nonparametric import (
+        DistanceCorrelation, IsotonicRegression, KernelDensityEstimate,
+        KruskalWallis, LocalPolynomialReg,
+    )
+
+    print("Nonparametric methods - density estimation, rank tests, dependence,")
+    print("and smoothing, none of it assuming a parametric family:")
+    rng = np.random.default_rng(21)
+    x = np.concatenate([rng.normal(0, 1, 300), rng.normal(6, 1.5, 100)])
+    kde = KernelDensityEstimate(bandwidth="silverman").fit(x)
+    print(f"  bimodal sample (n={len(x)}): KDE pdf(0)={kde.pdf(0.0):.3f}  "
+          f"pdf(6)={kde.pdf(6.0):.3f}  bandwidth={kde.bandwidth_:.3f}")
+
+    g1 = rng.normal(0, 1, 30)
+    g2 = rng.normal(0, 1, 30)
+    g3 = rng.normal(2.5, 1, 30)
+    kw = KruskalWallis().fit(g1, g2, g3)
+    print(f"  Kruskal-Wallis on 3 groups (one shifted +2.5): "
+          f"H={kw.statistic_:.3f}  p={kw.pvalue_:.4g}")
+
+    a = rng.uniform(-2, 2, 150)
+    b = a ** 2 + rng.normal(0, 0.3, 150)
+    dcor = DistanceCorrelation(n_resamples=300, random_state=1).fit(a, b)
+    print(f"  y = x^2 + noise: distance correlation={dcor.estimate_:.3f}  "
+          f"p={dcor.pvalue_:.4g} (Pearson would miss this)")
+
+    t = np.sort(rng.uniform(0, 10, 100))
+    z = np.sin(t) + rng.normal(0, 0.2, 100)
+    lp = LocalPolynomialReg(bandwidth=0.8).fit(t, z)
+    print(f"  local-linear smoother on sin(t)+noise: R^2={lp.score(t, z):.3f}  "
+          f"effective df={lp.df_:.1f}")
+
+    yi = np.sort(rng.uniform(0, 1, 40)) + rng.normal(0, 0.3, 40)
+    iso = IsotonicRegression().fit(np.arange(40), yi)
+    print(f"  isotonic regression: {int(np.sum(np.diff(iso.fitted_) < -1e-10))} "
+          f"monotonicity violations in the fit (expect 0)")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -404,6 +443,7 @@ DEMOS = {
     "numerical_methods": _demo_numerical_methods,
     "bayesian": _demo_bayesian,
     "robust_statistics": _demo_robust_statistics,
+    "nonparametric": _demo_nonparametric,
 }
 DEMO_MODULES = tuple(DEMOS)
 

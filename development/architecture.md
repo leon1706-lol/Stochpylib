@@ -1,6 +1,6 @@
 # stochpylib Architecture
 
-**Status:** seventeen of 23 planned modules are implemented and tested (597/794
+**Status:** eighteen of 23 planned modules are implemented and tested (628/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state). Everything else in the module map below
 remains design spec, not shipped code.
@@ -45,6 +45,7 @@ flowchart LR
     A --> R["stochpylib.numerical_methods<br/>quadrature, ODE/SDE solvers, linear algebra, roots, interpolation, PDE"]
     Q --> S["stochpylib.bayesian<br/>conjugate/grid/Laplace/VI/IS posteriors, Bayesian models, model selection"]
     O --> T["stochpylib.robust_statistics<br/>robust location/scale, high-breakdown regression, MCD/MVE/OGK, bootstraps"]
+    C --> U["stochpylib.nonparametric<br/>density estimation, resampling/rank tests, dependence measures, local regression"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -58,6 +59,7 @@ flowchart LR
     R --> L
     S --> L
     T --> L
+    U --> L
 ```
 
 ## Tech Stack
@@ -72,7 +74,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (212 checks)"]
+    C --> C3["spl --test embedded self-check (222 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -190,9 +192,14 @@ README per module):
   Wolf/OAS/constant-correlation shrinkage (identity-target Ledoit-Wolf matches
   `financial_stochastics.CovarianceEstimation` exactly); robust/wild/moving-
   circular-nonoverlapping-block/stationary bootstraps.
+- `nonparametric/` — kernel/adaptive/kNN/orthogonal-series/log-spline density estimation
+  (full 13-method distribution contract via `NonparametricDensity(Distribution)`),
+  empirical distribution/CDF/characteristic-function estimators, Glivenko-Cantelli bounds,
+  Owen's empirical likelihood, permutation/bootstrap/Mood/Kruskal-Wallis/Friedman/sign/runs/
+  Anderson-Darling/Cramer-von Mises tests, Spearman/Kendall/distance/Hoeffding dependence
+  measures, local-polynomial/isotonic/spline/quantile regression.
 
-Planned modules (6, in rough implementation order):
-nonparametric,
+Planned modules (5, in rough implementation order):
 spatial_statistics, optimization,
 experimental_design, viz, utils — each lands with the same bar:
 native implementations, the shared conventions, full tests against independent
@@ -276,6 +283,15 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
   `RANSACRegression`, multi-predictor `TheilSenRegression`) enumerate subsets
   exactly below 5000 and fall back to seeded resampling above it; scale
   estimators report the sigma-consistent value by default (`normal=True`).
+- **Nonparametric conventions** (established by `nonparametric`): density
+  estimators subclass `distributions.Distribution` via `NonparametricDensity`
+  and get the full 13-method contract, with `fit(x)` as a fluent instance
+  method (the one documented deviation from `Distribution.fit`'s classmethod
+  contract — these estimators carry bandwidth/kernel state); hypothesis tests
+  and dependence measures reuse `statistics.TestResult`/`EstimateResult`
+  rather than new result types; kernel-weighted local regressors drop points
+  below a relative-weight threshold to keep per-query cost bounded (exact for
+  a huge bandwidth, where nothing falls below threshold).
 
 ## Package Layout Convention
 

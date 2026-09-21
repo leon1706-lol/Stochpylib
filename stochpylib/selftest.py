@@ -340,6 +340,8 @@ def run(verbose=False):
                           "LaplacePosterior"]),
         "robust_statistics": (28, ["Median", "HuberRegression", "MCD", "TheilSenRegression",
                                    "BlockBootstrap"]),
+        "nonparametric": (31, ["KernelDensityEstimate", "EmpiricalCDF", "KruskalWallis",
+                               "KendallTau", "LocalPolynomialReg"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -769,6 +771,63 @@ def run(verbose=False):
     bb_rs2 = _RsBlockBoot(np.mean, random_state=1).fit(x_bb_rs)
     st.check("ROBUST: block bootstrap SE finite and reproducible",
              np.isfinite(bb_rs.std_error_) and bb_rs.std_error_ == bb_rs2.std_error_)
+
+    # nonparametric quick checks
+    from stochpylib.nonparametric import (
+        DistanceCorrelation as _NpDCor,
+        EmpiricalCDF as _NpECDF,
+        EmpiricalLikelihood as _NpEL,
+        IsotonicRegression as _NpIso,
+        KendallTau as _NpKendall,
+        KernelDensityEstimate as _NpKDE,
+        KruskalWallis as _NpKW,
+        RunsTest as _NpRuns,
+        SignTest as _NpSign,
+    )
+
+    rng_np = np.random.default_rng(300)
+    x_np = rng_np.normal(0, 2, 300)
+    kde_np = _NpKDE(bandwidth="silverman").fit(x_np)
+    st.check("NONPAR: KDE pdf integrates to ~1",
+             abs(np.trapezoid(kde_np.pdf(np.linspace(-10, 10, 2000)),
+                               np.linspace(-10, 10, 2000)) - 1.0) < 0.02)
+
+    ecdf_np = _NpECDF().fit(x_np)
+    st.check("NONPAR: EmpiricalCDF matches the sample fraction",
+             abs(ecdf_np.evaluate(0.0) - np.mean(x_np <= 0.0)) < 1e-10)
+
+    el_np = _NpEL().fit(x_np)
+    st.check("NONPAR: EmpiricalLikelihood rejects a clearly wrong mean",
+             el_np.test_mean(50.0).pvalue < 0.001)
+
+    g1_np, g2_np, g3_np = (rng_np.normal(0, 1, 30), rng_np.normal(0, 1, 30),
+                            rng_np.normal(3, 1, 30))
+    kw_np = _NpKW().fit(g1_np, g2_np, g3_np)
+    st.check("NONPAR: Kruskal-Wallis detects the shifted third group",
+             kw_np.pvalue_ < 0.001)
+
+    xk_np = rng_np.normal(size=60)
+    yk_np = xk_np + rng_np.normal(0, 0.3, 60)
+    kt_np = _NpKendall().fit(xk_np, yk_np)
+    from stochpylib.copulas import kendall_tau as _cop_kendall_tau
+    st.check("NONPAR: KendallTau matches copulas.kendall_tau",
+             abs(kt_np.estimate_ - float(_cop_kendall_tau(np.column_stack([xk_np, yk_np]))))
+             < 1e-10)
+
+    dc_np = _NpDCor(n_resamples=200, random_state=1).fit(
+        rng_np.uniform(-2, 2, 100), rng_np.normal(size=100))
+    st.check("NONPAR: DistanceCorrelation is in [0, 1]", 0.0 <= dc_np.estimate_ <= 1.0)
+
+    iso_np = _NpIso().fit(np.arange(20), np.sort(rng_np.normal(size=20)))
+    st.check("NONPAR: IsotonicRegression fit is non-decreasing",
+             bool(np.all(np.diff(iso_np.fitted_) >= -1e-10)))
+
+    sign_np = _NpSign(mu0=0.0).fit(rng_np.normal(2.0, 1, 40))
+    st.check("NONPAR: SignTest rejects a clearly nonzero median", sign_np.pvalue_ < 0.01)
+
+    runs_np = _NpRuns().fit(np.tile([1.0, -1.0], 20))
+    st.check("NONPAR: RunsTest flags a perfectly alternating sequence",
+             runs_np.reject(0.01))
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

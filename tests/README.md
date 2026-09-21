@@ -21,11 +21,11 @@ ship inside the wheel — `development/Probleme.md` [3]).
 
 ## Layout
 
-- `tests/<module>/tests.py` — one oracle suite per implemented module (seventeen
+- `tests/<module>/tests.py` — one oracle suite per implemented module (eighteen
   today: probability, distributions, montecarlo, timeseries, gaussian_processes,
   copulas, survival, queueing, information_theory, levy_processes,
   financial_stochastics, statistics, random_matrix, advanced_mcmc,
-  numerical_methods, bayesian, robust_statistics).
+  numerical_methods, bayesian, robust_statistics, nonparametric).
 - `tests/<module>/e2e.py` — the end-to-end API sweep of the same module: an
   `EXERCISES` registry with one realistic exercise per name in the module's
   `__all__`, each run as its own `test_exercise[<name>]` case, plus
@@ -34,7 +34,7 @@ ship inside the wheel — `development/Probleme.md` [3]).
   validation stays in `tests.py`. CI runs each module's pair as its own
   `smoke (<module>)` job.
 - `tests/library/tests.py` — the cross-module suite: spec-name conformance for
-  all 597 implemented public names (generated from
+  all 628 implemented public names (generated from
   `development/Implementation-Checklist.md` via `_extract_spec_names.py`, cached
   in `_spec_names.json`), pinned documented extras (`MCResult`,
   `DigitalNetBase2`, timeseries result objects, GP kernel base/ops,
@@ -42,14 +42,18 @@ ship inside the wheel — `development/Probleme.md` [3]).
   `SDESolution`/`Mesh`, bayesian's `Prior`/`Likelihood`/`ConjugateFamily`/
   `Posterior`/`PosteriorApproximation`/`ICResult`/`EmpiricalPredictive`,
   robust_statistics' `RobustEstimator`/`RobustRegressor`/`RobustCovarianceEstimator`/
-  `Resampler`/`SiegelRegression`), the sanctioned multivariate method-contract
+  `Resampler`/`SiegelRegression`, nonparametric's `NonparametricDensity`/
+  `NonparametricTest`/`DependenceMeasure`/`NonparametricRegressor`/`AndersonDarling`),
+  the sanctioned multivariate method-contract
   deviation, and end-to-end workflows spanning modules (reliability MC on library
   Weibull, t-copula margins through the library Student_t, ARIMA vs GP forecasting
   agreement, `CopulaFit` refit round trips, Sobol-QMC vs crude consistency, a
   conjugate Bayesian posterior cross-checked against `statistics.bayesian_estimator`
   and an MCMC sampler, robust regression/correlation/covariance cross-checked
   against `statistics.linear_regression`/`copulas.kendall_tau`/a library
-  `MultivariateNormal`).
+  `MultivariateNormal`, nonparametric's KendallTau/KruskalWallis/GPR_Nonparametric
+  cross-checked against `copulas.kendall_tau`/`statistics.TestResult`/
+  `gaussian_processes.GPRegression`).
 - `tests/docs/tests.py` — the documentation-consistency suite: every number the
   docs claim (test counts, versions, spec-name tables, links, checklist
   progress) is recomputed from reality; a drifted doc fails the suite.
@@ -65,6 +69,6 @@ pytest tests/ -v
 ```
 
 The package also ships an embedded smoke suite runnable from any pip install:
-`spl --test` (212 checks), which includes the per-module conformance and
+`spl --test` (222 checks), which includes the per-module conformance and
 cross-module spot checks. The live pass count lives only in the root README
 badge — deliberately no second copy here to go stale.

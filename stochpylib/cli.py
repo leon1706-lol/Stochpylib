@@ -206,6 +206,15 @@ def _implemented_overview():
             "                   Gaussian-rank/quadrant), Ledoit-Wolf/OAS/constant-\n"
             "                   correlation shrinkage, robust/wild/block/stationary\n"
             "                   bootstraps",
+        "nonparametric":
+            "distribution-free methods: kernel/adaptive/kNN/orthogonal-\n"
+            "                   series/log-spline density estimation, empirical\n"
+            "                   distribution/CDF/characteristic-function estimators,\n"
+            "                   Glivenko-Cantelli & empirical likelihood, permutation/\n"
+            "                   bootstrap/Mood/Kruskal-Wallis/Friedman/sign/runs/\n"
+            "                   Anderson-Darling/Cramer-von Mises tests, Spearman/Kendall/\n"
+            "                   distance/Hoeffding dependence measures, local-polynomial/\n"
+            "                   isotonic/spline/quantile regression",
     }
 
     blocks = []
@@ -442,8 +451,8 @@ Try a live mini-example:  spl demo <module>   (bare 'spl demo' lists them)
         epilog=(
             "subcommands: update, info, show, demo, cite - run 'spl <command> --help'\n"
             "for details.\n\n"
-            "roadmap: six more modules are planned (nonparametric,\n"
-            "spatial_statistics, optimization, experimental_design, viz, utils) -\n"
+            "roadmap: five more modules are planned (spatial_statistics,\n"
+            "optimization, experimental_design, viz, utils) -\n"
             "see the repository README and development/Implementation-Checklist.md.\n\n"
             "docs: README.md - contributing: CONTRIBUTING.md - security: SECURITY.md"
         ),

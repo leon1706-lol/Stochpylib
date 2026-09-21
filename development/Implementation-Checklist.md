@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 597 / 794 public names implemented.**
+**Progress: 628 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -527,45 +527,45 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `BlockBootstrap`
     - [x] `StationaryBootstrap`
 
-## [nonparametric](../Stochpylib-Obsidian-Vault/Modules/nonparametric.md) — Distribution-free methods (0/31)
+## [nonparametric](../Stochpylib-Obsidian-Vault/Modules/nonparametric.md) — Distribution-free methods (31/31)
 
-- [ ] **stochpylib.nonparametric** module overall
-  - [ ] `nonparametric.density`
-    - [ ] `KernelDensityEstimate`
-    - [ ] `NearestNeighborDensity`
-    - [ ] `AdaptiveKDE`
-    - [ ] `OrthogonalSeriesDensity`
-    - [ ] `LogsplineEstimator`
-  - [ ] `nonparametric.empirical`
-    - [ ] `EmpiricalDistribution`
-    - [ ] `EmpiricalLikelihood`
-    - [ ] `EmpiricalCDF`
-    - [ ] `EmpiricalCharFn`
-    - [ ] `GlivenkoCantelli`
-  - [ ] `nonparametric.tests`
-    - [ ] `PermutationTest`
-    - [ ] `BootstrapTest`
-    - [ ] `MoodTest`
-    - [ ] `KruskalWallis`
-    - [ ] `FriedmanTest`
-    - [ ] `SignTest`
-    - [ ] `RunsTest`
-    - [ ] `WaldWolfowitz`
-    - [ ] `AndersenDarling`
-    - [ ] `CramerVonMises`
-  - [ ] `nonparametric.correlation`
-    - [ ] `SpearmanCorrelation`
-    - [ ] `KendallTau`
-    - [ ] `RankCorrelation`
-    - [ ] `DistanceCorrelation`
-    - [ ] `BrownianCorrelation`
-    - [ ] `HoeffdingD`
-  - [ ] `nonparametric.regression`
-    - [ ] `LocalPolynomialReg`
-    - [ ] `IsotonicRegression`
-    - [ ] `SplineRegression`
-    - [ ] `GPR_Nonparametric`
-    - [ ] `QuantileRegression`
+- [x] **stochpylib.nonparametric** module overall
+  - [x] `nonparametric.density`
+    - [x] `KernelDensityEstimate`
+    - [x] `NearestNeighborDensity`
+    - [x] `AdaptiveKDE`
+    - [x] `OrthogonalSeriesDensity`
+    - [x] `LogsplineEstimator`
+  - [x] `nonparametric.empirical`
+    - [x] `EmpiricalDistribution`
+    - [x] `EmpiricalLikelihood`
+    - [x] `EmpiricalCDF`
+    - [x] `EmpiricalCharFn`
+    - [x] `GlivenkoCantelli`
+  - [x] `nonparametric.tests`
+    - [x] `PermutationTest`
+    - [x] `BootstrapTest`
+    - [x] `MoodTest`
+    - [x] `KruskalWallis`
+    - [x] `FriedmanTest`
+    - [x] `SignTest`
+    - [x] `RunsTest`
+    - [x] `WaldWolfowitz`
+    - [x] `AndersenDarling`
+    - [x] `CramerVonMises`
+  - [x] `nonparametric.correlation`
+    - [x] `SpearmanCorrelation`
+    - [x] `KendallTau`
+    - [x] `RankCorrelation`
+    - [x] `DistanceCorrelation`
+    - [x] `BrownianCorrelation`
+    - [x] `HoeffdingD`
+  - [x] `nonparametric.regression`
+    - [x] `LocalPolynomialReg`
+    - [x] `IsotonicRegression`
+    - [x] `SplineRegression`
+    - [x] `GPR_Nonparametric`
+    - [x] `QuantileRegression`
 
 ## [financial_stochastics](../Stochpylib-Obsidian-Vault/Modules/financial_stochastics.md) — Quantitative finance models (50/50)
 

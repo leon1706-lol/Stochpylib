@@ -9,20 +9,22 @@ are for — see `AGENTS.md`).
 
 -----
 
-## V0.14.0 — done
+## V0.15.0 — done
 
-`robust_statistics` (28 names) shipped end to end: robust location/scale, high-breakdown
-regression, robust covariance, resampling. 17/23 modules, 597/794 public names, version
-0.14.0. Full test suite + e2e sweep + module-smoke CI job added; all docs synced.
+`nonparametric` implemented end to end (31/31 spec names), tests + `module-smoke` CI job
+added, full Essential-Tasks.md wrap-up completed. See `development/CHANGELOG.md` Phase 32
+for the full breakdown. 628/794 public names, eighteen modules implemented.
 
 ## Next candidate
 
-Same size-first heuristic as before (smallest remaining module next): `nonparametric` (31
-names) and `spatial_statistics` (32) are the two smallest of the six remaining
-(`nonparametric`, `spatial_statistics`, `optimization`, `experimental_design`, `viz`,
-`utils`) — `nonparametric` edges it out. `utils.performance` (`GPUBackend`,
-`JIT_compile()`) still implies optional third-party deps (torch/cupy/numba) needing a
-lazy-import design pass before it's picked up, same caveat as before.
+Same size-first heuristic as before (smallest remaining module next): the five remaining
+modules are `spatial_statistics` (32), `optimization` (32), `experimental_design` (29),
+`viz` (35), `utils` (38). `experimental_design` is the smallest and has no third-party-dep
+caveat. `utils.performance` (`GPUBackend`, `JIT_compile()`) still implies optional
+torch/cupy/numba deps needing a lazy-import design pass before it's picked up. `viz`
+implies a plotting backend decision (matplotlib as a dev-only oracle/example dependency,
+or a from-scratch SVG/ASCII renderer to keep the zero-runtime-dep policy — needs an
+explicit decision before starting, unlike the other four).
 
 -----
 
