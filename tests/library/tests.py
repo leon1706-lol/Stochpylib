@@ -33,6 +33,7 @@ from stochpylib import (
     montecarlo,
     nonparametric,
     numerical_methods,
+    optimization,
     probability,
     queueing,
     random_matrix,
@@ -64,6 +65,7 @@ _MODULES = {
     "bayesian": bayesian,
     "robust_statistics": robust_statistics,
     "nonparametric": nonparametric,
+    "optimization": optimization,
 }
 
 # Documented public extras beyond the 229 spec names (utilities & result
@@ -98,6 +100,8 @@ _EXTRAS = {
                           "Resampler", "SiegelRegression"},
     "nonparametric": {"NonparametricDensity", "NonparametricTest", "DependenceMeasure",
                       "NonparametricRegressor", "AndersonDarling"},
+    "optimization": {"Objective", "Optimizer", "PopulationOptimizer",
+                     "ConstrainedOptimizer", "OptimizeResult"},
 }
 
 DISTRIBUTION_METHODS_DOC = (".pdf()/.pmf()", ".cdf()", ".ppf()", ".rvs()",
@@ -130,9 +134,9 @@ def test_total_spec_name_count():
                    "information_theory", "levy_processes",
                    "financial_stochastics", "statistics", "random_matrix",
                    "advanced_mcmc", "numerical_methods", "bayesian",
-                   "robust_statistics", "nonparametric")
+                   "robust_statistics", "nonparametric", "optimization")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 628  # 628/794 across the eighteen implemented modules
+    assert total == 660  # 660/794 across the nineteen implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -164,8 +168,9 @@ def test_top_level_package_wiring():
     assert set(stochpylib.__all__) == {
         "advanced_mcmc", "bayesian", "copulas", "distributions", "financial_stochastics",
         "gaussian_processes", "information_theory", "levy_processes",
-        "montecarlo", "nonparametric", "numerical_methods", "probability", "queueing",
-        "random_matrix", "robust_statistics", "statistics", "survival", "timeseries"}
+        "montecarlo", "nonparametric", "numerical_methods", "optimization",
+        "probability", "queueing", "random_matrix", "robust_statistics", "statistics",
+        "survival", "timeseries"}
     # version consistency, never a literal: the installed metadata and the
     # in-code __version__ must agree (a hardcoded literal here broke CI on
     # every version bump — development/Probleme.md [39])
@@ -453,3 +458,51 @@ def test_nonparametric_agrees_with_statistics_copulas_and_gaussian_processes():
     kde = nonparametric.KernelDensityEstimate().fit(x_lib)
     d, p = kde.ks_test(x_lib)
     assert p > 0.01
+
+
+def test_optimization_agrees_with_statistics_distributions_and_gaussian_processes():
+    """E2E: optimization -> statistics/distributions/gaussian_processes/montecarlo. BFGS
+    maximizes the logistic likelihood to statistics.logistic_regression's coefficients and
+    its inverse-Hessian reproduces that fit's standard errors; NewtonMethod reproduces
+    distributions.Gamma.fit; BayesianOptimization drives a gaussian_processes.GPRegression
+    surrogate; SAA reports its optimality gap as a montecarlo.MCResult."""
+    from scipy import special
+
+    rng = np.random.default_rng(410)
+    n, p = 400, 3
+    X = rng.normal(size=(n, p))
+    Xd = np.column_stack([np.ones(n), X])
+    y = (rng.random(n) < 1.0 / (1.0 + np.exp(-Xd @ np.array([0.4, -1.0, 0.7, 0.2])))
+         ).astype(float)
+    nll = lambda b: float(np.sum(np.logaddexp(0.0, Xd @ b) - y * (Xd @ b)))
+    nll_grad = lambda b: Xd.T @ (1.0 / (1.0 + np.exp(-Xd @ b)) - y)
+    fit = optimization.BFGS().minimize(nll, np.zeros(p + 1), grad=nll_grad)
+    ref = statistics.logistic_regression(X, y)
+    assert np.max(np.abs(fit.x_ - ref.coef_)) < 1e-5
+    se = np.sqrt(np.diag(fit.result_.hess_inv))
+    assert np.max(np.abs(se - ref.std_errors_) / ref.std_errors_) < 0.05
+
+    data = np.asarray(distributions.Gamma(3.0, 2.0).rvs(1500, random_state=41), dtype=float)
+    gamma_nll = lambda th: float(-np.sum(
+        (np.exp(th[0]) - 1) * np.log(data) - data / np.exp(th[1])
+        - special.gammaln(np.exp(th[0])) - np.exp(th[0]) * th[1]))
+    mle = optimization.NewtonMethod().minimize(gamma_nll, np.log([1.0, 1.0]))
+    fitted = distributions.Gamma(1.0, 1.0).fit(data)
+    assert float(np.exp(mle.x_[0])) == pytest.approx(fitted.shape, rel=1e-5)
+    assert float(np.exp(mle.x_[1])) == pytest.approx(fitted.scale, rel=1e-5)
+
+    bo = optimization.BayesianOptimization(n_init=6, n_iter=8, n_candidates=80,
+                                           bounds=[(-2.0, 2.0)] * 2,
+                                           random_state=0).minimize(
+        lambda z: float(np.sum(z ** 2)), [1.5, 1.5])
+    assert bo.result_.extras["X_observed"].shape == (14, 2)
+    assert bo.fun_ <= float(np.sum(np.array([1.5, 1.5]) ** 2))
+
+    cost = lambda q, d: float((q[0] - d) ** 2)
+    saa = optimization.SAA(n_samples=2000, n_batches=4, batch_size=200,
+                           random_state=0).minimize(
+        cost, [0.0], sampler=lambda size, r: r.normal(4.0, 1.0, size=size))
+    assert isinstance(saa.gap_, montecarlo.MCResult)
+    lo, hi = saa.gap_.confidence_interval()
+    assert lo <= float(saa.gap_) <= hi
+    assert abs(float(saa.x_[0]) - 4.0) < 4 / np.sqrt(2000)

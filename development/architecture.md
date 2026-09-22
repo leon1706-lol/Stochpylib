@@ -1,6 +1,6 @@
 # stochpylib Architecture
 
-**Status:** eighteen of 23 planned modules are implemented and tested (628/794
+**Status:** nineteen of 23 planned modules are implemented and tested (660/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state). Everything else in the module map below
 remains design spec, not shipped code.
@@ -46,6 +46,7 @@ flowchart LR
     Q --> S["stochpylib.bayesian<br/>conjugate/grid/Laplace/VI/IS posteriors, Bayesian models, model selection"]
     O --> T["stochpylib.robust_statistics<br/>robust location/scale, high-breakdown regression, MCD/MVE/OGK, bootstraps"]
     C --> U["stochpylib.nonparametric<br/>density estimation, resampling/rank tests, dependence measures, local regression"]
+    A --> V["stochpylib.optimization<br/>gradient & quasi-Newton methods, metaheuristics, stochastic approximation, constrained solvers"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -60,6 +61,7 @@ flowchart LR
     S --> L
     T --> L
     U --> L
+    V --> L
 ```
 
 ## Tech Stack
@@ -74,7 +76,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (222 checks)"]
+    C --> C3["spl --test embedded self-check (235 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -198,9 +200,22 @@ README per module):
   Owen's empirical likelihood, permutation/bootstrap/Mood/Kruskal-Wallis/Friedman/sign/runs/
   Anderson-Darling/Cramer-von Mises tests, Spearman/Kendall/distance/Hoeffding dependence
   measures, local-polynomial/isotonic/spline/quantile regression.
+- `optimization/` — line-searched gradient descent and the adaptive-step family
+  (AdaGrad/RMSProp/Adadelta/Adam/NADAM/AMSGrad, each matching its published update rule);
+  damped Newton with a modified-Cholesky safeguard, BFGS (inverse-Hessian form, reusable
+  as an asymptotic covariance), L-BFGS two-loop recursion, Fletcher-Reeves/PR+ conjugate
+  gradient, dogleg/Steihaug trust region, Marquardt-scaled Levenberg-Marquardt for
+  nonlinear least squares; simulated annealing (auto-calibrated temperature, best-point
+  restarts), real-coded GA, particle swarm, differential evolution, ant-colony TSP,
+  CMA-ES, and Bayesian optimization over a `gaussian_processes.GPRegression` Matern
+  surrogate seeded by `montecarlo.LatinHypercubeSampling`; Robbins-Monro/Kiefer-Wolfowitz/
+  SPSA stochastic approximation with Polyak-Ruppert averaging, the cross-entropy method,
+  and sample-average approximation reporting its optimality gap as a `montecarlo.MCResult`;
+  penalty, augmented-Lagrangian, Lagrangian-relaxation (dual bound), active-set QP and
+  relaxed-log-barrier interior-point constrained solvers.
 
-Planned modules (5, in rough implementation order):
-spatial_statistics, optimization,
+Planned modules (4, in rough implementation order):
+spatial_statistics,
 experimental_design, viz, utils — each lands with the same bar:
 native implementations, the shared conventions, full tests against independent
 oracles, honest documentation of deviations.
@@ -292,6 +307,15 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
   rather than new result types; kernel-weighted local regressors drop points
   below a relative-weight threshold to keep per-query cost bounded (exact for
   a huge bandwidth, where nothing falls below threshold).
+- **Optimization conventions** (established by `optimization`): every optimizer
+  subclasses `Optimizer` and is driven by `minimize(fun, x0)` returning `self`
+  (the `fit`-returns-self shape), with `result_` a single `OptimizeResult`;
+  objectives are wrapped in `Objective`, which supplies finite-difference
+  gradients/Hessians and maps NaN/`-inf` to `+inf` so an invalid point is never
+  accepted; a run that exhausts its budget, stalls or diverges returns
+  `converged=False` with a message rather than raising, and only genuine usage
+  errors raise; Monte Carlo quantities inside a result (`SAA.gap_`, `CEM`'s
+  elite estimate) are `montecarlo.MCResult`, never a new result type.
 
 ## Package Layout Convention
 

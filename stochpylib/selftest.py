@@ -342,6 +342,8 @@ def run(verbose=False):
                                    "BlockBootstrap"]),
         "nonparametric": (31, ["KernelDensityEstimate", "EmpiricalCDF", "KruskalWallis",
                                "KendallTau", "LocalPolynomialReg"]),
+        "optimization": (32, ["AdamOptimizer", "BFGS", "ParticleSwarmOptimization",
+                              "SPSA", "AugmentedLagrangian"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -828,6 +830,70 @@ def run(verbose=False):
     runs_np = _NpRuns().fit(np.tile([1.0, -1.0], 20))
     st.check("NONPAR: RunsTest flags a perfectly alternating sequence",
              runs_np.reject(0.01))
+
+    # optimization quick checks
+    from stochpylib.optimization import (
+        AugmentedLagrangian as _OptAugLag, BFGS as _OptBFGS, CMA_ES as _OptCMA,
+        LevenbergMarquardt as _OptLM, Objective as _OptObjective,
+        ParticleSwarmOptimization as _OptPSO, SPSA as _OptSPSA,
+        SimulatedAnnealing as _OptSA,
+    )
+    A_opt = np.array([[3.0, 1.0], [1.0, 2.0]])
+    b_opt = np.array([1.0, -1.0])
+    star_opt = np.linalg.solve(A_opt, b_opt)
+    f_opt = lambda z: 0.5 * float(z @ A_opt @ z) - float(b_opt @ z)
+    g_opt = lambda z: A_opt @ z - b_opt
+    sphere_opt = lambda z: float(np.sum(np.asarray(z, dtype=float) ** 2))
+
+    bfgs_opt = _OptBFGS().minimize(f_opt, [5.0, 5.0], grad=g_opt)
+    st.check("OPTIM: BFGS solves a quadratic to its closed-form minimizer",
+             float(np.max(np.abs(bfgs_opt.x_ - star_opt))) < 1e-8)
+    st.check("OPTIM: BFGS inverse-Hessian approximates inv(A)",
+             float(np.max(np.abs(bfgs_opt.result_.hess_inv - np.linalg.inv(A_opt)))) < 0.01)
+    st.check("OPTIM: minimize() returns self and exposes a converged OptimizeResult",
+             bfgs_opt.result_ is bfgs_opt.to_result() and bfgs_opt.result_.converged)
+
+    obj_opt = _OptObjective(f_opt)
+    st.check("OPTIM: finite-difference gradient matches the analytic one",
+             float(np.max(np.abs(obj_opt.grad(np.array([1.0, 2.0]))
+                                 - g_opt(np.array([1.0, 2.0]))))) < 1e-6)
+    st.check("OPTIM: Objective maps invalid values to +inf",
+             _OptObjective(lambda z: float("nan"))(np.zeros(2)) == float("inf"))
+
+    pso_opt = _OptPSO(bounds=(-5.0, 5.0), n_iter=60, n_particles=20,
+                      random_state=0).minimize(sphere_opt, np.full(3, 3.0))
+    st.check("OPTIM: particle swarm finds the sphere minimum", pso_opt.fun_ < 1e-6)
+    pso_again = _OptPSO(bounds=(-5.0, 5.0), n_iter=60, n_particles=20,
+                        random_state=0).minimize(sphere_opt, np.full(3, 3.0))
+    st.check("OPTIM: the same random_state reproduces a run exactly",
+             bool(np.array_equal(pso_opt.x_, pso_again.x_)))
+
+    cma_opt = _OptCMA(sigma0=1.0, n_iter=150, random_state=0).minimize(
+        sphere_opt, np.full(3, 2.0))
+    st.check("OPTIM: CMA-ES converges and learns a covariance",
+             cma_opt.fun_ < 1e-6 and cma_opt.result_.extras["C"].shape == (3, 3))
+
+    sa_opt = _OptSA(n_iter=2000, bounds=(-5.0, 5.0), random_state=0).minimize(
+        sphere_opt, np.full(3, 3.0))
+    st.check("OPTIM: simulated annealing descends from a poor start", sa_opt.fun_ < 1.0)
+
+    spsa_opt = _OptSPSA(n_iter=100, random_state=0).minimize(sphere_opt, np.ones(6))
+    st.check("OPTIM: SPSA costs 2 objective evaluations per iteration at any dimension",
+             spsa_opt.result_.extras["direction_evals"] == 200)
+
+    t_opt = np.linspace(0.0, 2.0, 20)
+    truth_opt = 2.0 * np.exp(-0.8 * t_opt)
+    lm_opt = _OptLM().minimize(lambda q: q[0] * np.exp(-q[1] * t_opt) - truth_opt,
+                               [1.0, 1.0])
+    st.check("OPTIM: Levenberg-Marquardt recovers exact least-squares parameters",
+             bool(np.allclose(lm_opt.x_, [2.0, 0.8], atol=1e-5)))
+
+    al_opt = _OptAugLag(
+        constraints=[{"type": "eq", "fun": lambda z: np.array([z[0] + z[1] - 1.0])}]
+    ).minimize(sphere_opt, [2.0, -1.0])
+    st.check("OPTIM: augmented Lagrangian solves min x^2+y^2 s.t. x+y=1",
+             bool(np.allclose(al_opt.x_, [0.5, 0.5], atol=1e-5))
+             and al_opt.result_.extras["feasible"])
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

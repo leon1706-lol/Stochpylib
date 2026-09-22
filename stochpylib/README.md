@@ -3,7 +3,7 @@
 The installable package: one subpackage per library module behind a single
 load-bearing contract — every distribution exposes the same method set, every
 stochastic method takes `random_state=`, every Monte Carlo estimator returns a
-shared result object. Eighteen subpackages live today (628/794 spec names):
+shared result object. Nineteen subpackages live today (660/794 spec names):
 
 | Subpackage | Spec names | What it owns | Guide |
 |---|---|---|---|
@@ -25,6 +25,7 @@ shared result object. Eighteen subpackages live today (628/794 spec names):
 | `bayesian/` | 25 | priors/likelihoods/posteriors, ten conjugate families, Bayesian linear/logistic regression, naive Bayes, hierarchical models, mixtures, Bayesian networks, Dirichlet processes, AIC/BIC/DIC/WAIC/PSIS-LOO/TIC & Bayes factors, Laplace/EP/VI/importance posteriors | [README](bayesian/README.md) |
 | `robust_statistics/` | 28 | trimmed/winsorized means, median, Hodges-Lehmann, L/M/R-estimators, MAD/Qn/Sn/IQR/biweight/tau scales, Theil-Sen/Siegel/RANSAC/LTS/MM/Huber regression, MCD/MVE/OGK covariance, robust correlation, Ledoit-Wolf/OAS shrinkage, robust/wild/block/stationary bootstraps | [README](robust_statistics/README.md) |
 | `nonparametric/` | 31 | kernel/adaptive/kNN/orthogonal-series/log-spline density estimation, empirical distribution/CDF/characteristic-function estimators, Glivenko-Cantelli & empirical likelihood, permutation/bootstrap/rank hypothesis tests, Spearman/Kendall/distance/Hoeffding dependence measures, local-polynomial/isotonic/spline/quantile regression | [README](nonparametric/README.md) |
+| `optimization/` | 32 | gradient descent and the adaptive-step family, Newton/BFGS/L-BFGS/conjugate-gradient/trust-region/Levenberg-Marquardt, simulated annealing, genetic algorithms, particle swarm, differential evolution, ant colony, CMA-ES, GP-surrogate Bayesian optimization, Robbins-Monro/Kiefer-Wolfowitz/SPSA, cross-entropy method, sample-average approximation, penalty/augmented-Lagrangian/active-set/interior-point solvers | [README](optimization/README.md) |
 
 Package-level files:
 
@@ -35,8 +36,8 @@ Package-level files:
   `cite` subcommands.
 - `cli_pypi.py` — offline-safe PyPI metadata access (fetch, 24 h cache,
   version parsing, install-mode detection) behind `--version` and `update`.
-- `cli_demo.py` — the eighteen live mini-examples behind `spl demo <module>`.
-- `selftest.py` — the 222-check self-check suite shipped inside the wheel,
+- `cli_demo.py` — the nineteen live mini-examples behind `spl demo <module>`.
+- `selftest.py` — the 235-check self-check suite shipped inside the wheel,
   runnable from any pip install without pytest or a source checkout.
 
 Target API for every planned module lives in the private Obsidian vault

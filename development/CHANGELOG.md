@@ -1320,3 +1320,76 @@ Suite: 1913 collected - 1911 passed / 2 skipped. Version 0.14.0.
   `README.md`, `ARCHITECTURE.md` updated.
 
 Suite: 2018 collected - 2016 passed / 2 skipped. Version 0.15.0.
+
+## Phase 33 — V0.16.0 optimization: gradient & second-order methods, metaheuristics, stochastic approximation, constrained solvers (32 names)
+
+- **CI green-up before the new module.** The V0.15.0 push left `test (3.10, ubuntu-latest)`
+  and `test (3.10, windows-latest)` red: `tests/nonparametric` oracled Anderson-Darling
+  critical values against `scipy.stats.anderson`, whose finite-sample correction changed
+  mid-scipy-1.x and which drops `critical_values` entirely in 1.19. The statistic (which is
+  version-stable) is still compared against scipy; the critical values are now pinned to the
+  published D'Agostino & Stephens table the implementation documents (Probleme.md #102).
+- **`optimization.gradient`**: `GradientDescent` (Armijo backtracking; the only
+  deterministic member), `StochasticGD` (mini-batch via a `grad_sample(x, idx)` hook, with
+  momentum/Nesterov and a decaying step), and the adaptive family matching its published
+  update rule term for term — `AdaGrad`, `RMSProp`, `Adadelta`, `AdamOptimizer` (with bias
+  correction), `NADAM` and `AMSGrad`. All eight share one descent loop and differ only in an
+  `_update` hook, so the family is eight small subclasses rather than eight algorithms.
+- **`optimization.second_order`**: `NewtonMethod` (damped, with a modified-Cholesky
+  safeguard so a saddle or negative-curvature region does not send the step uphill), `BFGS`
+  (inverse-Hessian form — `result_.hess_inv` reproduces `statistics.logistic_regression`'s
+  standard errors to 5%), `LBFGS` (two-loop recursion), `ConjugateGradient`
+  (Fletcher-Reeves / PR+ with restarts), `TrustRegion` (dogleg and Steihaug-CG
+  subproblems), and `LevenbergMarquardt` on a residual function. Each matches the converged
+  solution of the corresponding `scipy.optimize` method.
+- **`optimization.metaheuristic`**: `SimulatedAnnealing`, `GeneticAlgorithm`,
+  `ParticleSwarmOptimization`, `DifferentialEvolution` (three strategies), `CMA_ES` (rank-one
+  + rank-mu covariance adaptation with cumulative step-size control), `BayesianOptimization`
+  (EI/UCB/PI over a `gaussian_processes.GPRegression` Matern surrogate seeded by
+  `montecarlo.LatinHypercubeSampling`), and `AntColony` — the one combinatorial method, which
+  keeps its own `minimize(distance_matrix)` signature rather than being bent into the
+  continuous one, and reproduces brute-force-optimal tours on 8-city instances.
+- **`optimization.stochastic_optim`**: `StochasticApprox` (the `a/(n+A)^alpha` engine with
+  Polyak-Ruppert averaging), `RobbinsMonro` (root-finding form, error shrinking at the
+  `n^-1/2` rate), `KieferWolfowitz` and `SPSA` (two objective evaluations per iteration at
+  any dimension, against Kiefer-Wolfowitz's `2*dim` — asserted directly), `CEM`, and `SAA`,
+  whose optimality gap is reported as a `montecarlo.MCResult` so the estimate arrives with
+  its standard error and interval.
+- **`optimization.constrained`**: `PenaltyMethod`, `AugmentedLagrangian` (recovers the
+  analytic multiplier and reaches feasibility at a far smaller penalty than the pure penalty
+  method), `LagrangianRelaxation` (reports a valid dual lower bound), `ActiveSet` (matches
+  the Nocedal & Wright textbook QP optimum exactly), and `InteriorPoint` (relaxed log
+  barrier). Every solver reports `extras["violation"]`/`["feasible"]`, because silently
+  returning an infeasible point would be the worst failure mode here.
+- **One result type, one contract.** Everything returns `OptimizeResult` (point, value,
+  `nit`/`nfev`/`njev`, `converged` plus a message, `jac`, `hess_inv`, `history`, opt-in
+  `trajectory`, `extras`); `minimize()` returns `self` like `fit()` elsewhere; every
+  stochastic optimizer takes `random_state=` and reproduces a run exactly from a seed; a
+  failed run returns with `converged=False` and an explanation rather than raising. Nothing
+  wraps `scipy.optimize` — a test walks the module's sources to enforce that.
+- **6 bugs caught by the manual debug session, all fixed (Probleme.md #103-#108)**:
+  Lagrangian dual ascent climbing the wrong way and its primal recovery returning a
+  feasible-but-unoptimized `x0`; the log barrier's `+inf` producing NaN gradients inside the
+  inner optimizer; optimizer loops not stopping on non-finite gradients or a diverged
+  objective; simulated annealing's fixed initial temperature ignoring the objective's energy
+  scale; and the Bayesian-optimization surrogate being fitted on unscaled inputs.
+- **Manual debug session** against the real implementation before any test was written:
+  every method on Rosenbrock from a hostile start, all seven metaheuristics on Rastrigin-10
+  and Ackley-5, same-seed reproducibility for every stochastic optimizer, all five
+  constrained solvers on a problem with a closed-form solution, logistic and Gamma MLE
+  cross-checked against `statistics`/`distributions`, ant colony against brute force, and an
+  SAA newsvendor against its closed-form critical fractile.
+- **Every Essential-Tasks.md wrap-up item completed:** `tests/optimization/{tests,e2e}.py`
+  added (181 cases: scipy.optimize, closed-form optima, published global minima, brute-force
+  TSP and the library's own MLE fits as oracles); `README.md`, `stochpylib/README.md`,
+  `tests/README.md`, `AGENTS.md`, `CONTRIBUTING.md` and
+  `development/{README,Development,project_structure,architecture,infrastructure,
+  Implementation-Checklist}.md` all synced; `tests/docs/tests.py` and
+  `tests/library/tests.py` updated (spec-name conformance, wiring, stale-claim blacklist, a
+  cross-module integration test agreeing with `statistics.logistic_regression`,
+  `distributions.Gamma.fit`, `gaussian_processes.GPRegression` and `montecarlo.MCResult`);
+  `selftest.py` extended 222 -> 235 checks (`OPTIM:` block); `spl demo optimization` added to
+  `cli_demo.py`; `ci.yml` `module-smoke` matrix extended; vault
+  `Modules/optimization.md` flipped to implemented.
+
+Suite: 2203 collected - 2201 passed / 2 skipped. Version 0.16.0.

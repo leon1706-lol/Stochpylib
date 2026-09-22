@@ -215,6 +215,17 @@ def _implemented_overview():
             "                   Anderson-Darling/Cramer-von Mises tests, Spearman/Kendall/\n"
             "                   distance/Hoeffding dependence measures, local-polynomial/\n"
             "                   isotonic/spline/quantile regression",
+        "optimization":
+            "stochastic & numerical optimization: gradient descent and the\n"
+            "                   adaptive-step family (AdaGrad/RMSProp/Adadelta/Adam/\n"
+            "                   NADAM/AMSGrad), Newton/BFGS/L-BFGS/conjugate-gradient/\n"
+            "                   trust-region/Levenberg-Marquardt, simulated annealing,\n"
+            "                   genetic algorithms, particle swarm, differential\n"
+            "                   evolution, ant colony, CMA-ES, GP-surrogate Bayesian\n"
+            "                   optimization, Robbins-Monro/Kiefer-Wolfowitz/SPSA\n"
+            "                   stochastic approximation, cross-entropy method,\n"
+            "                   sample-average approximation, and penalty/augmented-\n"
+            "                   Lagrangian/active-set/interior-point constrained solvers",
     }
 
     blocks = []
@@ -451,8 +462,8 @@ Try a live mini-example:  spl demo <module>   (bare 'spl demo' lists them)
         epilog=(
             "subcommands: update, info, show, demo, cite - run 'spl <command> --help'\n"
             "for details.\n\n"
-            "roadmap: five more modules are planned (spatial_statistics,\n"
-            "optimization, experimental_design, viz, utils) -\n"
+            "roadmap: four more modules are planned (spatial_statistics,\n"
+            "experimental_design, viz, utils) -\n"
             "see the repository README and development/Implementation-Checklist.md.\n\n"
             "docs: README.md - contributing: CONTRIBUTING.md - security: SECURITY.md"
         ),

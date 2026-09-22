@@ -425,6 +425,47 @@ def _demo_nonparametric():
           f"monotonicity violations in the fit (expect 0)")
 
 
+def _demo_optimization():
+    from stochpylib.optimization import (
+        AugmentedLagrangian, BFGS, CMA_ES, LevenbergMarquardt,
+        ParticleSwarmOptimization,
+    )
+
+    print("Optimization - the same minimize(fun, x0) interface across gradient,")
+    print("derivative-free and constrained methods, each reporting an OptimizeResult:")
+    rng = np.random.default_rng(23)
+
+    rosen = lambda x: 100.0 * (x[1] - x[0] ** 2) ** 2 + (1 - x[0]) ** 2
+    rosen_der = lambda x: np.array([-400 * x[0] * (x[1] - x[0] ** 2) - 2 * (1 - x[0]),
+                                    200 * (x[1] - x[0] ** 2)])
+    bfgs = BFGS().minimize(rosen, [-1.2, 1.0], grad=rosen_der)
+    print(f"  Rosenbrock from (-1.2, 1.0): BFGS x=({bfgs.x_[0]:.6f}, {bfgs.x_[1]:.6f})  "
+          f"f={bfgs.fun_:.2e}  {bfgs.result_.nit} iterations, {bfgs.result_.nfev} evals")
+
+    rastrigin = lambda x: 10 * len(x) + float(np.sum(x ** 2 - 10 * np.cos(2 * np.pi * x)))
+    pso = ParticleSwarmOptimization(bounds=(-5.12, 5.12), n_particles=40, n_iter=300,
+                                    random_state=1).minimize(rastrigin, np.full(5, 3.0))
+    print(f"  Rastrigin-5 (10^5 local minima): particle swarm f={pso.fun_:.3e} "
+          f"vs f={rastrigin(np.full(5, 3.0)):.1f} at the start")
+
+    cma = CMA_ES(sigma0=2.0, n_iter=400, random_state=2).minimize(rastrigin, np.full(5, 3.0))
+    cond = np.linalg.cond(cma.result_.extras["C"])
+    print(f"  same problem, CMA-ES: f={cma.fun_:.3e}  learned covariance condition "
+          f"number={cond:.2f}")
+
+    t = np.linspace(0, 4, 60)
+    y = 2.5 * np.exp(-0.7 * t) + rng.normal(0, 0.02, len(t))
+    lm = LevenbergMarquardt().minimize(lambda p: p[0] * np.exp(-p[1] * t) - y, [1.0, 1.0])
+    print(f"  noisy exponential decay: Levenberg-Marquardt amplitude={lm.x_[0]:.4f} "
+          f"rate={lm.x_[1]:.4f} (true 2.5 / 0.7)")
+
+    con = AugmentedLagrangian(
+        constraints=[{"type": "eq", "fun": lambda x: np.array([x[0] + x[1] - 1.0])}]
+    ).minimize(lambda x: float(x[0] ** 2 + x[1] ** 2), [2.0, -1.0])
+    print(f"  min x^2+y^2 s.t. x+y=1: augmented Lagrangian x=({con.x_[0]:.6f}, "
+          f"{con.x_[1]:.6f})  constraint violation={con.result_.extras['violation']:.1e}")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -444,6 +485,7 @@ DEMOS = {
     "bayesian": _demo_bayesian,
     "robust_statistics": _demo_robust_statistics,
     "nonparametric": _demo_nonparametric,
+    "optimization": _demo_optimization,
 }
 DEMO_MODULES = tuple(DEMOS)
 

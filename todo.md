@@ -9,22 +9,28 @@ are for — see `AGENTS.md`).
 
 -----
 
-## V0.15.0 — done
+## V0.16.0 — done
 
-`nonparametric` implemented end to end (31/31 spec names), tests + `module-smoke` CI job
-added, full Essential-Tasks.md wrap-up completed. See `development/CHANGELOG.md` Phase 32
-for the full breakdown. 628/794 public names, eighteen modules implemented.
+`optimization` shipped end to end (32/32 spec names, 660/794 overall): gradient and
+adaptive-step methods, quasi-Newton/trust-region/Levenberg-Marquardt, seven
+metaheuristics, stochastic approximation, and five constrained solvers. The red
+`test (3.10, *)` jobs from the V0.15.0 push were fixed first (Probleme.md #102), so the
+module landed on a green baseline. Six further bugs found in the manual debug session are
+recorded as Probleme.md #103-#108.
 
 ## Next candidate
 
-Same size-first heuristic as before (smallest remaining module next): the five remaining
-modules are `spatial_statistics` (32), `optimization` (32), `experimental_design` (29),
-`viz` (35), `utils` (38). `experimental_design` is the smallest and has no third-party-dep
-caveat. `utils.performance` (`GPUBackend`, `JIT_compile()`) still implies optional
-torch/cupy/numba deps needing a lazy-import design pass before it's picked up. `viz`
-implies a plotting backend decision (matplotlib as a dev-only oracle/example dependency,
-or a from-scratch SVG/ASCII renderer to keep the zero-runtime-dep policy — needs an
-explicit decision before starting, unlike the other four).
+Four modules remain: `spatial_statistics` (32), `experimental_design` (29), `viz` (35),
+`utils` (38). Smallest-first puts `experimental_design` next, and it has no third-party-dep
+caveat. Two still need an explicit decision before they can start:
+
+- `viz` implies a plotting-backend decision — matplotlib as a dev-only oracle/example
+  dependency, or a from-scratch SVG/ASCII renderer to keep the zero-runtime-dep policy.
+- `utils.performance` (`GPUBackend`, `JIT_compile()`) implies optional torch/cupy/numba
+  deps and needs a lazy-import design pass first.
+
+`spatial_statistics` also needs a naming decision: its `GaussianRandomField` collides with
+the one already shipped in `levy_processes`.
 
 -----
 

@@ -393,17 +393,29 @@ def test_wald_wolfowitz_detects_different_distributions():
 
 # ========================================================== goodness of fit
 
-def test_anderson_darling_norm_and_expon_match_scipy():
+def test_anderson_darling_statistic_matches_scipy_and_critical_values_match_table():
+    # only the A^2 statistic is oracled against scipy: scipy switched critical-value
+    # correction formulas mid-1.x and drops `critical_values` entirely in 1.19, so
+    # comparing them pins us to one scipy version. The table below is the library's
+    # own documented contract (D'Agostino & Stephens 1986, Table 4.7).
     xn = _RNG.normal(2, 3, 60)
     ad = AndersenDarling(dist="norm").fit(xn)
     ref = stats.anderson(xn, dist="norm")
     assert ad.statistic_ == pytest.approx(ref.statistic)
-    assert list(ad.result_.extras["critical_values"]) == pytest.approx(list(ref.critical_values))
+    n = len(xn)
+    expected = np.round(np.array([0.561, 0.631, 0.752, 0.873, 1.035])
+                        / (1.0 + 0.75 / n + 2.25 / n ** 2), 3)
+    assert list(ad.result_.extras["critical_values"]) == pytest.approx(list(expected))
+    assert list(ad.result_.extras["significance_levels"]) == pytest.approx(
+        [0.15, 0.10, 0.05, 0.025, 0.01])
 
     xe = _RNG.exponential(2, 60)
     ade = AndersenDarling(dist="expon").fit(xe)
     refe = stats.anderson(xe, dist="expon")
     assert ade.statistic_ == pytest.approx(refe.statistic)
+    m = len(xe)
+    expected_e = np.round(np.array([0.916, 1.062, 1.321, 1.591, 1.959]) / (1.0 + 0.6 / m), 3)
+    assert list(ade.result_.extras["critical_values"]) == pytest.approx(list(expected_e))
 
 
 def test_anderson_darling_alias_is_identical():

@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 628 / 794 public names implemented.**
+**Progress: 660 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -739,46 +739,46 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `MFVariational()`
     - [x] `ImportanceSamplingPosterior()`
 
-## [optimization](../Stochpylib-Obsidian-Vault/Modules/optimization.md) — Stochastic & numerical optimization (0/32)
+## [optimization](../Stochpylib-Obsidian-Vault/Modules/optimization.md) — Stochastic & numerical optimization (32/32)
 
-- [ ] **stochpylib.optimization** module overall
-  - [ ] `optimization.gradient`
-    - [ ] `GradientDescent`
-    - [ ] `StochasticGD`
-    - [ ] `AdamOptimizer`
-    - [ ] `AdaGrad`
-    - [ ] `RMSProp`
-    - [ ] `Adadelta`
-    - [ ] `NADAM`
-    - [ ] `AMSGrad`
-  - [ ] `optimization.second_order`
-    - [ ] `NewtonMethod`
-    - [ ] `BFGS`
-    - [ ] `LBFGS`
-    - [ ] `ConjugateGradient`
-    - [ ] `TrustRegion`
-    - [ ] `LevenbergMarquardt`
-  - [ ] `optimization.metaheuristic`
-    - [ ] `SimulatedAnnealing`
-    - [ ] `GeneticAlgorithm`
-    - [ ] `ParticleSwarmOptimization`
-    - [ ] `DifferentialEvolution`
-    - [ ] `AntColony`
-    - [ ] `BayesianOptimization`
-    - [ ] `CMA_ES`
-  - [ ] `optimization.stochastic_optim`
-    - [ ] `SAA`
-    - [ ] `StochasticApprox`
-    - [ ] `RobbinsMonro`
-    - [ ] `KieferWolfowitz`
-    - [ ] `SPSA`
-    - [ ] `CEM`
-  - [ ] `optimization.constrained`
-    - [ ] `LagrangianRelaxation`
-    - [ ] `PenaltyMethod`
-    - [ ] `AugmentedLagrangian`
-    - [ ] `ActiveSet`
-    - [ ] `InteriorPoint`
+- [x] **stochpylib.optimization** module overall
+  - [x] `optimization.gradient`
+    - [x] `GradientDescent`
+    - [x] `StochasticGD`
+    - [x] `AdamOptimizer`
+    - [x] `AdaGrad`
+    - [x] `RMSProp`
+    - [x] `Adadelta`
+    - [x] `NADAM`
+    - [x] `AMSGrad`
+  - [x] `optimization.second_order`
+    - [x] `NewtonMethod`
+    - [x] `BFGS`
+    - [x] `LBFGS`
+    - [x] `ConjugateGradient`
+    - [x] `TrustRegion`
+    - [x] `LevenbergMarquardt`
+  - [x] `optimization.metaheuristic`
+    - [x] `SimulatedAnnealing`
+    - [x] `GeneticAlgorithm`
+    - [x] `ParticleSwarmOptimization`
+    - [x] `DifferentialEvolution`
+    - [x] `AntColony`
+    - [x] `BayesianOptimization`
+    - [x] `CMA_ES`
+  - [x] `optimization.stochastic_optim`
+    - [x] `SAA`
+    - [x] `StochasticApprox`
+    - [x] `RobbinsMonro`
+    - [x] `KieferWolfowitz`
+    - [x] `SPSA`
+    - [x] `CEM`
+  - [x] `optimization.constrained`
+    - [x] `LagrangianRelaxation`
+    - [x] `PenaltyMethod`
+    - [x] `AugmentedLagrangian`
+    - [x] `ActiveSet`
+    - [x] `InteriorPoint`
 
 ## [numerical_methods](../Stochpylib-Obsidian-Vault/Modules/numerical_methods.md) — Numerical analysis backbone (38/38)
 

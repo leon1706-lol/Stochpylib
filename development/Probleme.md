@@ -2191,3 +2191,145 @@ re-deriving the inversion count from scratch — reuses code already validated a
 **Verification:** `tests/nonparametric/tests.py::test_kendall_tau_variants_a_and_c` and
 `test_kendall_tau_exact_matches_scipy_no_ties` pass; the tau-a-equals-tau-b (no ties)
 identity and the exact-test p-value both match `scipy.stats.kendalltau` exactly.
+
+---
+
+### 102. `tests/nonparametric` oracled Anderson-Darling critical values against a scipy internal that changes between scipy versions
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.16.0)
+
+**Problem:** `test_anderson_darling_norm_and_expon_match_scipy` compared
+`AndersenDarling`'s critical-value table against `scipy.stats.anderson(...).critical_values`.
+scipy changed that table's finite-sample correction mid-1.x (legacy
+`[0.576, ...] / (1 + 4/n - 25/n^2)` vs. the current `[0.561, ...] / (1 + 0.75/n + 2.25/n^2)`),
+so the assertion passed on the scipy that ships for Python 3.11+ and failed on the older
+one pip resolves for Python 3.10 — red `test (3.10, ubuntu-latest)` and
+`test (3.10, windows-latest)` jobs on the V0.15.0 push.
+
+**Fix:** Keep the version-stable half of the oracle (the `A^2` statistic, which matches
+scipy on every version) and pin the critical values against the published D'Agostino &
+Stephens (1986) Table 4.7 values the implementation actually documents, computed inline in
+the test. Also covers the `dist="expon"` table, which was previously unasserted, and
+side-steps scipy 1.19 dropping `critical_values` from the result object entirely.
+
+**Verification:** `tests/nonparametric/tests.py::test_anderson_darling_statistic_matches_scipy_and_critical_values_match_table`
+passes against both correction formulas; the library's own numbers were never wrong, only
+the oracle was version-coupled.
+
+---
+
+### 103. `optimization.LagrangianRelaxation`'s dual ascent stepped *with* the constraint residual instead of against it
+
+**Severity:** 7/10 · **Status:** 🟢 `fixed` (V0.16.0)
+
+**Problem:** The subgradient update was `lam_eq += step * c(x)`. Since
+`dg/dlambda = -c(x*(lambda))` for `g(lambda) = min_x f - lambda.c`, that ascends the
+negated dual and drives the multiplier *away* from its optimum: on `min x^2+y^2 s.t.
+x+y=1` the recursion `lam <- lam + step*(lam - 1)` diverged from the true `lam = 1`, so
+the relaxation reported a dual bound of 0 instead of the exact 0.5.
+
+**Fix:** Step against the residual (`lam_eq -= step * eq`), matching the inequality branch
+which was already correct, with the derivation recorded as a one-line comment.
+
+**Verification:** `tests/optimization/tests.py::test_lagrangian_relaxation_dual_bound_is_a_valid_lower_bound`
+now sees `dual_bound = 0.5` and a duality gap below `1e-3` on the convex problem, and the
+manual debug script's primal point moved from `(2, -1)` to `(0.49995, 0.49995)`.
+
+---
+
+### 104. `optimization.LagrangianRelaxation` could return the starting point when it happened to be feasible
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.16.0)
+
+**Problem:** Primal recovery kept the iterate with the smallest constraint violation and
+seeded that search with `x0`. A start that satisfies the constraints but is far from
+optimal — `(2, -1)` satisfies `x+y=1` with objective 5 against an optimum of 0.5 — is
+never beaten on violation alone, so the solver returned it unchanged.
+
+**Fix:** Exclude `x0` from the candidate set (it minimizes no Lagrangian) and rank the
+primal iterates lexicographically by `(max(violation - ctol, 0), objective)`, the standard
+primal-recovery heuristic, now stated in the class docstring.
+
+**Verification:** `test_lagrangian_relaxation_never_returns_a_feasible_but_unoptimized_start`
+pins `fun_ < 1.0` from exactly that start, and
+`test_constrained_methods_solve_the_equality_problem_with_a_known_solution[LagrangianRelaxation]`
+matches `(0.5, 0.5)`.
+
+---
+
+### 105. `optimization.InteriorPoint`'s log barrier returned `+inf` outside the feasible region, poisoning the inner optimizer with NaN gradients
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.16.0)
+
+**Problem:** The barrier evaluated to `+inf` wherever any inequality was non-positive. The
+inner L-BFGS takes finite differences of that, so a trial point anywhere near the boundary
+produced `inf - inf = NaN`, which the two-loop recursion propagated: the inequality-
+constrained run returned `x = (nan, nan)` with `fun = inf`.
+
+**Fix:** Replaced the barrier with the relaxed log barrier (Hauser 2003; Feller &
+Ebenbauer 2017) — `-log(c)` continued below `delta` by its quadratic extrapolation, which
+is C^2 and finite everywhere and pushes an infeasible trial point back inside.
+
+**Verification:** `test_interior_point_iterates_stay_inside_the_feasible_region` and
+`test_relaxed_log_barrier_is_finite_continuous_and_agrees_with_minus_log` pass; the
+inequality problem now returns `(0.5, 0.5)` with zero violation.
+
+---
+
+### 106. Optimizer loops kept iterating on non-finite gradients and let fixed-step methods overflow
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.16.0)
+
+**Problem:** Neither the first-order nor the second-order loop checked that the gradient or
+objective was finite, so a diverging fixed-step method (`StochasticGD` on Rosenbrock) ran
+its full budget against overflowing values and surfaced numpy `RuntimeWarning`s from inside
+the library, and a NaN gradient produced a NaN solution with `converged=False` but no
+explanation.
+
+**Fix:** Both loops now break with `message="non-finite gradient"` / `"objective diverged"`,
+keeping the last good iterate, and `Objective.__call__`/`grad` evaluate under
+`np.errstate(all="ignore")` since mapping an overflow to `+inf` is exactly that wrapper's
+documented job.
+
+**Verification:** `test_gradient_descent_without_line_search_diverges_and_says_so` asserts
+the message, and the full `tests/optimization` run is warning-free.
+
+---
+
+### 107. `optimization.SimulatedAnnealing`'s fixed initial temperature ignored the objective's energy scale
+
+**Severity:** 5/10 · **Status:** 🟢 `fixed` (V0.16.0)
+
+**Problem:** `T0` defaulted to a constant, and the acceptance probability `exp(-dE/T)` is
+only meaningful relative to the objective's own scale: on Rastrigin-5 (`dE ~ 10`) with
+`T0 = 1` the chain was effectively greedy, and the same landscape scaled by 1000 would make
+it a pure random walk. The chain also wandered away from the best point it had found and
+never returned.
+
+**Fix:** `T0=None` now calibrates from a short random probe so roughly half the uphill
+moves are accepted at `t=0` (Ben-Ameur 2004), `cooling_rate=None` derives the geometric
+rate from `n_iter` so the schedule rescales with the budget, and the walker is teleported
+back to the best point after `restart_patience` non-improving steps.
+
+**Verification:** `test_simulated_annealing_calibrates_its_temperature_to_the_objective_scale`
+pins the 1000x `T0` ratio under a 1000x objective rescaling, and
+`test_simulated_annealing_matches_scipy_dual_annealing_quality_on_beale` beats
+`scipy.optimize.dual_annealing` on Beale.
+
+---
+
+### 108. `optimization.BayesianOptimization` fitted its GP surrogate on unscaled inputs
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.16.0)
+
+**Problem:** The Matern surrogate was fitted on raw coordinates while `length_scale`
+defaulted to 1.0, so on Branin's `[-5, 10] x [0, 15]` box the kernel saw every pair of
+points as essentially uncorrelated and the acquisition degenerated. The optimizer returned
+0.63 against Branin's true minimum of 0.3979.
+
+**Fix:** Fit the GP on the unit cube with standardized responses — a single default
+`length_scale`/`noise` is only meaningful once both axes are scale-free — and map candidate
+points through the same transform before predicting.
+
+**Verification:** `test_bayesian_optimization_finds_branin_with_few_evaluations` passes for
+all three acquisitions (EI, UCB and PI now reach 0.42-0.65 within 40 evaluations).
