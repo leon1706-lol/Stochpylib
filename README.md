@@ -11,10 +11,10 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10%2B-FF8C00?style=flat-square&labelColor=1A1A1A&logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/%F0%9F%93%84%20license-MIT-8B5CF6?style=flat-square&labelColor=1A1A1A" alt="License: MIT">
-  <img src="https://img.shields.io/badge/tests-2201%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="2201 of 2203 tests passing">
+  <img src="https://img.shields.io/badge/tests-2371%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="2371 of 2373 tests passing">
   <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&style=flat-square&labelColor=1A1A1A&label=CI&logo=githubactions&logoColor=white" alt="CI status"></a>
   <a href="https://pypi.org/project/stochpylib/"><img src="https://img.shields.io/pypi/v/stochpylib?style=flat-square&labelColor=1A1A1A&color=FF8C00&logo=pypi&logoColor=white" alt="PyPI version"></a>
-  <img src="https://img.shields.io/badge/public%20names-660%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="660 of 794 spec names implemented">
+  <img src="https://img.shields.io/badge/public%20names-689%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="689 of 794 spec names implemented">
 </p>
 
 <p align="center">
@@ -36,7 +36,7 @@ exposes the same method set
 (`.pdf()/.cdf()/.ppf()/.rvs()/.mean()/.var()/.skewness()/.kurtosis()/.entropy()/.mgf()/.cf()/.fit()/.ks_test()`),
 every stochastic method takes a `random_state=` seed, and every Monte Carlo estimator returns a
 shared result object carrying its point estimate together with an honest standard error and
-confidence interval. Around that contract, nineteen modules are live today: a **probability
+confidence interval. Around that contract, twenty modules are live today: a **probability
 engine** (sample spaces, Bayes' theorem, exact-integer combinatorics, independence
 testing), **47 distributions** across discrete/continuous/multivariate/heavy-tailed
 families — including stable laws with Chambers–Mallows–Leckie sampling and numerically
@@ -90,8 +90,14 @@ annealing, genetic algorithms, particle swarm, differential evolution, ant colon
 CMA-ES, GP-surrogate Bayesian optimization, Robbins-Monro/Kiefer-Wolfowitz/SPSA
 stochastic approximation, the cross-entropy method, sample-average approximation with an
 optimality-gap interval, and penalty/augmented-Lagrangian/active-set/interior-point
-constrained solvers). The roadmap
-takes it onward through spatial statistics and beyond (23 modules, ~794 public names planned). The
+constrained solvers), and **design of experiments** (full/fractional factorials with
+resolution and alias structure, Plackett-Burman, central composite and Box-Behnken
+designs, Latin and Graeco-Latin squares, D/A/G/I/T- and Bayesian optimal designs, Latin
+hypercube/maximin/minimax/uniform/orthogonal-array space-filling designs, response surfaces
+with canonical analysis and lack-of-fit ANOVA, polynomial chaos expansions, universal
+kriging surrogates, DOE ANOVA, Lenth's method, and Morris/Sobol sensitivity analysis). The
+roadmap takes it onward through spatial statistics, visualization and utilities (23
+modules, ~794 public names planned). The
 [Architecture](#architecture) section
 below has the structural picture; [`development/architecture.md`](development/architecture.md)
 goes deeper still.
@@ -99,10 +105,10 @@ goes deeper still.
 ## Known Limitations
 
 - **PyPI lags the repository.** The latest published release is `0.6.4`; the code here is at
-  `0.16.0`. Releases are tag-triggered (see [Release Process](#release-process)) and no tag has
+  `0.17.0`. Releases are tag-triggered (see [Release Process](#release-process)) and no tag has
   been pushed since the early modules — `pip install stochpylib` gets 0.6.4, so for the
   current state of the library, install from source (`pip install -e .`).
-- **4 of 23 planned modules remain.** The implemented nineteen are complete and tested against
+- **3 of 23 planned modules remain.** The implemented twenty are complete and tested against
   their spec; everything else in the roadmap is design spec, not shipped code. Exact
   per-name state: [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md).
 - **`statistics`'s two-sample KS p-value uses the classical asymptotic formula**, not
@@ -155,6 +161,14 @@ goes deeper still.
   bound and a least-infeasible primal point, not a guaranteed-feasible one; and with no
   autodiff, missing Hessians cost O(dim^2) finite-difference evaluations — see
   `stochpylib/optimization/README.md`.
+- **`experimental_design`'s plot classes are data-only and its constructions have fixed
+  coverage** — `InteractionPlot`/`NormalPlot` return cell means, effect quantiles and
+  Lenth thresholds (rendering waits for the planned `viz` module); `BoxBehnken` covers 3–7
+  factors, `GraecoLatin` every order not congruent to 2 mod 4, and `Plackett_Burman` skips
+  orders without a Sylvester/Paley construction (N = 36, 52, …); the optimal designs are
+  multi-start point exchange over a candidate grid (local optima), and
+  `FractionalFactorial` falls back to a seeded random generator search above 200 000
+  candidate sets — see `stochpylib/experimental_design/README.md`.
 
 ## Table of Contents
 
@@ -248,7 +262,7 @@ For local development (this repo cloned, a virtual environment active):
 pip install -e ".[dev]"     # runtime deps + pytest
 pytest tests/ -v            # full test suite must be green before you start changing things
 spl --version               # verify your editable install
-spl --test                  # embedded self-check (235 checks), no pytest needed
+spl --test                  # embedded self-check (250 checks), no pytest needed
 ```
 
 Then implement or improve one module at a time and run the wrap-up procedure described in
@@ -295,6 +309,7 @@ flowchart LR
     O --> T["stochpylib.robust_statistics<br/>robust location/scale, high-breakdown regression, MCD/MVE/OGK, bootstraps"]
     C --> U["stochpylib.nonparametric<br/>density estimation, resampling/rank tests, dependence measures, local regression"]
     A --> V["stochpylib.optimization<br/>gradient & quasi-Newton methods, metaheuristics, stochastic approximation, constrained solvers"]
+    D --> W["stochpylib.experimental_design<br/>classical, optimal & space-filling designs, response surfaces, sensitivity analysis"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -310,6 +325,7 @@ flowchart LR
     T --> L
     U --> L
     V --> L
+    W --> L
 ```
 
 #### Tech Stack
@@ -324,7 +340,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (235 checks)"]
+    C --> C3["spl --test embedded self-check (250 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -336,7 +352,7 @@ module must follow — see
 
 ## Current Status
 
-Nineteen modules implemented and tested — **660 / 794 spec names**:
+Twenty modules implemented and tested — **689 / 794 spec names**:
 
 | Module | Public names | What's inside |
 |---|---|---|
@@ -359,10 +375,11 @@ Nineteen modules implemented and tested — **660 / 794 spec names**:
 | `stochpylib.robust_statistics` | 28 | trimmed/winsorized means, median (Maritz-Jarrett SE, order-statistic CI), Hodges-Lehmann, L/M/R-estimators, MAD/Qn/Sn/IQR/biweight/tau/Huber scales, Theil-Sen (Sen CI)/Siegel/RANSAC/FAST-LTS/FAST-S+MM/Huber regression, FAST-MCD/MVE/OGK covariance, robust correlation (Spearman/Kendall/Gaussian-rank/quadrant), Ledoit-Wolf/OAS/constant-correlation shrinkage, robust/wild/moving-circular-nonoverlapping-block/stationary bootstraps |
 | `stochpylib.nonparametric` | 31 | kernel/adaptive/kNN/orthogonal-series/log-spline density estimation (full distribution contract), empirical distribution/CDF/characteristic-function estimators, Glivenko-Cantelli bounds, empirical likelihood, permutation/bootstrap/Mood/Kruskal-Wallis/Friedman/sign/runs/Anderson-Darling/Cramer-von Mises tests, Spearman/Kendall/distance/Hoeffding dependence measures, local-polynomial/isotonic/spline/quantile regression |
 | `stochpylib.optimization` | 32 | line-searched gradient descent and the adaptive-step family (AdaGrad/RMSProp/Adadelta/Adam/NADAM/AMSGrad), damped Newton, BFGS/L-BFGS, nonlinear conjugate gradient, dogleg/Steihaug trust region, Levenberg-Marquardt least squares; simulated annealing, real-coded genetic algorithm, particle swarm, differential evolution, ant-colony TSP, CMA-ES, GP-surrogate Bayesian optimization (EI/UCB/PI); Robbins-Monro/Kiefer-Wolfowitz/SPSA stochastic approximation, cross-entropy method, sample-average approximation with a replicated optimality-gap interval; penalty/augmented-Lagrangian/Lagrangian-relaxation/active-set/interior-point constrained solvers |
+| `stochpylib.experimental_design` | 29 | full/fractional factorials (searched maximum resolution + minimum aberration, alias structure, fold-over), Plackett-Burman (Sylvester/Paley), central composite (rotatable/orthogonal/face/inscribed), Box-Behnken, Latin and Graeco-Latin squares with ANOVA; D/A/G/I/T-optimal and Bayesian (linear and pseudo-Bayesian nonlinear) designs by point exchange; Latin hypercube, Morris-Mitchell maximin, minimax, good-lattice-point uniform and Bush orthogonal-array (Tang OA-LHS) designs; response surfaces with canonical analysis, steepest ascent and lack-of-fit ANOVA, polynomial chaos with analytic Sobol indices, universal kriging with expected-improvement sequential design, CV surrogate selection; DOE ANOVA, main effects, interaction and Lenth normal-plot data, Morris/SRC/PRCC screening, Saltelli/Jansen Sobol indices |
 
 Exact progress against the full design spec lives in
 [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md)
-(currently **660 / 794 public names**).
+(currently **689 / 794 public names**).
 
 ## Project Layout
 
@@ -372,7 +389,7 @@ as an entry-point guide:
 
 | Folder | Guide | What lives there |
 |---|---|---|
-| `stochpylib/` | [package guide](stochpylib/README.md) | the installable package: nineteen module subpackages, `cli.py`, `selftest.py` |
+| `stochpylib/` | [package guide](stochpylib/README.md) | the installable package: twenty module subpackages, `cli.py`, `selftest.py` |
 | `tests/` | [suite guide](tests/README.md) | per module: an oracle suite (`tests.py`) and an end-to-end API sweep (`e2e.py`), plus the cross-module library/docs/cli suites, outside the installed package |
 | `development/` | [dev-docs guide](development/README.md) | architecture, infrastructure runbook, build history, bug audit log, progress checklist |
 | `.github/` | — | CI / PyPI-publish / GitHub-Release workflows, issue & PR templates |
@@ -404,6 +421,7 @@ conventions and its documented limitations — this table is the index:
 | `stochpylib/robust_statistics/` | Robust location/scale, high-breakdown regression, robust covariance, resampling | [README](stochpylib/robust_statistics/README.md) |
 | `stochpylib/nonparametric/` | Density estimation, empirical/likelihood, resampling & rank tests, dependence measures, local regression | [README](stochpylib/nonparametric/README.md) |
 | `stochpylib/optimization/` | Gradient & quasi-Newton methods, global metaheuristics, stochastic approximation, constrained solvers | [README](stochpylib/optimization/README.md) |
+| `stochpylib/experimental_design/` | Classical, optimal and space-filling designs, response surfaces & surrogates, effect and sensitivity analysis | [README](stochpylib/experimental_design/README.md) |
 
 ## Development Documentation
 
@@ -435,7 +453,7 @@ conventions and its documented limitations — this table is the index:
 pytest tests/ -v
 ```
 
-**2201 passed / 2 skipped** as of the V0.16.0 `optimization` implementation (the 2 permanent skips
+**2371 passed / 2 skipped** as of the V0.17.0 `experimental_design` implementation (the 2 permanent skips
 are the VonMises/Kumaraswamy scipy cross-checks — no direct scipy mapping, covered by
 dedicated checks instead). Tests are deterministic (fixed seeds everywhere), live outside
 the installed package, and use `scipy.stats`, `statsmodels` and brute-force references as
@@ -465,7 +483,7 @@ interface, and a runnable quick-start snippet. Running bare `spl` shows the same
 
 ```bash
 $ spl --version
-0.16.0
+0.17.0
 latest on PyPI: 0.6.4  (installed version is newer / unreleased)
 ```
 
@@ -480,7 +498,7 @@ entirely by setting `STOCHPYLIB_SKIP_UPDATE_CHECK=1`.
 
 ```bash
 $ spl --version --list
-0.16.0
+0.17.0
 latest on PyPI: 0.6.4  (installed version is newer / unreleased)
 3 published versions:
   0.1.0
@@ -494,7 +512,7 @@ served from the 24 h cache).
 
 ### `spl --test`
 
-Runs the embedded self-check suite shipped inside the wheel (**235 checks**): package sanity and per-module spec
+Runs the embedded self-check suite shipped inside the wheel (**250 checks**): package sanity and per-module spec
 conformance, one closed-form spot check per distribution family, Monte Carlo
 convergence sanity, cross-module workflows, and the offline CLI-helper logic. This works
 after any `pip install` — no pytest, no source checkout — making it the quickest way to verify
@@ -558,7 +576,10 @@ block-bootstrap standard error, a bimodal KDE density fit + Kruskal-Wallis on a
 shifted group + distance correlation on y=x^2 + a local-linear smoother's R^2 + an
 isotonic-regression monotonicity check, BFGS on Rosenbrock + particle swarm and
 CMA-ES on Rastrigin-5 + Levenberg-Marquardt on a noisy exponential decay + an
-augmented-Lagrangian equality-constrained solve). Bare `spl demo` lists the available demos.
+augmented-Lagrangian equality-constrained solve, a resolution-V 2^(5-1) fraction's alias
+structure + Lenth's method on Montgomery's unreplicated 2^4 + a D-optimal quadratic design's
+efficiencies + a CCD response-surface stationary point + Ishigami Sobol indices vs their
+analytic values + a maximin Latin hypercube). Bare `spl demo` lists the available demos.
 
 ### `spl cite`
 
@@ -585,8 +606,8 @@ Publishing.
 
 ## Roadmap
 
-Four modules remain on the spec (in rough implementation order): spatial statistics,
-experimental design, visualization, and utilities.
+Three modules remain on the spec (in rough implementation order): spatial statistics,
+visualization, and utilities.
 Each lands with the same bar: native implementations, the shared
 interface conventions, full tests against independent oracles, and honest documentation of
 deviations. All finished work and changes can be found in

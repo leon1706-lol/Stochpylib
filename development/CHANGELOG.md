@@ -1393,3 +1393,66 @@ Suite: 2018 collected - 2016 passed / 2 skipped. Version 0.15.0.
   `Modules/optimization.md` flipped to implemented.
 
 Suite: 2203 collected - 2201 passed / 2 skipped. Version 0.16.0.
+
+## Phase 34 — V0.17.0 experimental_design: classical, optimal and space-filling designs, response surfaces & surrogates, effect & sensitivity analysis (29 names)
+
+- **One design contract.** Every design class subclasses `DesignGenerator`, and
+  `generate()` returns a `Design`: the run matrix in coded `[-1, 1]` or unit-cube units,
+  plus factor names (skipping `I`), natural-unit bounds, `to_natural()`/`randomized()`, and
+  quality metrics (D-efficiency, minimum/fill distance, discrepancy). It is the only new
+  result type; analyses reuse `statistics.TestResult`/`RegressionResult` and
+  `montecarlo.MCResult`.
+- **`experimental_design.classical`**: `FullFactorial` (Yates order, mixed or explicit
+  levels), `FractionalFactorial` (explicit generators, or a maximum-resolution /
+  minimum-aberration search that reproduces the textbook maximum resolutions up to
+  2^(8-4); defining relation, alias structure, fold-over) and `Plackett_Burman` (Sylvester
+  and Paley Hadamard matrices over GF(q), reproducing the published N = 12/20/24 generator
+  rows). Also `CCD` (rotatable/orthogonal/face/inscribed alpha), `BoxBehnken` (3–7
+  factors), and `LatinSquare`/`GraecoLatin` (MOLS for every order not congruent to 2 mod 4)
+  with ANOVA matching statsmodels.
+- **`experimental_design.optimal`**: D/A/G/I/T-optimal and Bayesian designs share one
+  multi-start point-exchange engine, batched over candidates. They reproduce the
+  brute-force exact optima for quadratic regression (D/G 1/3 each, A/I 1/4-1/2-1/4),
+  Atkinson-Fedorov's T-optimal design, and Box-Lucas' nonlinear design for exponential
+  decay.
+- **`experimental_design.space_filling`**: `LatinHypercubeDesign` delegates to
+  `montecarlo.LatinHypercubeSampling`. Alongside it are Morris-Mitchell `MaximinLHD`,
+  fill-distance `MinimaxDesign`, good-lattice-point `UniformDesign` with CD/WD/MD/L2-star
+  discrepancies equal to `scipy.stats.qmc.discrepancy` to 1e-12, and Bush
+  `OrthogonalArrayDesign` with Tang's OA-based Latin hypercube.
+- **`experimental_design.response_surface`**: `ResponseSurface` fits through
+  `statistics.linear_regression` and adds a stationary point, canonical analysis, steepest
+  ascent and `optimization.DifferentialEvolution` box optimization. `RSM_ANOVA` splits
+  sums of squares sequentially, with lack of fit vs pure error and PRESS. `PolynomialChaos`
+  (Legendre/Hermite, `numerical_methods` Gauss rules) recovers Ishigami's analytic Sobol
+  indices. `KrigingSurrogate` is universal kriging on `gaussian_processes` kernels with EI
+  sequential design, and a `MetaModel` base picks among surrogates by CV.
+- **`experimental_design.analysis`**: `ANOVA_DOE` (contrast SS for orthogonal two-level
+  designs, Type II otherwise, both equal to statsmodels), `MainEffects`, and data-only
+  `InteractionPlot`/`NormalPlot` with Lenth's PSE/ME/SME, all reproducing Montgomery's
+  filtration-rate example. `SensitivityIndex` covers Morris, SRC, PRCC and correlation;
+  `SobolIndex` gives Saltelli/Jansen first-, total- and second-order indices with bootstrap
+  standard errors as `MCResult`s, agreeing with the Ishigami/g-function analytic values and
+  `scipy.stats.sobol_indices`.
+- **Two existing library bugs fixed on the way (Probleme.md #109, #110).**
+  `gaussian_processes.optimize_hyperparams` never moved a Matern kernel yet reported
+  success. `montecarlo.MCResult.confidence_interval` returned near-zero-width intervals for
+  every level other than 0.95. Two construction bugs in the new module were caught before
+  shipping (#111, #112).
+- **Manual debug session** against the real package before tests were written: every
+  classical design's properties; Montgomery's 2^4 through main effects, Lenth, ANOVA and
+  the AC interaction; the optimal designs against brute force; the space-filling metrics
+  against random LHS; CCD → response surface → lack-of-fit ANOVA → optimum; kriging
+  sequential design on Branin; PCE and Sobol indices on Ishigami; same-seed
+  reproducibility of every stochastic class.
+- **Every Essential-Tasks.md wrap-up item completed:**
+  - `tests/experimental_design/{tests,e2e}.py` added (157 cases);
+  - regression tests added to the gaussian_processes and montecarlo suites;
+  - the library suite gained spec conformance, extras, wiring, and a cross-module test
+    against `statistics`, `gaussian_processes`, `montecarlo` and `optimization`;
+  - `tests/docs` counts and stale-claim blacklist updated;
+  - `selftest.py` 235 → 250 checks (`DOE:` block);
+  - `spl demo experimental_design` added, `ci.yml` `module-smoke` matrix extended;
+  - all READMEs and `development/` docs synced, and the vault spec flipped to implemented.
+
+Suite: 2373 collected - 2371 passed / 2 skipped. Version 0.17.0.

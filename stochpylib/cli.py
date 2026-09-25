@@ -226,6 +226,15 @@ def _implemented_overview():
             "                   stochastic approximation, cross-entropy method,\n"
             "                   sample-average approximation, and penalty/augmented-\n"
             "                   Lagrangian/active-set/interior-point constrained solvers",
+        "experimental_design":
+            "design of experiments: full/fractional factorials (resolution,\n"
+            "                   aliases, fold-over), Plackett-Burman, central composite,\n"
+            "                   Box-Behnken, Latin and Graeco-Latin squares, D/A/G/I/T-\n"
+            "                   and Bayesian optimal designs, Latin hypercube/maximin/\n"
+            "                   minimax/uniform/orthogonal-array space-filling designs,\n"
+            "                   response surfaces with canonical analysis and ANOVA,\n"
+            "                   polynomial chaos, kriging surrogates, DOE ANOVA, main\n"
+            "                   effects, Lenth normal plots, Morris and Sobol sensitivity",
     }
 
     blocks = []
@@ -462,8 +471,8 @@ Try a live mini-example:  spl demo <module>   (bare 'spl demo' lists them)
         epilog=(
             "subcommands: update, info, show, demo, cite - run 'spl <command> --help'\n"
             "for details.\n\n"
-            "roadmap: four more modules are planned (spatial_statistics,\n"
-            "experimental_design, viz, utils) -\n"
+            "roadmap: three more modules are planned (spatial_statistics,\n"
+            "viz, utils) -\n"
             "see the repository README and development/Implementation-Checklist.md.\n\n"
             "docs: README.md - contributing: CONTRIBUTING.md - security: SECURITY.md"
         ),

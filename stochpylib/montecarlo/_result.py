@@ -30,14 +30,11 @@ class MCResult:
         """Normal-approximation two-sided confidence interval ``(low, high)``."""
         if not np.isfinite(self.std_error):
             return (float("nan"), float("nan"))
-        # invert two-sided normal quantile without hardcoding tables
-        from scipy import optimize, special
+        from scipy import special
 
-        if level == 0.95:
-            z = _Z_95
-        else:
-            alpha2 = (1.0 - level) / 2.0
-            z = float(optimize.brentq(lambda q: 2.0 * special.ndtr(q) - 1.0 - 2.0 * alpha2, 0.0, 50.0))
+        if not 0.0 < level < 1.0:
+            raise ValueError("level must be in (0, 1)")
+        z = _Z_95 if level == 0.95 else float(special.ndtri(0.5 + level / 2.0))
         return (self.estimate - z * self.std_error, self.estimate + z * self.std_error)
 
     def __float__(self):

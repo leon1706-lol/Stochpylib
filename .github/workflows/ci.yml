@@ -57,6 +57,7 @@ jobs:
           - robust_statistics
           - nonparametric
           - optimization
+          - experimental_design
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

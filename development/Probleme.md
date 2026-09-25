@@ -2333,3 +2333,72 @@ points through the same transform before predicting.
 
 **Verification:** `test_bayesian_optimization_finds_branin_with_few_evaluations` passes for
 all three acquisitions (EI, UCB and PI now reach 0.42-0.65 within 40 evaluations).
+
+---
+
+### 109. `gaussian_processes.optimize_hyperparams` never moved a Matern kernel and still reported success
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.17.0)
+
+**Problem:** Matern's discrete `nu` was log-packed with the continuous hyperparameters, so
+every optimizer step set an invalid `nu`, was rejected, and the start point came back with
+`success=True` and zero iterations — every Matern GP silently kept its initial length scale
+and variance. Found when `experimental_design.KrigingSurrogate` never tuned its kernel.
+
+**Fix:** Parameters restricted to a discrete set (`nu`) are held fixed during the
+optimization.
+
+**Verification:** `test_optimize_hyperparams_moves_matern_and_keeps_nu_fixed` (nu = 0.5,
+1.5, 2.5): the log marginal likelihood now rises by more than 1 with `nu` unchanged; the
+kriging surrogate reaches R^2 > 0.9 on Branin from 20 runs.
+
+---
+
+### 110. `montecarlo.MCResult.confidence_interval` returned near-zero-width intervals for every level except 0.95
+
+**Severity:** 8/10 · **Status:** 🟢 `fixed` (V0.17.0)
+
+**Problem:** Non-default levels solved `2 Phi(z) - 1 = 1 - level` instead of `= level`, so
+a 99% interval was `+/- 0.0125` standard errors instead of `+/- 2.576` (and 90% was
+`+/- 0.126`). Only the hard-coded 0.95 path was right; the one existing test merely checked
+that the estimate lay inside the (degenerate) interval. Found by an experimental_design
+Sobol-index coverage test at the 99.9% level.
+
+**Fix:** `z = ndtri(0.5 + level/2)` for any level in (0, 1); other levels raise
+`ValueError`.
+
+**Verification:** `test_confidence_interval_half_width_is_the_normal_quantile` checks
+six levels against `scipy.stats.norm.ppf`; the montecarlo suite (73 cases) stays green.
+
+---
+
+### 111. `experimental_design.FullFactorial` crashed on explicit level lists of different lengths
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.17.0)
+
+**Problem:** `np.ndim(levels)` was used to tell an integer from a list, and numpy refuses to
+build an array from a ragged list such as `[[100, 150, 200], [1.5, 3.0]]`. Caught by the
+unit tests before shipping.
+
+**Fix:** Integers are detected with `isinstance`, so ragged per-factor level lists pass
+straight through.
+
+**Verification:** `test_full_factorial_explicit_levels_are_natural_units` builds the
+3 x 2 natural-unit design.
+
+---
+
+### 112. `experimental_design.FractionalFactorial(resolution=...)` tried fractions with too few base factors
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.17.0)
+
+**Problem:** The smallest-fraction search walked `p` down from `k - 2` and asked the
+generator search for, e.g., 2^(7-5), which has only 1 admissible generator word for 5
+generated columns, so it raised instead of skipping to a feasible fraction. Caught in the
+manual debug session before shipping.
+
+**Fix:** Fractions whose base factors cannot supply `p` distinct generator words are
+skipped.
+
+**Verification:** `FractionalFactorial(7, resolution=4)` returns the 2^(7-3) resolution-IV
+fraction (`test_fractional_factorial_resolution_target_and_errors`).

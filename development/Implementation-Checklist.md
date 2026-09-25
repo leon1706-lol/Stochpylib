@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 660 / 794 public names implemented.**
+**Progress: 689 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -828,43 +828,43 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `BoundaryElement`
     - [x] `SpectralMethod`
 
-## [experimental_design](../Stochpylib-Obsidian-Vault/Modules/experimental_design.md) — Design of experiments (0/29)
+## [experimental_design](../Stochpylib-Obsidian-Vault/Modules/experimental_design.md) — Design of experiments (29/29)
 
-- [ ] **stochpylib.experimental_design** module overall
-  - [ ] `experimental_design.classical`
-    - [ ] `FullFactorial`
-    - [ ] `FractionalFactorial`
-    - [ ] `Plackett_Burman`
-    - [ ] `CCD`
-    - [ ] `BoxBehnken`
-    - [ ] `LatinSquare`
-    - [ ] `GraecoLatin`
-  - [ ] `experimental_design.optimal`
-    - [ ] `D_OptimalDesign`
-    - [ ] `A_OptimalDesign`
-    - [ ] `G_OptimalDesign`
-    - [ ] `I_OptimalDesign`
-    - [ ] `T_OptimalDesign`
-    - [ ] `BayesianDesign`
-  - [ ] `experimental_design.space_filling`
-    - [ ] `LatinHypercubeDesign`
-    - [ ] `OrthogonalArrayDesign`
-    - [ ] `UniformDesign`
-    - [ ] `MaximinLHD`
-    - [ ] `MinimaxDesign`
-  - [ ] `experimental_design.response_surface`
-    - [ ] `ResponseSurface`
-    - [ ] `MetaModel`
-    - [ ] `PolynomialChaos`
-    - [ ] `KrigingSurrogate`
-    - [ ] `RSM_ANOVA`
-  - [ ] `experimental_design.analysis`
-    - [ ] `ANOVA_DOE`
-    - [ ] `MainEffects`
-    - [ ] `InteractionPlot`
-    - [ ] `NormalPlot`
-    - [ ] `SensitivityIndex`
-    - [ ] `SobolIndex`
+- [x] **stochpylib.experimental_design** module overall
+  - [x] `experimental_design.classical`
+    - [x] `FullFactorial`
+    - [x] `FractionalFactorial`
+    - [x] `Plackett_Burman`
+    - [x] `CCD`
+    - [x] `BoxBehnken`
+    - [x] `LatinSquare`
+    - [x] `GraecoLatin`
+  - [x] `experimental_design.optimal`
+    - [x] `D_OptimalDesign`
+    - [x] `A_OptimalDesign`
+    - [x] `G_OptimalDesign`
+    - [x] `I_OptimalDesign`
+    - [x] `T_OptimalDesign`
+    - [x] `BayesianDesign`
+  - [x] `experimental_design.space_filling`
+    - [x] `LatinHypercubeDesign`
+    - [x] `OrthogonalArrayDesign`
+    - [x] `UniformDesign`
+    - [x] `MaximinLHD`
+    - [x] `MinimaxDesign`
+  - [x] `experimental_design.response_surface`
+    - [x] `ResponseSurface`
+    - [x] `MetaModel`
+    - [x] `PolynomialChaos`
+    - [x] `KrigingSurrogate`
+    - [x] `RSM_ANOVA`
+  - [x] `experimental_design.analysis`
+    - [x] `ANOVA_DOE`
+    - [x] `MainEffects`
+    - [x] `InteractionPlot`
+    - [x] `NormalPlot`
+    - [x] `SensitivityIndex`
+    - [x] `SobolIndex`
 
 ## [statistics](../Stochpylib-Obsidian-Vault/Modules/statistics.md) — Classical statistical toolkit (48/48)
 

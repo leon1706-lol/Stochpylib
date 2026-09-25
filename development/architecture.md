@@ -1,6 +1,6 @@
 # stochpylib Architecture
 
-**Status:** nineteen of 23 planned modules are implemented and tested (660/794
+**Status:** twenty of 23 planned modules are implemented and tested (689/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state). Everything else in the module map below
 remains design spec, not shipped code.
@@ -47,6 +47,7 @@ flowchart LR
     O --> T["stochpylib.robust_statistics<br/>robust location/scale, high-breakdown regression, MCD/MVE/OGK, bootstraps"]
     C --> U["stochpylib.nonparametric<br/>density estimation, resampling/rank tests, dependence measures, local regression"]
     A --> V["stochpylib.optimization<br/>gradient & quasi-Newton methods, metaheuristics, stochastic approximation, constrained solvers"]
+    D --> W["stochpylib.experimental_design<br/>classical, optimal & space-filling designs, response surfaces, sensitivity analysis"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -62,6 +63,7 @@ flowchart LR
     T --> L
     U --> L
     V --> L
+    W --> L
 ```
 
 ## Tech Stack
@@ -76,7 +78,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (235 checks)"]
+    C --> C3["spl --test embedded self-check (250 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -213,10 +215,24 @@ README per module):
   and sample-average approximation reporting its optimality gap as a `montecarlo.MCResult`;
   penalty, augmented-Lagrangian, Lagrangian-relaxation (dual bound), active-set QP and
   relaxed-log-barrier interior-point constrained solvers.
+- `experimental_design/` — full factorials in Yates order and regular fractions (explicit
+  generators or a maximum-resolution/minimum-aberration search, defining relation, alias
+  structure, fold-over), Plackett-Burman from Sylvester/Paley Hadamard matrices over GF(q),
+  rotatable/orthogonal/face/inscribed central composite and Box-Behnken designs, Latin and
+  Graeco-Latin squares (MOLS via GF(q) and Kronecker products) with their ANOVA; D/A/G/I/T-
+  and (pseudo-)Bayesian optimal designs from one multi-start point-exchange engine; Latin
+  hypercube (via `montecarlo.LatinHypercubeSampling`), Morris-Mitchell maximin, minimax,
+  good-lattice-point uniform and Bush orthogonal-array / Tang OA-LHS designs;
+  second-order response surfaces through `statistics.linear_regression` with canonical
+  analysis and `optimization.DifferentialEvolution` box optimization, lack-of-fit RSM
+  ANOVA, polynomial chaos (Legendre/Hermite, `numerical_methods` Gauss rules, analytic
+  Sobol indices), universal kriging on `gaussian_processes` kernels with EI sequential
+  design, CV surrogate selection; contrast/Type II DOE ANOVA, main effects, interaction and
+  Lenth normal-plot data, Morris/SRC/PRCC screening and Saltelli/Jansen Sobol indices as
+  `montecarlo.MCResult`s.
 
-Planned modules (4, in rough implementation order):
-spatial_statistics,
-experimental_design, viz, utils — each lands with the same bar:
+Planned modules (3, in rough implementation order):
+spatial_statistics, viz, utils — each lands with the same bar:
 native implementations, the shared conventions, full tests against independent
 oracles, honest documentation of deviations.
 
@@ -316,6 +332,15 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
   `converged=False` with a message rather than raising, and only genuine usage
   errors raise; Monte Carlo quantities inside a result (`SAA.gap_`, `CEM`'s
   elite estimate) are `montecarlo.MCResult`, never a new result type.
+- **Experimental-design conventions** (established by `experimental_design`): every
+  design class subclasses `DesignGenerator` and `generate()` returns a `Design` — the run
+  matrix in coded `[-1, 1]` (classical/optimal) or unit-cube `[0, 1]` (space-filling)
+  units with factor names (skipping `I`), bounds for `to_natural()` and a `properties`
+  dict; `Design` is the one new result type, because a design is not an estimate.
+  Surrogates subclass `MetaModel` and analyses `fit(...)` returning `self`, reusing
+  `statistics.TestResult`/`RegressionResult` and `montecarlo.MCResult` (Sobol indices);
+  Latin hypercubes, OLS, kernels, Gauss rules and box optimization are delegated to
+  `montecarlo`/`statistics`/`gaussian_processes`/`numerical_methods`/`optimization`.
 
 ## Package Layout Convention
 

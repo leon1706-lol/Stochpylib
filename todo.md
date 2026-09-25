@@ -9,28 +9,30 @@ are for — see `AGENTS.md`).
 
 -----
 
-## V0.16.0 — done
+## V0.17.0 — done
 
-`optimization` shipped end to end (32/32 spec names, 660/794 overall): gradient and
-adaptive-step methods, quasi-Newton/trust-region/Levenberg-Marquardt, seven
-metaheuristics, stochastic approximation, and five constrained solvers. The red
-`test (3.10, *)` jobs from the V0.15.0 push were fixed first (Probleme.md #102), so the
-module landed on a green baseline. Six further bugs found in the manual debug session are
-recorded as Probleme.md #103-#108.
+`experimental_design` shipped end to end (29/29 spec names, 689/794 overall, twenty
+modules): classical/screening/RSM designs, optimal designs, space-filling designs, response
+surfaces and surrogates, and DOE/sensitivity analysis, plus its `smoke (experimental_design)`
+CI job. Two pre-existing library bugs surfaced and were fixed on the way (Probleme.md #109
+Matern hyperparameters never optimized, #110 `MCResult` intervals wrong for levels != 0.95).
 
 ## Next candidate
 
-Four modules remain: `spatial_statistics` (32), `experimental_design` (29), `viz` (35),
-`utils` (38). Smallest-first puts `experimental_design` next, and it has no third-party-dep
-caveat. Two still need an explicit decision before they can start:
+Three modules remain: `spatial_statistics` (32), `viz` (35), `utils` (38). Each needs an
+explicit decision before it can start:
 
-- `viz` implies a plotting-backend decision — matplotlib as a dev-only oracle/example
-  dependency, or a from-scratch SVG/ASCII renderer to keep the zero-runtime-dep policy.
-- `utils.performance` (`GPUBackend`, `JIT_compile()`) implies optional torch/cupy/numba
-  deps and needs a lazy-import design pass first.
+- `spatial_statistics`: its `GaussianRandomField` collides with the one already shipped in
+  `levy_processes` (rename, alias, or re-export).
+- `viz`: a plotting-backend decision — matplotlib as a dev-only oracle/example dependency,
+  or a from-scratch SVG/ASCII renderer to keep the zero-runtime-dep policy. It would also
+  render `experimental_design`'s data-only `InteractionPlot`/`NormalPlot`.
+- `utils.performance` (`GPUBackend`, `JIT_compile()`): optional torch/cupy/numba deps and a
+  lazy-import design pass first.
 
-`spatial_statistics` also needs a naming decision: its `GaussianRandomField` collides with
-the one already shipped in `levy_processes`.
+Hygiene follow-up worth a patch release: a few modules still import `scipy.stats` in library
+code (`montecarlo.sensitivity_analysis`, `gaussian_processes/inference.py`,
+`information_theory` Wasserstein, `levy_processes/advanced.py`) despite the oracle-only rule.
 
 -----
 

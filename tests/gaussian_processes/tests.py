@@ -247,6 +247,23 @@ def test_optimize_hyperparams_recovers_lengthscale():
     assert result["log_marginal_likelihood"] > lml_before - 1e-9
 
 
+@pytest.mark.parametrize("nu", [0.5, 1.5, 2.5])
+def test_optimize_hyperparams_moves_matern_and_keeps_nu_fixed(nu):
+    # regression: nu was log-packed with the continuous parameters, so every trial step
+    # set an invalid nu, was rejected, and the start point came back as "success"
+    rng = np.random.default_rng(96)
+    X = rng.uniform(0, 1, (25, 2))
+    y = np.sin(6 * X[:, 0]) + X[:, 1]
+    inference = gp.GPRegression(gp.MaternKernel(nu=nu, length_scale=np.array([0.5, 0.5])),
+                                noise=1e-6).fit(X, y)
+    lml_before = inference.log_marginal_likelihood_
+    result = gp.optimize_hyperparams(inference)
+    assert result["params"]["nu"] == nu
+    assert result["n_iterations"] > 0
+    assert result["log_marginal_likelihood"] > lml_before + 1.0
+    assert not np.allclose(result["params"]["length_scale"], [0.5, 0.5])
+
+
 def test_cross_validate_gp_returns_valid_structure():
     rng = np.random.default_rng(95)
     X = rng.uniform(-2, 2, 100)[:, None]

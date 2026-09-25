@@ -344,6 +344,9 @@ def run(verbose=False):
                                "KendallTau", "LocalPolynomialReg"]),
         "optimization": (32, ["AdamOptimizer", "BFGS", "ParticleSwarmOptimization",
                               "SPSA", "AugmentedLagrangian"]),
+        "experimental_design": (29, ["FullFactorial", "FractionalFactorial",
+                                     "D_OptimalDesign", "LatinHypercubeDesign",
+                                     "ResponseSurface", "SobolIndex"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -894,6 +897,68 @@ def run(verbose=False):
     st.check("OPTIM: augmented Lagrangian solves min x^2+y^2 s.t. x+y=1",
              bool(np.allclose(al_opt.x_, [0.5, 0.5], atol=1e-5))
              and al_opt.result_.extras["feasible"])
+
+    # experimental_design quick checks
+    from stochpylib.experimental_design import (
+        BoxBehnken as _DoeBB, CCD as _DoeCCD, D_OptimalDesign as _DoeD,
+        FractionalFactorial as _DoeFF, FullFactorial as _DoeFull, GraecoLatin as _DoeGL,
+        MainEffects as _DoeME, MaximinLHD as _DoeMM, NormalPlot as _DoeNP,
+        Plackett_Burman as _DoePB, PolynomialChaos as _DoePCE,
+        ResponseSurface as _DoeRS, SobolIndex as _DoeSobol, UniformDesign as _DoeUD,
+    )
+
+    full_doe = _DoeFull(2, 3).generate()
+    st.check("DOE: 2^3 full factorial has orthogonal columns",
+             full_doe.n_runs == 8 and bool(np.allclose(full_doe.points.T @ full_doe.points,
+                                                       8 * np.eye(3))))
+    st.check("DOE: searched 2^(5-1) fraction reaches resolution V",
+             _DoeFF(5, p=1).generate().properties["resolution"] == 5)
+    pb_doe = _DoePB(11).generate()
+    H_doe = np.column_stack([np.ones(12), pb_doe.points])
+    st.check("DOE: Plackett-Burman(11) is a 12-run Hadamard design",
+             pb_doe.n_runs == 12 and bool(np.allclose(H_doe.T @ H_doe, 12 * np.eye(12))))
+    st.check("DOE: rotatable CCD alpha = F^(1/4)",
+             abs(_DoeCCD(3).generate().properties["alpha"] - 8 ** 0.25) < 1e-12)
+    F_bb, _ = _DoeBB(3).generate().model_matrix("quadratic")
+    st.check("DOE: Box-Behnken(3) supports the full quadratic model",
+             int(np.linalg.matrix_rank(F_bb)) == 10)
+    gl_doe = _DoeGL(4, random_state=0)
+    gl_doe.generate()
+    st.check("DOE: Graeco-Latin square of order 4 is orthogonal",
+             len({(a, b) for a, b in zip(gl_doe.latin_.ravel(), gl_doe.greek_.ravel())}) == 16)
+    d_doe = _DoeD(6, 1, model="quadratic", random_state=0).generate()
+    st.check("DOE: D-optimal quadratic design puts two runs at each of -1, 0, 1",
+             sorted(np.round(d_doe.points[:, 0], 9).tolist()) == [-1, -1, 0, 0, 1, 1])
+    U_doe = np.array([[0.1, 0.2], [0.6, 0.9], [0.8, 0.4]])
+    a_doe = np.abs(U_doe - 0.5)
+    D_doe = np.abs(U_doe[:, None, :] - U_doe[None, :, :])
+    cd_doe = ((13 / 12) ** 2 - 2 / 3 * np.prod(1 + a_doe / 2 - a_doe ** 2 / 2, 1).sum()
+              + np.prod(1 + a_doe[:, None] / 2 + a_doe[None] / 2 - D_doe / 2, 2).sum() / 9)
+    st.check("DOE: centred L2 discrepancy matches its closed form",
+             abs(_DoeUD.discrepancy(U_doe, "CD") - cd_doe) < 1e-14)
+    mm_doe = _DoeMM(8, 2, n_iter=300, random_state=0).generate()
+    st.check("DOE: maximin LHD stays a Latin hypercube",
+             all(sorted(np.floor(mm_doe.points[:, j] * 8).astype(int).tolist())
+                 == list(range(8)) for j in range(2)))
+    ccd_doe = _DoeCCD(2, center=3).generate().points
+    rs_doe = _DoeRS(2).fit(ccd_doe, 5 - (ccd_doe[:, 0] - 0.3) ** 2 - (ccd_doe[:, 1] + 0.2) ** 2)
+    st.check("DOE: response surface recovers an exact stationary point",
+             bool(np.allclose(rs_doe.stationary_point(), [0.3, -0.2], atol=1e-10)))
+    y_doe = np.array([45, 71, 48, 65, 68, 60, 80, 65, 43, 100, 45, 104, 75, 86, 70, 96],
+                     dtype=float)
+    d4_doe = _DoeFull(2, 4).generate()
+    st.check("DOE: main effect A of Montgomery's 2^4 filtration data is 21.625",
+             abs(_DoeME().fit(d4_doe, y_doe).effects_["A"] - 21.625) < 1e-12)
+    st.check("DOE: Lenth's method flags A, C, D, AC, AD as active",
+             set(_DoeNP().fit(d4_doe, y_doe).active_) == {"A", "C", "D", "AC", "AD"})
+    so_doe = _DoeSobol(n_samples=4096, n_bootstrap=20, random_state=0).analyze(
+        lambda X: np.sin(X[:, 0]) + 7 * np.sin(X[:, 1]) ** 2
+        + 0.1 * X[:, 2] ** 4 * np.sin(X[:, 0]), bounds=[(-np.pi, np.pi)] * 3)
+    st.check("DOE: Sobol indices of the Ishigami function match the analytic values",
+             bool(np.allclose(so_doe.S1_, [0.3139, 0.4424, 0.0], atol=0.05)))
+    pce_doe = _DoePCE(2, bounds=[(-1.0, 1.0)]).fit_function(lambda X: X[:, 0] ** 2)
+    st.check("DOE: polynomial chaos gives the exact mean and variance of x^2",
+             abs(pce_doe.mean_ - 1 / 3) < 1e-12 and abs(pce_doe.var_ - 4 / 45) < 1e-12)
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

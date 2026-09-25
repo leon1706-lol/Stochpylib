@@ -13,6 +13,9 @@ from stochpylib.gaussian_processes._utils import _as_2d
 
 __all__ = ["ARD", "MarginalLikelihood", "optimize_hyperparams", "cross_validate_gp"]
 
+# parameters restricted to a discrete set; they stay fixed during optimization
+_DISCRETE_PARAMS = ("nu",)
+
 
 def ARD(dimensions):
     """Initialize an ARD length-scale vector of ones (per-dimension relevance)."""
@@ -62,6 +65,8 @@ def optimize_hyperparams(inference, maxiter=200, verbose=False):
         arr = np.atleast_1d(value)
         if np.any(arr <= 0):
             continue  # non-positive parameters (e.g. constants) are left fixed
+        if name.split("__")[-1] in _DISCRETE_PARAMS:
+            continue  # a continuous step off Matern's closed-form nu is always rejected
         names.append((name, arr.size))
         theta0.extend(np.log(arr))
     theta0 = np.asarray(theta0)

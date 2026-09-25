@@ -3,6 +3,7 @@ from stochpylib import (
     bayesian,
     copulas,
     distributions,
+    experimental_design,
     financial_stochastics,
     gaussian_processes,
     information_theory,
@@ -25,6 +26,7 @@ __all__ = [
     "bayesian",
     "copulas",
     "distributions",
+    "experimental_design",
     "financial_stochastics",
     "gaussian_processes",
     "information_theory",
@@ -42,4 +44,4 @@ __all__ = [
     "timeseries",
 ]
 
-__version__ = "0.16.0"
+__version__ = "0.17.0"

@@ -26,6 +26,7 @@ from stochpylib import (
     bayesian,
     copulas,
     distributions,
+    experimental_design,
     financial_stochastics,
     gaussian_processes,
     information_theory,
@@ -66,6 +67,7 @@ _MODULES = {
     "robust_statistics": robust_statistics,
     "nonparametric": nonparametric,
     "optimization": optimization,
+    "experimental_design": experimental_design,
 }
 
 # Documented public extras beyond the 229 spec names (utilities & result
@@ -102,6 +104,7 @@ _EXTRAS = {
                       "NonparametricRegressor", "AndersonDarling"},
     "optimization": {"Objective", "Optimizer", "PopulationOptimizer",
                      "ConstrainedOptimizer", "OptimizeResult"},
+    "experimental_design": {"Design", "DesignGenerator", "OptimalDesign"},
 }
 
 DISTRIBUTION_METHODS_DOC = (".pdf()/.pmf()", ".cdf()", ".ppf()", ".rvs()",
@@ -134,9 +137,10 @@ def test_total_spec_name_count():
                    "information_theory", "levy_processes",
                    "financial_stochastics", "statistics", "random_matrix",
                    "advanced_mcmc", "numerical_methods", "bayesian",
-                   "robust_statistics", "nonparametric", "optimization")
+                   "robust_statistics", "nonparametric", "optimization",
+                   "experimental_design")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 660  # 660/794 across the nineteen implemented modules
+    assert total == 689  # 689/794 across the twenty implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -166,8 +170,8 @@ def test_every_distribution_class_exposes_common_interface():
 
 def test_top_level_package_wiring():
     assert set(stochpylib.__all__) == {
-        "advanced_mcmc", "bayesian", "copulas", "distributions", "financial_stochastics",
-        "gaussian_processes", "information_theory", "levy_processes",
+        "advanced_mcmc", "bayesian", "copulas", "distributions", "experimental_design",
+        "financial_stochastics", "gaussian_processes", "information_theory", "levy_processes",
         "montecarlo", "nonparametric", "numerical_methods", "optimization",
         "probability", "queueing", "random_matrix", "robust_statistics", "statistics",
         "survival", "timeseries"}
@@ -506,3 +510,54 @@ def test_optimization_agrees_with_statistics_distributions_and_gaussian_processe
     lo, hi = saa.gap_.confidence_interval()
     assert lo <= float(saa.gap_) <= hi
     assert abs(float(saa.x_[0]) - 4.0) < 4 / np.sqrt(2000)
+
+
+def test_experimental_design_agrees_with_statistics_gaussian_processes_montecarlo_and_optimization():
+    """E2E: experimental_design -> statistics/gaussian_processes/montecarlo/optimization.
+    ResponseSurface is statistics.linear_regression on the model matrix; KrigingSurrogate
+    without a trend is gaussian_processes.GPRegression; LatinHypercubeDesign is
+    montecarlo.LatinHypercubeSampling; Sobol indices are montecarlo.MCResults;
+    ResponseSurface.optimize runs optimization.DifferentialEvolution to the grid optimum;
+    and the DOE ANOVA of a balanced two-way layout is statistics.ANOVA's table."""
+    rng = np.random.default_rng(420)
+    ccd = experimental_design.CCD(2, center=5).generate()
+    X = ccd.points
+    y = 5 + X[:, 0] - 2 * X[:, 1] - X[:, 0] ** 2 - 0.5 * X[:, 1] ** 2 + rng.normal(0, 0.1,
+                                                                                   len(X))
+    rs = experimental_design.ResponseSurface(2).fit(X, y)
+    F, _ = ccd.model_matrix("quadratic")
+    ref = statistics.linear_regression(F[:, 1:], y)
+    assert np.allclose(rs.coef_, ref.coef_, atol=1e-12)
+    assert np.allclose(rs.regression_.std_errors_, ref.std_errors_)
+
+    best = rs.optimize(bounds=[(-1, 1), (-1, 1)], maximize=True, random_state=0)
+    g1, g2 = np.meshgrid(np.linspace(-1, 1, 401), np.linspace(-1, 1, 401))
+    grid = np.column_stack([g1.ravel(), g2.ravel()])
+    assert best["value"] == pytest.approx(float(np.max(rs.predict(grid))), abs=1e-4)
+
+    Xk = experimental_design.LatinHypercubeDesign(15, 2, random_state=3).generate().points
+    lhs = montecarlo.LatinHypercubeSampling(dim=2, n=15,
+                                            random_state=np.random.default_rng(3)).generate()
+    assert np.array_equal(Xk, lhs)
+    yk = np.sin(4 * Xk[:, 0]) + Xk[:, 1]
+    kern = gaussian_processes.MaternKernel(nu=2.5, length_scale=0.4)
+    kr = experimental_design.KrigingSurrogate(kernel=kern, trend="none", optimize=False,
+                                              normalize=False, noise=1e-6).fit(Xk, yk)
+    gp = gaussian_processes.GPRegression(gaussian_processes.MaternKernel(nu=2.5,
+                                                                         length_scale=0.4),
+                                         noise=1e-6).fit(Xk, yk)
+    Xt = rng.random((30, 2))
+    assert np.allclose(kr.predict(Xt), gp.predict(Xt, return_std=False), atol=1e-10)
+
+    so = experimental_design.SobolIndex(n_samples=1024, n_bootstrap=20, random_state=0).analyze(
+        lambda Z: Z[:, 0] + 2 * Z[:, 1], bounds=[(0, 1), (0, 1)])
+    assert all(isinstance(r, montecarlo.MCResult) for r in so.first_order_ + so.total_order_)
+    assert np.allclose(so.S1_, [0.2, 0.8], atol=0.03)
+
+    a = np.repeat([0.0, 1.0, 2.0], 8)
+    b = np.tile([0.0, 1.0], 12)
+    yy = a + 0.5 * b + rng.normal(0, 1, 24)
+    mine = {r["source"]: r["ss"] for r in experimental_design.ANOVA_DOE(
+        model="interaction").fit(np.column_stack([a, b]), yy).table_.table}
+    theirs = {r["source"]: r["ss"] for r in statistics.ANOVA(yy, factors=[a, b]).table}
+    assert mine["A"] == pytest.approx(theirs["A"]) and mine["AB"] == pytest.approx(theirs["A:B"])

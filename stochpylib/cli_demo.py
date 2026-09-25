@@ -466,6 +466,52 @@ def _demo_optimization():
           f"{con.x_[1]:.6f})  constraint violation={con.result_.extras['violation']:.1e}")
 
 
+def _demo_experimental_design():
+    from stochpylib.experimental_design import (
+        CCD, D_OptimalDesign, FractionalFactorial, FullFactorial, LatinHypercubeDesign,
+        MaximinLHD, NormalPlot, ResponseSurface, SobolIndex,
+    )
+
+    print("Design of experiments - screening, optimal and space-filling designs,")
+    print("response surfaces and sensitivity analysis:")
+    ff = FractionalFactorial(5, p=1).generate()
+    print(f"  2^(5-1) fraction: {ff.n_runs} runs, generator E={ff.properties['generators']['E']}"
+          f", resolution {ff.properties['resolution']}, AB aliased with "
+          f"{ff.properties['aliases']['AB']}")
+
+    y = np.array([45, 71, 48, 65, 68, 60, 80, 65, 43, 100, 45, 104, 75, 86, 70, 96], float)
+    npl = NormalPlot().fit(FullFactorial(2, 4).generate(), y)
+    print(f"  Montgomery's unreplicated 2^4 filtration data: Lenth PSE={npl.pse_:.3f}  "
+          f"ME={npl.me_:.2f}  active effects {npl.active_}")
+
+    d = D_OptimalDesign(12, 2, model="quadratic", random_state=0).generate()
+    print(f"  12-run D-optimal design for a 2-factor quadratic: D-efficiency="
+          f"{d.properties['D_efficiency']:.3f}  G-efficiency={d.properties['G_efficiency']:.3f}")
+
+    rng = np.random.default_rng(29)
+    ccd = CCD(2, center=5).generate()
+    truth = lambda X: 80 + 4 * X[:, 0] + 2.5 * X[:, 1] - 3 * X[:, 0] ** 2 - 2 * X[:, 1] ** 2 \
+        + 1.2 * X[:, 0] * X[:, 1]
+    rs = ResponseSurface(2).fit(ccd.points, truth(ccd.points) + rng.normal(0, 0.3, ccd.n_runs))
+    can = rs.canonical_analysis()
+    print(f"  CCD ({ccd.n_runs} runs) + quadratic fit: stationary point "
+          f"({can['stationary_point'][0]:.3f}, {can['stationary_point'][1]:.3f}) is a "
+          f"{can['nature']}, predicted yield {can['predicted']:.2f}")
+
+    ish = lambda X: np.sin(X[:, 0]) + 7 * np.sin(X[:, 1]) ** 2 \
+        + 0.1 * X[:, 2] ** 4 * np.sin(X[:, 0])
+    so = SobolIndex(n_samples=4096, n_bootstrap=50, random_state=0).analyze(
+        ish, bounds=[(-np.pi, np.pi)] * 3)
+    print("  Ishigami Sobol indices: S1=" + ", ".join(f"{v:.3f}" for v in so.S1_)
+          + "  ST=" + ", ".join(f"{v:.3f}" for v in so.ST_)
+          + "  (analytic 0.314/0.442/0 and 0.558/0.442/0.244)")
+
+    mm = MaximinLHD(20, 3, n_iter=1000, random_state=0).generate()
+    rnd = LatinHypercubeDesign(20, 3, random_state=0).generate()
+    print(f"  20-run maximin Latin hypercube: min distance {mm.min_distance():.3f} "
+          f"vs {rnd.min_distance():.3f} for a random one")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -486,6 +532,7 @@ DEMOS = {
     "robust_statistics": _demo_robust_statistics,
     "nonparametric": _demo_nonparametric,
     "optimization": _demo_optimization,
+    "experimental_design": _demo_experimental_design,
 }
 DEMO_MODULES = tuple(DEMOS)
 

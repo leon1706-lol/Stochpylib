@@ -355,3 +355,16 @@ def test_result_object_contract():
     assert float(res) == res.estimate
     lo, hi = res.confidence_interval(0.99)
     assert lo < res.estimate < hi
+
+
+@pytest.mark.parametrize("level", [0.5, 0.8, 0.9, 0.95, 0.99, 0.999])
+def test_confidence_interval_half_width_is_the_normal_quantile(level):
+    # regression: every level other than 0.95 used to solve 2*Phi(z)-1 = 1-level, giving
+    # a 99% interval of +/-0.0125 standard errors instead of +/-2.576
+    from scipy import stats
+
+    lo, hi = M.MCResult(estimate=1.0, std_error=2.0).confidence_interval(level)
+    z = stats.norm.ppf(0.5 + level / 2)
+    assert lo == pytest.approx(1.0 - 2.0 * z) and hi == pytest.approx(1.0 + 2.0 * z)
+    with pytest.raises(ValueError):
+        M.MCResult(1.0, 1.0).confidence_interval(1.0)
