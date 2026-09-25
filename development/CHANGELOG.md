@@ -1456,3 +1456,16 @@ Suite: 2203 collected - 2201 passed / 2 skipped. Version 0.16.0.
   - all READMEs and `development/` docs synced, and the vault spec flipped to implemented.
 
 Suite: 2373 collected - 2371 passed / 2 skipped. Version 0.17.0.
+
+- **Post-push CI fix (same phase, unreleased):** `test (3.10, windows-latest)` and
+  `test (3.11, ubuntu-latest)` came back red on GitHub Actions with
+  `AssertionError: assert 'ResponseSurface_0' == 'ResponseSurface_1'` in
+  `test_metamodel_selects_by_cross_validation` (Probleme.md #113) — the test's custom-
+  candidates assertion ran `MetaModel(..., cv=3)` with no `random_state`, and roughly 1 in
+  40 random 3-fold splits of the 13-point CCD strips every factorial run from a training
+  fold, making the quadratic candidate's `A*B` term inestimable so the linear candidate
+  wins by chance. Not a library bug (`MetaModel`'s own `random_state=None` default is the
+  documented convention); switched the test to `cv=13` (leave-one-out, structurally immune
+  to the confound) plus a fixed seed. 500 reruns across seeds all pick the quadratic
+  candidate; `pytest tests/experimental_design/` (157 tests) green, both CI cells rerun
+  green.

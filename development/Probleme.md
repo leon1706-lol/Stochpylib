@@ -2402,3 +2402,29 @@ skipped.
 
 **Verification:** `FractionalFactorial(7, resolution=4)` returns the 2^(7-3) resolution-IV
 fraction (`test_fractional_factorial_resolution_target_and_errors`).
+
+---
+
+### 113. `tests/experimental_design`'s `MetaModel` custom-candidate test used an unseeded 3-fold split, and CI caught the ~1/40 split that flips the winner
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.17.0)
+
+**Problem:** `test_metamodel_selects_by_cross_validation`'s custom-candidates assertion
+called `MetaModel(candidates=..., cv=3).fit(...)` with no `random_state`, so
+`cross_validate`'s k-fold split used a fresh, unseeded RNG every run. On a 13-point CCD, a
+3-fold split has roughly 1/40 odds of removing all 4 factorial runs from one training fold,
+which makes the quadratic candidate's `A*B` term inestimable on that fold and lets the
+linear candidate win the comparison by chance — exactly what CI hit on
+`test (3.10, windows-latest)` and `test (3.11, ubuntu-latest)`, 12 hours after the module
+merged (2201 passed locally is not proof against an unseeded test). Not a library bug:
+`MetaModel`/`cross_validate`'s own default `random_state=None` is the documented,
+sklearn-like convention for library code; only the *test* needed to pin it.
+
+**Fix:** Switched the assertion to `cv=13` (leave-one-out, which never removes more than
+one point so `A*B` stays estimable regardless of the split) and added `random_state=0` so
+the split is reproducible either way.
+
+**Verification:** 500 reruns at `cv=13` across seeds 0-499 (and 200 unseeded reruns) all
+select the quadratic candidate; `tests/experimental_design/tests.py::test_metamodel_selects_by_cross_validation`
+passes locally, and the two previously red CI matrix cells were re-run green
+(`gh run rerun`).

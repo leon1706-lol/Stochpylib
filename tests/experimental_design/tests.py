@@ -869,8 +869,12 @@ def test_metamodel_selects_by_cross_validation():
     cv = ResponseSurface(2).cross_validate(_CCD2, _quad2(_CCD2), k=4, random_state=0)
     assert set(cv) == {"rmse", "q2", "fold_rmse"} and len(cv["fold_rmse"]) == 4
     assert cv["q2"] == pytest.approx(1.0)
-    custom = MetaModel(candidates=[ResponseSurface(1), ResponseSurface(2)], cv=3).fit(
-        _CCD2, _quad2(_CCD2))
+    # cv=13 (leave-one-out): a 3-fold split can by chance remove all 4 factorial runs from
+    # a training fold, leaving A*B inestimable on a 13-point CCD and letting the linear
+    # model win that fold by luck (CI caught this at ~1/40 odds); LOO never drops more than
+    # one point, so it can't break A*B's estimability, and random_state pins the outcome.
+    custom = MetaModel(candidates=[ResponseSurface(1), ResponseSurface(2)], cv=13,
+                       random_state=0).fit(_CCD2, _quad2(_CCD2))
     assert custom.best_name_ == "ResponseSurface_1"
     assert issubclass(ResponseSurface, MetaModel) and issubclass(KrigingSurrogate, MetaModel)
     assert issubclass(PolynomialChaos, MetaModel)
