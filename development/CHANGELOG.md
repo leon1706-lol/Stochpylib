@@ -1469,3 +1469,88 @@ Suite: 2373 collected - 2371 passed / 2 skipped. Version 0.17.0.
   to the confound) plus a fixed seed. 500 reruns across seeds all pick the quadratic
   candidate; `pytest tests/experimental_design/` (157 tests) green, both CI cells rerun
   green.
+
+## Phase 35 — V0.18.0 spatial_statistics: variograms, kriging, random fields, point processes & spatial autocorrelation tests (32 names)
+
+- **One reused-result contract.** Kriging predictions reuse `timeseries.ForecastResult`
+  (`predict_result(X)`); the autocorrelation and nearest-neighbour tests reuse
+  `statistics.TestResult`. `SpatialFunction` is the only new result type, for
+  `RipleyK`/`PairCorrelation`'s summary functions (with an optional Monte Carlo CSR
+  envelope and `L()` transform).
+- **`spatial_statistics.variogram`**: `Variogram` (abstract; `+` nests structures) and
+  `Semivariogram` (spherical/exponential/gaussian/cubic/linear/power/nugget, plus a
+  general-nu Matern via `scipy.special.kv` that matches `gaussian_processes.MaternKernel`
+  exactly at its three closed-form nu values); `SpatialCovariance` bridges to/from a
+  `gaussian_processes` kernel; `ExperimentalVariogram` (Matheron/Cressie-Hawkins/Dowd
+  estimators, optional directional binning); `VariogramFitting` (weighted least squares,
+  or the best of several models by AIC); `Nugget`/`Sill`/`Range` curve estimators.
+- **`spatial_statistics.kriging`**: `Kriging`/`OrdinaryKriging`/`UniversalKriging` share one
+  gamma-Lagrange linear system (so unbounded power/linear variograms work);
+  `SimpleKriging` uses the covariance form directly and matches `GPRegression`'s posterior
+  mean/std to 1e-8; `CoKriging` uses the Markov Model 1 simplification (cross-covariance
+  proportional to the primary's own correlation), guaranteeing validity with no separate
+  cross-variogram fit; `IndicatorKriging` (Deutsch & Journel order-relation-corrected
+  ccdf); `DisjunctiveKriging` (Gaussian anamorphosis, Hermite expansion via
+  `numerical_methods.GaussHermite`, its `He_1` term reused directly for `predict_proba`).
+- **`spatial_statistics.random_fields`**: `GaussianRandomField` (covariance-driven;
+  Cholesky on scattered points, exact circulant embedding on grids, or
+  `method="spectral"` delegating to `levy_processes.GaussianRandomField`'s FFT synthesis —
+  a *separate* class from that one, only meeting at that one entry point);
+  general-nu `MaternField`; `OrnsteinUhlenbeckField` (exact per-axis AR(1) on separable
+  grids); `BrownianSheet`; `FractionalBrownianSheet` (exact via the separable Kronecker
+  Cholesky structure).
+- **`spatial_statistics.point_processes`**: `SpatialPointProcess` base with a shared
+  Diggle `K**(1/4)` minimum-contrast fitter; `PoissonPointProcess`,
+  `InhomogeneousPoisson` (Lewis-Shedler thinning, log-linear MLE), `ThomasProcess`,
+  `MaternCluster`, `LogGaussianCox`; `RipleyK`/`PairCorrelation` are plain functions (per
+  the spec's `()` convention) with translation, quadrature-evaluated isotropic, and border
+  edge corrections.
+- **`spatial_statistics.tests`**: `MoransI`, `GearyC` (Cliff & Ord normality/randomization
+  variances, optional permutation p-value), `SpatialAutocorrelation` (global or local
+  Moran/Geary/Getis-Ord), `NNDistanceTest` (Clark-Evans R with Donnelly's edge correction,
+  or the G-function CSR envelope test) — all four plain functions.
+- **CAR/SAR extras close the vault's long-standing "no CAR/SAR" gap** (`ARCHITECTURE.md`
+  Known Gaps, `Ratings.md`): `SARModel`/`CARModel` (`spatial_statistics.lattice`) maximize a
+  concentrated Gaussian log-likelihood over the spatial-autoregressive parameter, with
+  standard errors from the numerical Hessian (`statistics._common._numeric_hessian`).
+- **`spl show` disambiguates ambiguous public names.** Four names (`Gamma`,
+  `InverseWishart`, `MonteCarloIntegration`, and now `GaussianRandomField`, exported by
+  both `levy_processes` and the new `spatial_statistics`) are exported by more than one
+  module; `spl show <Name>` now lists every owner (`also exported by: ...`), and
+  `spl show <module>.<Name>` / `spl show stochpylib.<module>.<Name>` picks one directly.
+- **scipy.stats hygiene: removed from all 9 remaining library files**
+  (`gaussian_processes/inference.py`, `information_theory/divergences.py`,
+  `levy_processes/advanced.py`, `montecarlo/applications.py`, `survival/regression.py`,
+  `survival/tests.py`, `timeseries/changepoint.py`, `timeseries/latent.py`,
+  `timeseries/tests.py`) — `todo.md` had flagged only 4 of them. A new AST-based guard
+  test (`tests/library/tests.py`) walks every `stochpylib/**/*.py` file so the violation
+  cannot return silently (Probleme.md #114).
+- **Six real bugs fixed on the way** (Probleme.md #115-#119 plus the hygiene entry
+  #114): a `VariogramFitting` nugget-exceeds-sill fit; cluster-process minimum-contrast
+  fitting trying to estimate the (unidentifiable-from-K) offspring count `mu`;
+  `BrownianSheet`'s boundary zeroed after, not before, its cumulative sum (a silently
+  wrong variance); the Donnelly nearest-neighbour edge correction's variance-exponent
+  slip plus its missing mean-bias term; and (caught by running the real `spl demo`, not a
+  unit test) `VariogramFitting` reporting an arbitrarily large, physically meaningless
+  `range` on weakly-structured data, fixed by bounding the search to sane multiples of the
+  observed lags/gamma.
+- **Manual debug session** against the real package before tests were written: a
+  Walker-Lake-style variogram-fit-to-kriging-to-cross-validation workflow; simple kriging
+  vs `GPRegression` and ordinary kriging vs `KrigingSurrogate` identities; exact
+  interpolation and weight-sum-to-one properties; CoKriging vs OK with a correlated and an
+  uncorrelated secondary; disjunctive kriging's convergence to simple kriging under weak
+  spatial correlation; cluster-process and Ripley-K CSR sanity; a hexagonal-lattice
+  Clark-Evans check; circulant-vs-Cholesky and Brownian/fractional-Brownian-sheet variance
+  checks; SAR/CAR parameter recovery; same-seed reproducibility of every stochastic class;
+  and running the real `spl demo spatial_statistics`, which is what surfaced #119.
+- **Every Essential-Tasks.md wrap-up item completed:**
+  - `tests/spatial_statistics/{tests,e2e}.py` added (141 cases);
+  - the library suite gained the scipy.stats AST guard, spec conformance, extras, wiring,
+    and a cross-module test against `gaussian_processes`, `experimental_design` and
+    `levy_processes`;
+  - `tests/docs` counts and stale-claim blacklist updated;
+  - `selftest.py` 250 -> 264 checks (`SPATIAL:` block + 1 `CONFORM` entry);
+  - `spl demo spatial_statistics` added, `ci.yml` `module-smoke` matrix extended;
+  - all READMEs and `development/` docs synced, and the vault spec flipped to implemented.
+
+Suite: 2522 collected - 2520 passed / 2 skipped. Version 0.18.0.

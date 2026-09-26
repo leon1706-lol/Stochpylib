@@ -19,10 +19,18 @@ reproducible bit-for-bit while paying the simulation cost once per session.
 from dataclasses import dataclass, field
 
 import numpy as np
-from scipy import stats
+from scipy import special
 
 from stochpylib.timeseries._result import TestResult
 from stochpylib.timeseries._utils import as_1d, as_2d, nw_lags
+
+
+def _chi2_sf(x, df):
+    return special.chdtrc(df, x)
+
+
+def _f_sf(x, dfn, dfd):
+    return special.fdtrc(dfn, dfd, x)
 
 
 # ---------------------------------------------------------------------------
@@ -308,7 +316,7 @@ def ljung_box(x, lags=10, box_pierce=False, fit_df=0):
             )
         df = max(int(k) - int(fit_df), 1)
         q_stats.append(float(q))
-        p_vals.append(float(stats.chi2.sf(q, df)))
+        p_vals.append(float(_chi2_sf(q, df)))
     return LjungBoxResult([int(k) for k in lags_list], q_stats, p_vals)
 
 
@@ -344,7 +352,7 @@ def arch_test(resid, lags=12):
     lm = float(T * r2)
     return TestResult(
         statistic=lm,
-        pvalue=float(stats.chi2.sf(lm, lags)),
+        pvalue=float(_chi2_sf(lm, lags)),
         null="no ARCH effects (conditional homoskedasticity)",
     )
 
@@ -388,7 +396,7 @@ def granger_causality(x, y, max_lag=4):
         f_stat = ((ssr - ssu) / df1) / (ssu / df2)
         out[L] = TestResult(
             statistic=float(f_stat),
-            pvalue=float(stats.f.sf(f_stat, df1, df2)),
+            pvalue=float(_f_sf(f_stat, df1, df2)),
             null=f"x does not Granger-cause y (lag {L})",
         )
     return out

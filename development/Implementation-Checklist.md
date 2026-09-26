@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 689 / 794 public names implemented.**
+**Progress: 721 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -449,46 +449,46 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `WeakApproximation()`
     - [x] `StrongApproximation()`
 
-## [spatial_statistics](../Stochpylib-Obsidian-Vault/Modules/spatial_statistics.md) — Geostatistics & spatial modeling (0/32)
+## [spatial_statistics](../Stochpylib-Obsidian-Vault/Modules/spatial_statistics.md) — Geostatistics & spatial modeling (32/32)
 
-- [ ] **stochpylib.spatial_statistics** module overall
-  - [ ] `spatial_statistics.random_fields`
-    - [ ] `GaussianRandomField`
-    - [ ] `MaternField`
-    - [ ] `OrnsteinUhlenbeckField`
-    - [ ] `BrownianSheet`
-    - [ ] `FractionalBrownianSheet`
-  - [ ] `spatial_statistics.kriging`
-    - [ ] `Kriging`
-    - [ ] `OrdinaryKriging`
-    - [ ] `UniversalKriging`
-    - [ ] `SimpleKriging`
-    - [ ] `CoKriging`
-    - [ ] `IndicatorKriging`
-    - [ ] `DisjunctiveKriging`
-  - [ ] `spatial_statistics.variogram`
-    - [ ] `Variogram`
-    - [ ] `Semivariogram`
-    - [ ] `SpatialCovariance`
-    - [ ] `ExperimentalVariogram`
-    - [ ] `VariogramFitting`
-    - [ ] `Nugget`
-    - [ ] `Sill`
-    - [ ] `Range`
-  - [ ] `spatial_statistics.point_processes`
-    - [ ] `SpatialPointProcess`
-    - [ ] `PoissonPointProcess`
-    - [ ] `ThomasProcess`
-    - [ ] `MaternCluster`
-    - [ ] `LogGaussianCox`
-    - [ ] `InhomogeneousPoisson`
-    - [ ] `RipleyK()`
-    - [ ] `PairCorrelation()`
-  - [ ] `spatial_statistics.tests`
-    - [ ] `MoransI()`
-    - [ ] `GearyC()`
-    - [ ] `SpatialAutocorrelation()`
-    - [ ] `NNDistanceTest()`
+- [x] **stochpylib.spatial_statistics** module overall
+  - [x] `spatial_statistics.random_fields`
+    - [x] `GaussianRandomField`
+    - [x] `MaternField`
+    - [x] `OrnsteinUhlenbeckField`
+    - [x] `BrownianSheet`
+    - [x] `FractionalBrownianSheet`
+  - [x] `spatial_statistics.kriging`
+    - [x] `Kriging`
+    - [x] `OrdinaryKriging`
+    - [x] `UniversalKriging`
+    - [x] `SimpleKriging`
+    - [x] `CoKriging`
+    - [x] `IndicatorKriging`
+    - [x] `DisjunctiveKriging`
+  - [x] `spatial_statistics.variogram`
+    - [x] `Variogram`
+    - [x] `Semivariogram`
+    - [x] `SpatialCovariance`
+    - [x] `ExperimentalVariogram`
+    - [x] `VariogramFitting`
+    - [x] `Nugget`
+    - [x] `Sill`
+    - [x] `Range`
+  - [x] `spatial_statistics.point_processes`
+    - [x] `SpatialPointProcess`
+    - [x] `PoissonPointProcess`
+    - [x] `ThomasProcess`
+    - [x] `MaternCluster`
+    - [x] `LogGaussianCox`
+    - [x] `InhomogeneousPoisson`
+    - [x] `RipleyK()`
+    - [x] `PairCorrelation()`
+  - [x] `spatial_statistics.tests`
+    - [x] `MoransI()`
+    - [x] `GearyC()`
+    - [x] `SpatialAutocorrelation()`
+    - [x] `NNDistanceTest()`
 
 ## [robust_statistics](../Stochpylib-Obsidian-Vault/Modules/robust_statistics.md) — Outlier-resistant estimators (28/28)
 

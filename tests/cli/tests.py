@@ -375,6 +375,37 @@ def test_show_unknown_suggests_close_matches(capsys):
     assert "Normal" in out  # suggestion
 
 
+def test_show_ambiguous_name_lists_every_owner(capsys):
+    """GaussianRandomField is exported by both levy_processes and spatial_statistics."""
+    assert cli.main(["show", "GaussianRandomField"]) == 0
+    out = capsys.readouterr().out
+    assert "stochpylib.levy_processes.GaussianRandomField" in out
+    assert "also exported by: stochpylib.spatial_statistics" in out
+
+
+def test_show_qualified_name_picks_one_owner(capsys):
+    # each docstring legitimately mentions the other module by name (see their
+    # relationship), so check the qualified header and the absence of the
+    # disambiguation line, not a blanket absence of the other module's name.
+    assert cli.main(["show", "spatial_statistics.GaussianRandomField"]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("stochpylib.spatial_statistics.GaussianRandomField")
+    assert "also exported by" not in out
+
+    capsys.readouterr()
+    assert cli.main(["show", "stochpylib.levy_processes.GaussianRandomField"]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("stochpylib.levy_processes.GaussianRandomField")
+    assert "also exported by" not in out
+
+
+def test_show_unknown_qualified_name_suggests_real_owners(capsys):
+    assert cli.main(["show", "utils.GaussianRandomField"]) == 1
+    out = capsys.readouterr().out
+    assert "unknown qualified name" in out
+    assert "stochpylib.levy_processes" in out and "stochpylib.spatial_statistics" in out
+
+
 def test_show_every_exported_name_resolves():
     """spl show must be able to find every public name of every module."""
     for module_name in stochpylib.__all__:

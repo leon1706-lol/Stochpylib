@@ -15,7 +15,7 @@ this module had a broken predict path and was removed (Probleme [21]).
 """
 
 import numpy as np
-from scipy import special, stats
+from scipy import special
 
 from stochpylib.gaussian_processes._utils import _as_2d
 
@@ -23,9 +23,19 @@ __all__ = [
     "LaplacePropagation", "ExpectationPropagation", "VariationalInference",
 ]
 
+_LOG_SQRT_2PI = 0.5 * np.log(2.0 * np.pi)
+
 
 def _sigmoid(z):
     return special.expit(z)
+
+
+def _norm_cdf(x):
+    return special.ndtr(x)
+
+
+def _norm_logpdf(x):
+    return -0.5 * np.asarray(x, dtype=float) ** 2 - _LOG_SQRT_2PI
 
 
 # ---------------------------------------------------------------------------
@@ -49,7 +59,7 @@ class LaplacePropagation:
         if self.link == "logit":
             p = np.clip(_sigmoid(f), 1e-12, 1 - 1e-12)
         else:
-            p = np.clip(stats.norm.cdf(f), 1e-12, 1 - 1e-12)
+            p = np.clip(_norm_cdf(f), 1e-12, 1 - 1e-12)
         ll = float(np.sum(y01 * np.log(p) + (1 - y01) * np.log(1 - p)))
         d_ll = y01 - p
         w = np.clip(p * (1 - p), 1e-10, None)
@@ -105,7 +115,7 @@ class LaplacePropagation:
             kappa = 1.0 / np.sqrt(1.0 + np.pi * var / 8.0)
             probs = _sigmoid(kappa * mean)
         else:
-            probs = stats.norm.cdf(mean / std)
+            probs = _norm_cdf(mean / std)
         if return_std:
             return probs, std
         return probs
@@ -133,7 +143,7 @@ class ExpectationPropagation:
 
     def _tilted_moments(self, y_signed, mu_cav, sig_cav):
         f = mu_cav + sig_cav * self.nodes
-        log_terms = -0.5 * self.nodes**2 + stats.norm.logpdf(y_signed * f)
+        log_terms = -0.5 * self.nodes**2 + _norm_logpdf(y_signed * f)
         norm = special.logsumexp(log_terms)
         wts = np.exp(log_terms - norm)
         m_hat = float(wts @ f)
@@ -149,7 +159,7 @@ class ExpectationPropagation:
 
         def _tilted(y_s, mu_cav, sig_cav):
             f = mu_cav + sig_cav * self.nodes
-            log_terms = -0.5 * self.nodes**2 + stats.norm.logpdf(y_s * f)
+            log_terms = -0.5 * self.nodes**2 + _norm_logpdf(y_s * f)
             norm = special.logsumexp(log_terms)
             wts = np.exp(log_terms - norm)
             m_hat = float(wts @ f)

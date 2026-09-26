@@ -2428,3 +2428,138 @@ the split is reproducible either way.
 select the quadratic candidate; `tests/experimental_design/tests.py::test_metamodel_selects_by_cross_validation`
 passes locally, and the two previously red CI matrix cells were re-run green
 (`gh run rerun`).
+
+---
+
+### 114. Nine library files imported `scipy.stats` despite AGENTS.md's test-oracle-only rule
+
+**Severity:** 2/10 · **Status:** 🟢 `fixed` (V0.18.0)
+
+**Problem:** `gaussian_processes/inference.py` (norm cdf/logpdf), `information_theory/divergences.py`
+(`wasserstein_distance`), `levy_processes/advanced.py` (`kstest`), `montecarlo/applications.py`
+(`pearsonr`/`spearmanr`), `survival/regression.py` and `survival/tests.py` (norm sf/ppf, chi2 sf),
+and `timeseries/changepoint.py`, `timeseries/latent.py` and `timeseries/tests.py` (t/norm logpdf,
+chi2/f sf) all imported `scipy.stats` at runtime — a policy violation `todo.md` had only partly
+cataloged (4 of the 9 files).
+
+**Fix:** Every site replaced with a native `scipy.special`-based equivalent: reused
+`experimental_design._common._pearson`/`_spearman` and `copulas/elliptical.py`'s
+`_marginal_logpdf_std` where an equivalent already existed elsewhere in the library, and added
+small local helpers (`special.ndtr`/`ndtri`/`chdtrc`/`fdtrc`, a native 1-D Wasserstein-1 via the
+merged-order-statistics identity, `statistics.hypothesis.ks_test` for the Hawkes residual test)
+where none did. A new `ast`-based guard (`tests/library/tests.py::test_library_code_never_imports_scipy_stats`)
+walks every `stochpylib/**/*.py` file so the violation cannot silently return.
+
+**Verification:** Each replacement checked against `scipy.stats` directly (e.g. the native
+Wasserstein-1 and Student-t logpdf match to machine precision); the full suites of all 9 touched
+modules (734 tests) stay green with no tolerance loosened.
+
+---
+
+### 115. `spatial_statistics.VariogramFitting` could fit a nugget larger than the sill, giving a decreasing (nonphysical) semivariogram
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.18.0)
+
+**Problem:** The optimizer's free parameters were `[nugget, sill, range, ...]`, each independently
+bounded at >= 0 (or >= 1e-9), with no constraint that `sill >= nugget`. On noisy or
+weakly-structured data the fit could drive `nugget` above `sill`, making `partial_sill` negative
+and the fitted curve decrease with lag — caught in the manual debug session before shipping.
+
+**Fix:** Reparametrized the optimizer to fit `partial_sill = sill - nugget` directly (bounded
+>= 0) and reconstruct `sill = nugget + partial_sill` when building the `Semivariogram`, so a
+negative partial sill is structurally impossible regardless of the data.
+
+**Verification:** `test_recovers_known_parameters_from_noiseless_curve` and
+`test_selects_true_model_from_a_list` in `tests/spatial_statistics/tests.py`; a synthetic
+pure-nugget curve no longer produces a decreasing fit.
+
+---
+
+### 116. Cluster point-process minimum-contrast fitting tried to estimate `mu` from K, which does not depend on it
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.18.0)
+
+**Problem:** `ThomasProcess._fit`/`MaternCluster._fit` included the offspring count `mu` as a free
+parameter in the Diggle `K**(1/4)` minimum-contrast objective, but the theoretical `K(r)` for a
+Poisson-cluster process depends only on `kappa` and the cluster-shape parameter
+(`sigma`/`radius`) — `mu` only scales the first-order intensity and never appears in `K`. The
+objective was flat along the `mu` direction, and Nelder-Mead drove it to a degenerate near-zero
+value. Caught in the manual debug session (a fit on data simulated with `mu=8` returned
+`mu ~ 1e-127`).
+
+**Fix:** `mu` is no longer part of the minimum-contrast search; `kappa`/`sigma` (or
+`kappa`/`radius`) are fit against `K` alone, then `mu_hat = (n / |W|) / kappa_hat` is derived
+directly from the observed point count. The search was also made multi-start (deterministic
+seed) with a geometric-spacing lag grid, since the flat direction had made the optimizer
+sensitive to its starting point even before this fix.
+
+**Verification:** `TestClusterProcesses` in `tests/spatial_statistics/tests.py` recovers `kappa`,
+`mu` and `sigma`/`radius` within a few standard errors of their true values on simulated data.
+
+---
+
+### 117. `spatial_statistics.BrownianSheet.sample_grid` zeroed the boundary after the cumulative sum, leaving every value contaminated by a discarded random term
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.18.0)
+
+**Problem:** Each axis's noise was scaled and cumulatively summed *before* its origin slice was
+set to zero, so the cumulative sum at every index already included the origin's random draw;
+zeroing the origin afterward removed that value only at the boundary itself, not from any of the
+partial sums built on top of it. The sampled field's variance did not match `s*t` (e.g. ~0.75 vs
+the theoretical 0.48 at one test point) — a silently wrong number that a distributional check
+caught, not a crash.
+
+**Fix:** Each axis's origin slice is zeroed immediately after scaling, before any axis is
+cumulatively summed, so index 0 along every axis contributes exactly zero to every downstream sum.
+
+**Verification:** `test_brownian_sheet_variance_and_zero_boundary` (`tests/spatial_statistics/tests.py`)
+checks `Var(W(s,t)) == s*t` within 5 standard errors over 2000 replicates, and that `W` vanishes
+on both axes.
+
+---
+
+### 118. `spatial_statistics.NNDistanceTest`'s Donnelly edge correction had a variance-formula exponent bug and omitted the mean bias correction
+
+**Severity:** 5/10 · **Status:** 🟢 `fixed` (V0.18.0)
+
+**Problem:** The Donnelly (1978) variance term was implemented as `perim / (n**1.5 * sqrt(lam))`
+instead of `perim * sqrt(vol) / n**2.5`, an algebraic slip made while substituting `vol = n/lam`.
+Separately, only the variance was edge-corrected; the z-test's null mean stayed the naive
+`0.5/sqrt(lambda)`, which is itself biased low under edge truncation (a point's true nearest
+neighbour can lie outside the window), so the significance test was not well calibrated under
+CSR. Caught by a p-value calibration test across simulated CSR patterns.
+
+**Fix:** Corrected the variance term to the direct Donnelly formula, and added the accompanying
+Donnelly mean-correction term (`0.5*sqrt(A/n) + (0.0514 + 0.041/sqrt(n))*P/n`) as the z-test's
+null mean — used only for the p-value, not for `R` itself, which stays the simple, universally
+recognized `r_obs / (0.5/sqrt(lambda))` ratio (matching common software convention; documented in
+the module README as a known small positive finite-window bias in `R`).
+
+**Verification:** `test_csr_pvalues_are_calibrated` checks the CSR rejection rate at alpha=0.05
+across 300 simulated patterns; `test_hexagonal_lattice_clark_evans_near_2149` and
+`test_sar_logdet_via_eigenvalues_matches_slogdet`-style direct checks confirm the corrected
+formula.
+
+---
+
+### 119. `spatial_statistics.VariogramFitting` reported an arbitrarily large, physically meaningless `range` on weakly-structured (near-nugget) data
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.18.0)
+
+**Problem:** With no upper bound on `range`/`partial_sill`, the optimizer could wander an
+unidentifiable flat ridge whenever the experimental variogram was nearly flat (little real
+spatial structure): `spl demo spatial_statistics`'s own dataset (an mostly-iid field with a
+weak linear trend, sample variance ~1.3) fit to a "gaussian" model with `nugget=1.04`,
+`partial_sill=2231`, `range=909` — a plateau reported nearly 100x past the ~6.4 unit lag
+range the data could actually resolve. Caught by running the real CLI demo, not by the unit
+tests (whose synthetic curves all had a true range well inside the observed lags).
+
+**Fix:** Bounded the optimizer's `range` at 3x the maximum observed lag and `partial_sill`
+(and, for `linear`/`power`, the slope) at 5x the maximum observed gamma level — generous
+enough not to constrain any real fit, but tight enough that unidentifiable data reports an
+honest "near its cap" range/sill rather than an arbitrary large number.
+
+**Verification:** The demo now reports `nugget=0.952 sill=1.733 range=19.314` (`19.314 ==
+3 * 6.438`, the capped boundary) on the same data; `tests/spatial_statistics/tests.py`'s
+`TestVariogramFitting` (whose true ranges sit well inside the bound) is unaffected, and the
+full `tests/spatial_statistics` suite (141 cases) stays green.

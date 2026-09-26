@@ -39,6 +39,7 @@ from stochpylib import (
     queueing,
     random_matrix,
     robust_statistics,
+    spatial_statistics,
     statistics,
     survival,
     timeseries,
@@ -68,6 +69,7 @@ _MODULES = {
     "nonparametric": nonparametric,
     "optimization": optimization,
     "experimental_design": experimental_design,
+    "spatial_statistics": spatial_statistics,
 }
 
 # Documented public extras beyond the 229 spec names (utilities & result
@@ -105,6 +107,7 @@ _EXTRAS = {
     "optimization": {"Objective", "Optimizer", "PopulationOptimizer",
                      "ConstrainedOptimizer", "OptimizeResult"},
     "experimental_design": {"Design", "DesignGenerator", "OptimalDesign"},
+    "spatial_statistics": {"SpatialWeights", "SpatialFunction", "SARModel", "CARModel"},
 }
 
 DISTRIBUTION_METHODS_DOC = (".pdf()/.pmf()", ".cdf()", ".ppf()", ".rvs()",
@@ -138,9 +141,9 @@ def test_total_spec_name_count():
                    "financial_stochastics", "statistics", "random_matrix",
                    "advanced_mcmc", "numerical_methods", "bayesian",
                    "robust_statistics", "nonparametric", "optimization",
-                   "experimental_design")
+                   "experimental_design", "spatial_statistics")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 689  # 689/794 across the twenty implemented modules
+    assert total == 721  # 721/794 across the twenty-one implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -173,8 +176,8 @@ def test_top_level_package_wiring():
         "advanced_mcmc", "bayesian", "copulas", "distributions", "experimental_design",
         "financial_stochastics", "gaussian_processes", "information_theory", "levy_processes",
         "montecarlo", "nonparametric", "numerical_methods", "optimization",
-        "probability", "queueing", "random_matrix", "robust_statistics", "statistics",
-        "survival", "timeseries"}
+        "probability", "queueing", "random_matrix", "robust_statistics", "spatial_statistics",
+        "statistics", "survival", "timeseries"}
     # version consistency, never a literal: the installed metadata and the
     # in-code __version__ must agree (a hardcoded literal here broke CI on
     # every version bump — development/Probleme.md [39])
@@ -561,3 +564,66 @@ def test_experimental_design_agrees_with_statistics_gaussian_processes_montecarl
         model="interaction").fit(np.column_stack([a, b]), yy).table_.table}
     theirs = {r["source"]: r["ss"] for r in statistics.ANOVA(yy, factors=[a, b]).table}
     assert mine["A"] == pytest.approx(theirs["A"]) and mine["AB"] == pytest.approx(theirs["A:B"])
+
+
+def test_library_code_never_imports_scipy_stats():
+    """AGENTS.md: scipy.stats is the test suite's independent oracle only, never a runtime
+    import. Walks every stochpylib/*.py file with ast (not a text grep) so a docstring or
+    comment mentioning scipy.stats can't trip a false positive."""
+    import ast
+    import pathlib
+
+    pkg_dir = pathlib.Path(stochpylib.__file__).parent
+    seen = 0
+    for path in pkg_dir.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                assert not node.module.startswith("scipy.stats"), path
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    assert not alias.name.startswith("scipy.stats"), path
+        seen += 1
+    assert seen >= 150  # 174 at the time of writing; a floor, not a pin
+
+
+def test_spatial_statistics_agrees_with_gaussian_processes_experimental_design_and_levy():
+    """E2E: spatial_statistics -> gaussian_processes/experimental_design/levy_processes/
+    statistics/timeseries. Simple kriging with a known mean is exactly the GP posterior;
+    ordinary kriging (constant drift, no hyperparameter optimization) is
+    experimental_design.KrigingSurrogate; spatial_statistics.GaussianRandomField's
+    spectral method delegates to levy_processes.GaussianRandomField; kriging predictions
+    and spatial tests reuse timeseries.ForecastResult / statistics.TestResult."""
+    rng = np.random.default_rng(77)
+    coords = rng.uniform(0, 5, size=(40, 2))
+    v = spatial_statistics.Semivariogram(model="exponential", nugget=0.0, sill=1.0, range=1.0)
+    values = spatial_statistics.GaussianRandomField(covariance=v).sample(coords, random_state=1)
+
+    sk = spatial_statistics.SimpleKriging(variogram=v, mean=0.0).fit(coords, values)
+    gp = gaussian_processes.GPRegression(
+        gaussian_processes.MaternKernel(nu=0.5, length_scale=1.0 / 3.0, variance=1.0),
+        noise=1e-10).fit(coords, values)
+    Xt = rng.uniform(0, 5, size=(15, 2))
+    m1, s1 = sk.predict(Xt, return_std=True)
+    m2, s2 = gp.predict(Xt, return_std=True)
+    assert np.allclose(m1, m2, atol=1e-6) and np.allclose(s1, s2, atol=1e-6)
+
+    ok = spatial_statistics.OrdinaryKriging(variogram=v).fit(coords, values)
+    cov_kernel = spatial_statistics.SpatialCovariance(v).to_kernel()
+    surrogate = experimental_design.KrigingSurrogate(
+        kernel=cov_kernel, trend="constant", normalize=False, optimize=False, noise=1e-10
+    ).fit(coords, values)
+    assert np.allclose(ok.predict(Xt), surrogate.predict(Xt), atol=1e-4)
+
+    spectrum = lambda k: 1.0 / (1.0 + k ** 2)
+    mine = spatial_statistics.GaussianRandomField(method="spectral", spectrum=spectrum)
+    theirs = levy_processes.GaussianRandomField(spectrum=spectrum, shape=(32,), length=1.0)
+    assert np.allclose(mine.sample_grid((32,), spacing=1.0, random_state=5),
+                       theirs.sample(random_state=5))
+
+    r = ok.predict_result(Xt)
+    assert isinstance(r, timeseries.ForecastResult)
+
+    W = spatial_statistics.SpatialWeights.knn(coords, k=6)
+    mi = spatial_statistics.MoransI(values, W)
+    assert isinstance(mi, statistics.TestResult)

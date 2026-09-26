@@ -14,10 +14,16 @@ collapsed filter); mixture components share no cross-component structure.
 """
 
 import numpy as np
-from scipy import stats
 from scipy.special import logsumexp
 
 from stochpylib.timeseries._utils import as_1d, as_2d, lag_matrix
+
+_LOG_SQRT_2PI = 0.5 * np.log(2.0 * np.pi)
+
+
+def _norm_logpdf(x, loc=0.0, scale=1.0):
+    z = (np.asarray(x, dtype=float) - loc) / scale
+    return -0.5 * z * z - np.log(scale) - _LOG_SQRT_2PI
 
 __all__ = [
     "HiddenMarkovModel",
@@ -115,7 +121,7 @@ class HiddenMarkovModel:
         self.random_state = random_state
 
     def _emissions(self, y):
-        return stats.norm.logpdf(y[:, None], self.means_[None, :], self.stds_[None, :])
+        return _norm_logpdf(y[:, None], self.means_[None, :], self.stds_[None, :])
 
     def fit(self, y):
         y = as_1d(y)
@@ -164,21 +170,21 @@ class HiddenMarkovModel:
     def score(self, y=None):
         """Log-likelihood of ``y`` (defaults to the fitted series)."""
         data = as_1d(self._y if y is None else y)
-        emis = stats.norm.logpdf(data[:, None], self.means_[None, :], self.stds_[None, :])
+        emis = _norm_logpdf(data[:, None], self.means_[None, :], self.stds_[None, :])
         _, _, ll = _forward_backward_markov(emis, self.transition_, self.startprob_)
         return ll
 
     def predict_proba(self, y=None):
         """Smoothed state probabilities ``(T, K)``."""
         data = as_1d(self._y if y is None else y)
-        emis = stats.norm.logpdf(data[:, None], self.means_[None, :], self.stds_[None, :])
+        emis = _norm_logpdf(data[:, None], self.means_[None, :], self.stds_[None, :])
         gamma, _, _ = _forward_backward_markov(emis, self.transition_, self.startprob_)
         return gamma
 
     def decode(self, y=None):
         """Most likely hidden-state path (Viterbi)."""
         data = as_1d(self._y if y is None else y)
-        emis = stats.norm.logpdf(data[:, None], self.means_[None, :], self.stds_[None, :])
+        emis = _norm_logpdf(data[:, None], self.means_[None, :], self.stds_[None, :])
         return _viterbi(emis, self.transition_, self.startprob_)
 
 
@@ -223,7 +229,7 @@ def _fit_switching_core(design, target, n_regimes, markov=True,
     for n_iter in range(1, max_iter + 1):
         e = target[:, None] - design @ np.column_stack(coefs)   # (T, K)
         sig = np.asarray(sigmas)
-        lik = stats.norm.logpdf(e, scale=sig[None, :])          # (T, K)
+        lik = _norm_logpdf(e, scale=sig[None, :])          # (T, K)
 
         if markov:
             gamma, xi_sum, ll = _forward_backward_markov(lik, A, pi)

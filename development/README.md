@@ -12,15 +12,16 @@ working on the library — they hold the structure and plan context.
 | [`project_structure.md`](project_structure.md) | The annotated directory tree: what every folder and top-level file is for |
 | [`CHANGELOG.md`](CHANGELOG.md) | Detailed, append-only, per-phase build history: what was built, when, and why |
 | [`Probleme.md`](Probleme.md) | Audit log of bugs and infrastructure issues, each with a severity rating (1–10) and a status from the legend at the top (fixed / partial / closed). Add an entry for every bug you find and fix |
-| [`Implementation-Checklist.md`](Implementation-Checklist.md) | Every planned module/submodule/public name as checkboxes — the single-glance progress tracker (currently 689/794). Update it whenever you implement |
+| [`Implementation-Checklist.md`](Implementation-Checklist.md) | Every planned module/submodule/public name as checkboxes — the single-glance progress tracker (currently 721/794). Update it whenever you implement |
 
 Module status snapshot: `probability`, `distributions`, `montecarlo`,
 `timeseries`, `gaussian_processes`, `copulas`, `survival`, `queueing`,
 `information_theory`, `levy_processes`, `financial_stochastics`, `statistics`,
 `random_matrix`, `advanced_mcmc`, `numerical_methods`, `bayesian`,
-`robust_statistics`, `nonparametric`, `optimization` and `experimental_design` are
-complete and tested (689/794 spec names across twenty modules); all other modules are still
-planned — see the
+`robust_statistics`, `nonparametric`, `optimization`, `experimental_design` and
+`spatial_statistics` are
+complete and tested (721/794 spec names across twenty-one modules); all other modules are
+still planned — see the
 checklist for the authoritative per-name state.
 
 Wrap-up procedure for any task: see the vault's `Essential-Tasks.md`

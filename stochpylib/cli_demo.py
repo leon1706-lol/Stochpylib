@@ -512,6 +512,45 @@ def _demo_experimental_design():
           f"vs {rnd.min_distance():.3f} for a random one")
 
 
+def _demo_spatial_statistics():
+    from stochpylib.spatial_statistics import (
+        ExperimentalVariogram, MoransI, OrdinaryKriging, RipleyK, SpatialWeights,
+        ThomasProcess, VariogramFitting,
+    )
+
+    print("Spatial statistics - variograms, kriging, point processes and spatial")
+    print("autocorrelation tests:")
+    rng = np.random.default_rng(0)
+    coords = rng.uniform(0, 10, size=(80, 2))
+    values = rng.normal(size=80) + 0.15 * coords[:, 0]
+    ev = ExperimentalVariogram(bins=10).fit(coords, values)
+    vf = VariogramFitting(model=["spherical", "exponential", "gaussian"]).fit(ev)
+    print(f"  fitted {vf.variogram_.model} variogram: nugget={vf.variogram_.nugget:.3f}  "
+          f"sill={vf.variogram_.sill:.3f}  range={vf.variogram_.range:.3f}")
+
+    ok = OrdinaryKriging(variogram=vf.variogram_).fit(coords, values)
+    r = ok.predict_result([[5.0, 5.0]])
+    lo, hi = r.confidence_interval(0.95)
+    print(f"  ordinary kriging at (5, 5): {r.mean[0]:.3f} +/- {r.std[0]:.3f}  "
+          f"95% CI [{lo[0]:.3f}, {hi[0]:.3f}]")
+
+    W = SpatialWeights.knn(coords, k=6)
+    mi = MoransI(values, W)
+    print(f"  Moran's I on the trended field: I={mi.statistic:.3f}  p={mi.pvalue:.4f}  "
+          f"(E[I]={mi.extras['expected']:.3f})")
+
+    window = ((0.0, 10.0), (0.0, 10.0))
+    k = RipleyK(coords, window, r=np.array([1.0, 2.0]), n_simulations=99, random_state=1)
+    verdict = "outside" if k.pvalue < 0.05 else "within"
+    print(f"  Ripley K at r=1,2: {np.round(k.estimate, 3).tolist()} vs CSR "
+          f"{np.round(k.theoretical, 3).tolist()}  (p={k.pvalue:.3f}, {verdict} the CSR envelope)")
+
+    tp = ThomasProcess(kappa=0.05, mu=8.0, sigma=0.3, window=window)
+    pts = tp.sample(random_state=2)
+    print(f"  Thomas cluster process (kappa=0.05, mu=8, sigma=0.3): {len(pts)} points sampled, "
+          f"K(1.0)={tp.K(1.0):.3f}  (CSR reference {np.pi:.3f})")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -533,6 +572,7 @@ DEMOS = {
     "nonparametric": _demo_nonparametric,
     "optimization": _demo_optimization,
     "experimental_design": _demo_experimental_design,
+    "spatial_statistics": _demo_spatial_statistics,
 }
 DEMO_MODULES = tuple(DEMOS)
 

@@ -58,6 +58,7 @@ jobs:
           - nonparametric
           - optimization
           - experimental_design
+          - spatial_statistics
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

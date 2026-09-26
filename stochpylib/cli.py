@@ -235,6 +235,14 @@ def _implemented_overview():
             "                   response surfaces with canonical analysis and ANOVA,\n"
             "                   polynomial chaos, kriging surrogates, DOE ANOVA, main\n"
             "                   effects, Lenth normal plots, Morris and Sobol sensitivity",
+        "spatial_statistics":
+            "geostatistics: variogram models and fitting, simple/ordinary/\n"
+            "                   universal/co-/indicator/disjunctive kriging, covariance-\n"
+            "                   driven Gaussian random fields (Cholesky/circulant),\n"
+            "                   Brownian/fractional-Brownian sheets, Poisson/Thomas/\n"
+            "                   Matern-cluster/log-Gaussian-Cox point processes, Ripley's\n"
+            "                   K and pair correlation, Moran's I/Geary's C/Getis-Ord and\n"
+            "                   nearest-neighbour spatial autocorrelation tests",
     }
 
     blocks = []
@@ -380,10 +388,13 @@ def cmd_info():
     return 0
 
 
-def cmd_show(name):
-    """Print the qualified path, signature and docstring of a public name."""
-    import inspect
+def _show_candidates():
+    """``{name: [owning module paths, ...]}`` over every public name in the library.
 
+    A handful of names are exported by more than one module (e.g. ``GaussianRandomField``
+    by both ``levy_processes`` and ``spatial_statistics``); this keeps every owner instead
+    of silently picking one.
+    """
     import stochpylib
 
     candidates = {}
@@ -392,19 +403,55 @@ def cmd_show(name):
         if mod is None:
             continue
         for attr in getattr(mod, "__all__", []):
-            candidates.setdefault(attr, f"stochpylib.{module_name}")
+            candidates.setdefault(attr, []).append(f"stochpylib.{module_name}")
+    return candidates
+
+
+def _show_entry(module_path, name):
+    import inspect
+
+    module = __import__(module_path, fromlist=[name])
+    obj = getattr(module, name)
+    print(f"{module_path}.{name}")
+    try:
+        print(inspect.signature(obj))
+    except (TypeError, ValueError):
+        pass  # builtins / classes without clean signatures
+    doc = inspect.getdoc(obj)
+    if doc:
+        print()
+        print(doc)
+
+
+def cmd_show(name):
+    """Print the qualified path, signature and docstring of a public name.
+
+    ``name`` may be unqualified (searches every module; an ambiguous name prints its
+    first owner, then an ``also exported by:`` line listing the rest) or qualified as
+    ``module.Name`` / ``stochpylib.module.Name`` to pick one owner directly.
+    """
+    candidates = _show_candidates()
+
+    if "." in name:
+        module_part, _, attr = name.rpartition(".")
+        module_path = module_part if module_part == "stochpylib" \
+            or module_part.startswith("stochpylib.") else f"stochpylib.{module_part}"
+        owners = candidates.get(attr, [])
+        if module_path in owners:
+            _show_entry(module_path, attr)
+            return 0
+        print(f"unknown qualified name: {name!r}")
+        if owners:
+            print(f"{attr!r} is exported by: {', '.join(owners)}")
+        return 1
+
     if name in candidates:
-        module = __import__(candidates[name], fromlist=[name])
-        obj = getattr(module, name)
-        print(f"{candidates[name]}.{name}")
-        try:
-            print(inspect.signature(obj))
-        except (TypeError, ValueError):
-            pass  # builtins / classes without clean signatures
-        doc = inspect.getdoc(obj)
-        if doc:
+        owners = candidates[name]
+        _show_entry(owners[0], name)
+        if len(owners) > 1:
             print()
-            print(doc)
+            print(f"also exported by: {', '.join(owners[1:])} "
+                  f"(use '{owners[0]}.{name}' etc. to disambiguate)")
         return 0
     lower_map = {k.lower(): k for k in candidates}
     if name.lower() in lower_map:
@@ -471,8 +518,7 @@ Try a live mini-example:  spl demo <module>   (bare 'spl demo' lists them)
         epilog=(
             "subcommands: update, info, show, demo, cite - run 'spl <command> --help'\n"
             "for details.\n\n"
-            "roadmap: three more modules are planned (spatial_statistics,\n"
-            "viz, utils) -\n"
+            "roadmap: two more modules are planned (viz, utils) -\n"
             "see the repository README and development/Implementation-Checklist.md.\n\n"
             "docs: README.md - contributing: CONTRIBUTING.md - security: SECURITY.md"
         ),

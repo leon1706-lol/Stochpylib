@@ -1,6 +1,6 @@
 # stochpylib Architecture
 
-**Status:** twenty of 23 planned modules are implemented and tested (689/794
+**Status:** twenty-one of 23 planned modules are implemented and tested (721/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state). Everything else in the module map below
 remains design spec, not shipped code.
@@ -48,6 +48,7 @@ flowchart LR
     C --> U["stochpylib.nonparametric<br/>density estimation, resampling/rank tests, dependence measures, local regression"]
     A --> V["stochpylib.optimization<br/>gradient & quasi-Newton methods, metaheuristics, stochastic approximation, constrained solvers"]
     D --> W["stochpylib.experimental_design<br/>classical, optimal & space-filling designs, response surfaces, sensitivity analysis"]
+    F --> X["stochpylib.spatial_statistics<br/>variograms, kriging, random fields, point processes, spatial autocorrelation"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -64,6 +65,7 @@ flowchart LR
     U --> L
     V --> L
     W --> L
+    X --> L
 ```
 
 ## Tech Stack
@@ -78,7 +80,7 @@ flowchart TB
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (250 checks)"]
+    C --> C3["spl --test embedded self-check (264 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -230,9 +232,22 @@ README per module):
   design, CV surrogate selection; contrast/Type II DOE ANOVA, main effects, interaction and
   Lenth normal-plot data, Morris/SRC/PRCC screening and Saltelli/Jansen Sobol indices as
   `montecarlo.MCResult`s.
+- `spatial_statistics/` — variogram models (spherical/exponential/gaussian/general-nu-Matern
+  via `scipy.special.kv`/cubic/linear/power/nugget, nested via `+`) and their fitting
+  (Matheron/Cressie-Hawkins/Dowd estimators, weighted least squares or best-of-several by
+  AIC); simple/ordinary/universal kriging sharing one gamma-Lagrange linear system,
+  co-kriging by the Markov Model 1 simplification, indicator kriging with the
+  order-relation correction, disjunctive kriging via a Hermite expansion of the Gaussian
+  anamorphosis (`numerical_methods.GaussHermite`); covariance-driven Gaussian random
+  fields (exact Cholesky/circulant embedding, or `method="spectral"` delegating to
+  `levy_processes.GaussianRandomField`), general-nu Matern fields, per-axis-exact
+  Ornstein-Uhlenbeck fields, Brownian/fractional-Brownian sheets; Poisson/inhomogeneous-
+  Poisson/Thomas/Matern-cluster/log-Gaussian-Cox point processes fit by Diggle
+  minimum-contrast on Ripley's K; Moran's I/Geary's C/Getis-Ord/Clark-Evans spatial
+  autocorrelation tests; `SARModel`/`CARModel` lattice-model extras.
 
-Planned modules (3, in rough implementation order):
-spatial_statistics, viz, utils — each lands with the same bar:
+Planned modules (2, in rough implementation order):
+viz, utils — each lands with the same bar:
 native implementations, the shared conventions, full tests against independent
 oracles, honest documentation of deviations.
 
@@ -341,6 +356,14 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
   `statistics.TestResult`/`RegressionResult` and `montecarlo.MCResult` (Sobol indices);
   Latin hypercubes, OLS, kernels, Gauss rules and box optimization are delegated to
   `montecarlo`/`statistics`/`gaussian_processes`/`numerical_methods`/`optimization`.
+- **Spatial-statistics conventions** (established by `spatial_statistics`): kriging
+  predictions reuse `timeseries.ForecastResult` and spatial tests reuse
+  `statistics.TestResult`, so `SpatialFunction` (Ripley's K / pair-correlation summary
+  functions) is the only new result type. A module owning two related concepts under one
+  spec name that another module already used (`GaussianRandomField`, also in
+  `levy_processes`) ships as a genuinely separate class rather than a re-export — `spl
+  show` was extended to list every owner and accept a qualified `module.Name` — and only
+  delegates to the earlier one when its own documented `method="spectral"` option is used.
 
 ## Package Layout Convention
 
@@ -354,8 +377,8 @@ the module `__init__.py`. Tests live outside the package entirely
 
 ## Known Gaps (from the design scorecard)
 
-The two lowest-scored areas as currently specced (see the vault's
-`Ratings.md`): spatial statistics (8/10 — no CAR/SAR models) and Bayesian
-inference (9/10 — variational inference thin relative to its computation
-section). When those modules get implemented, treat these as first follow-ups
-rather than re-deriving scope.
+Spatial statistics's gap (no CAR/SAR models) was closed at implementation time —
+`spatial_statistics.SARModel`/`CARModel` ship as documented extras (see the vault's
+`Ratings.md`). The remaining lowest-scored area as currently specced: Bayesian inference
+(9/10 — variational inference thin relative to its computation section). When that module
+gets extended, treat this as the first follow-up rather than re-deriving scope.

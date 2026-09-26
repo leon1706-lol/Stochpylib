@@ -347,6 +347,8 @@ def run(verbose=False):
         "experimental_design": (29, ["FullFactorial", "FractionalFactorial",
                                      "D_OptimalDesign", "LatinHypercubeDesign",
                                      "ResponseSurface", "SobolIndex"]),
+        "spatial_statistics": (32, ["Kriging", "OrdinaryKriging", "ExperimentalVariogram",
+                                    "MaternField", "RipleyK", "MoransI"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -959,6 +961,88 @@ def run(verbose=False):
     pce_doe = _DoePCE(2, bounds=[(-1.0, 1.0)]).fit_function(lambda X: X[:, 0] ** 2)
     st.check("DOE: polynomial chaos gives the exact mean and variance of x^2",
              abs(pce_doe.mean_ - 1 / 3) < 1e-12 and abs(pce_doe.var_ - 4 / 45) < 1e-12)
+
+    # spatial_statistics quick checks
+    from stochpylib.spatial_statistics import (
+        BrownianSheet as _SpBS, ExperimentalVariogram as _SpEV,
+        GaussianRandomField as _SpGRF, MoransI as _SpMoran,
+        NNDistanceTest as _SpNN, OrdinaryKriging as _SpOK,
+        PoissonPointProcess as _SpPois, Semivariogram as _SpSV,
+        SimpleKriging as _SpSK, SpatialWeights as _SpW,
+    )
+    from stochpylib.gaussian_processes import GPRegression as _SpGP, MaternKernel as _SpMatK
+    from stochpylib.cli import _show_candidates
+
+    sv_sp = _SpSV(model="spherical", nugget=0.2, sill=1.0, range=2.0)
+    st.check("SPATIAL: gamma(0) == 0", sv_sp(0.0) == 0.0)
+    st.check("SPATIAL: spherical reaches the sill exactly at range",
+             abs(sv_sp(2.0) - 1.0) < 1e-12)
+
+    coords_sp = np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [2.0, 1.0]])
+    z_sp = np.array([1.0, 2.0, -1.0, 0.5])
+    v_sp = _SpSV(model="exponential", nugget=0.0, sill=1.0, range=1.0)
+    ok_sp = _SpOK(variogram=v_sp).fit(coords_sp, z_sp)
+    st.check("SPATIAL: ordinary kriging interpolates exactly at data points",
+             bool(np.allclose(ok_sp.predict(coords_sp), z_sp, atol=1e-6)))
+    w_sp, _ = ok_sp.weights(np.array([0.5, 0.5]))
+    st.check("SPATIAL: ordinary kriging weights sum to 1", abs(w_sp.sum() - 1.0) < 1e-8)
+
+    sk_sp = _SpSK(variogram=v_sp, mean=0.0).fit(coords_sp, z_sp)
+    gp_sp = _SpGP(_SpMatK(nu=0.5, length_scale=1.0 / 3.0, variance=1.0), noise=1e-10)
+    gp_sp.fit(coords_sp, z_sp)
+    m_sk, _ = sk_sp.predict(np.array([[0.5, 0.5]]), return_std=True)
+    m_gp, _ = gp_sp.predict(np.array([[0.5, 0.5]]), return_std=True)
+    st.check("SPATIAL: simple kriging matches GP regression",
+             abs(m_sk[0] - m_gp[0]) < 1e-6)
+
+    ev_sp = _SpEV(bins=2, max_dist=2.5).fit(coords_sp, z_sp)
+    h01 = float(np.linalg.norm(coords_sp[0] - coords_sp[1]))
+    brute_first_bin = [(i, j) for i in range(4) for j in range(i + 1, 4)
+                       if np.linalg.norm(coords_sp[i] - coords_sp[j]) <= ev_sp.bin_edges_[1]]
+    brute_gamma0 = 0.5 * np.mean([(z_sp[i] - z_sp[j]) ** 2 for i, j in brute_first_bin])
+    st.check("SPATIAL: Matheron estimator matches a brute-force bin average",
+             abs(ev_sp.gamma_[0] - brute_gamma0) < 1e-10)
+
+    bs_sp = _SpBS(extent=(1.0, 1.0)).sample_grid((5, 5), random_state=0)
+    st.check("SPATIAL: Brownian sheet vanishes on both axes",
+             bool(np.all(bs_sp[0, :] == 0.0) and np.all(bs_sp[:, 0] == 0.0)))
+
+    grf_c_sp = _SpGRF(covariance=v_sp, method="circulant")
+    grf_l_sp = _SpGRF(covariance=v_sp, method="cholesky")
+    gc_sp = grf_c_sp.sample_grid((12, 12), spacing=0.3, n_samples=200, random_state=1)
+    gl_sp = grf_l_sp.sample_grid((12, 12), spacing=0.3, n_samples=200, random_state=2)
+    st.check("SPATIAL: circulant-embedding variance matches Cholesky",
+             abs(gc_sp.std() - gl_sp.std()) < 0.15)
+
+    st.check("SPATIAL: homogeneous Poisson K(r) == pi*r^2 (2-D)",
+             bool(np.allclose(_SpPois(1.0, ((0, 1), (0, 1))).K(np.array([0.2, 0.4])),
+                              np.pi * np.array([0.2, 0.4]) ** 2)))
+
+    w_moran_sp = _SpW.lattice((4, 4), rule="rook")
+    n_moran_sp = w_moran_sp.n
+    moran_sp = _SpMoran(np.arange(n_moran_sp, dtype=float), w_moran_sp)
+    st.check("SPATIAL: Moran's I expectation is -1/(n-1)",
+             abs(moran_sp.extras["expected"] - (-1.0 / (n_moran_sp - 1))) < 1e-12)
+
+    hex_pts = np.array([(j + (0.5 if i % 2 else 0.0), i * np.sqrt(3) / 2.0)
+                        for i in range(20) for j in range(20)])
+    hex_w = ((0.0, 19.5), (0.0, 19.0 * np.sqrt(3) / 2.0))
+    ce_sp = _SpNN(hex_pts, hex_w, edge="donnelly")
+    st.check("SPATIAL: Clark-Evans R on a hexagonal lattice is near 2.149",
+             abs(ce_sp.statistic - 2.149) < 0.1)
+
+    W_sar_sp = _SpW.lattice((5, 5)).row_standardize().W
+    eig_sar_sp = np.linalg.eigvals(W_sar_sp).real
+    rho_sar_sp = 0.3
+    logdet_eig = float(np.sum(np.log(np.abs(1.0 - rho_sar_sp * eig_sar_sp))))
+    _, logdet_direct = np.linalg.slogdet(np.eye(25) - rho_sar_sp * W_sar_sp)
+    st.check("SPATIAL: SAR log-det via eigenvalues matches slogdet",
+             abs(logdet_eig - logdet_direct) < 1e-8)
+
+    show_candidates = _show_candidates()
+    st.check("SPATIAL: GaussianRandomField is ambiguous (levy_processes + spatial_statistics)",
+             set(show_candidates.get("GaussianRandomField", [])) ==
+             {"stochpylib.levy_processes", "stochpylib.spatial_statistics"})
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

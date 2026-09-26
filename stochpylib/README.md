@@ -3,7 +3,7 @@
 The installable package: one subpackage per library module behind a single
 load-bearing contract — every distribution exposes the same method set, every
 stochastic method takes `random_state=`, every Monte Carlo estimator returns a
-shared result object. Twenty subpackages live today (689/794 spec names):
+shared result object. Twenty-one subpackages live today (721/794 spec names):
 
 | Subpackage | Spec names | What it owns | Guide |
 |---|---|---|---|
@@ -27,6 +27,7 @@ shared result object. Twenty subpackages live today (689/794 spec names):
 | `nonparametric/` | 31 | kernel/adaptive/kNN/orthogonal-series/log-spline density estimation, empirical distribution/CDF/characteristic-function estimators, Glivenko-Cantelli & empirical likelihood, permutation/bootstrap/rank hypothesis tests, Spearman/Kendall/distance/Hoeffding dependence measures, local-polynomial/isotonic/spline/quantile regression | [README](nonparametric/README.md) |
 | `optimization/` | 32 | gradient descent and the adaptive-step family, Newton/BFGS/L-BFGS/conjugate-gradient/trust-region/Levenberg-Marquardt, simulated annealing, genetic algorithms, particle swarm, differential evolution, ant colony, CMA-ES, GP-surrogate Bayesian optimization, Robbins-Monro/Kiefer-Wolfowitz/SPSA, cross-entropy method, sample-average approximation, penalty/augmented-Lagrangian/active-set/interior-point solvers | [README](optimization/README.md) |
 | `experimental_design/` | 29 | full/fractional factorials (resolution, aliases, fold-over), Plackett-Burman, central composite, Box-Behnken, Latin/Graeco-Latin squares, D/A/G/I/T- and Bayesian optimal designs, Latin hypercube/maximin/minimax/uniform/orthogonal-array designs, response surfaces with canonical analysis and ANOVA, polynomial chaos, kriging surrogates, DOE ANOVA, main effects, interaction/normal-plot data with Lenth's method, Morris/SRC/PRCC and Sobol sensitivity | [README](experimental_design/README.md) |
+| `spatial_statistics/` | 32 | variogram models and fitting, simple/ordinary/universal/co-/indicator/disjunctive kriging, covariance-driven Gaussian random fields (Cholesky/circulant), Matern/Ornstein-Uhlenbeck fields, Brownian/fractional-Brownian sheets, Poisson/Thomas/Matern-cluster/log-Gaussian-Cox point processes, Ripley's K and pair correlation, Moran's I/Geary's C/Getis-Ord/nearest-neighbour tests | [README](spatial_statistics/README.md) |
 
 Package-level files:
 
@@ -37,8 +38,8 @@ Package-level files:
   `cite` subcommands.
 - `cli_pypi.py` — offline-safe PyPI metadata access (fetch, 24 h cache,
   version parsing, install-mode detection) behind `--version` and `update`.
-- `cli_demo.py` — the twenty live mini-examples behind `spl demo <module>`.
-- `selftest.py` — the 250-check self-check suite shipped inside the wheel,
+- `cli_demo.py` — the twenty-one live mini-examples behind `spl demo <module>`.
+- `selftest.py` — the 264-check self-check suite shipped inside the wheel,
   runnable from any pip install without pytest or a source checkout.
 
 Target API for every planned module lives in the private Obsidian vault

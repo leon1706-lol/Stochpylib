@@ -67,6 +67,21 @@ class JensenShannonDivergence:
         return cls().fit(p, q).result_
 
 
+def _wasserstein_1d(u, v):
+    """1-D Wasserstein-1 (Earth Mover's) distance between two unweighted samples.
+
+    ``integral |F_u(x) - F_v(x)| dx`` via the merged-order-statistics identity (the same
+    algorithm ``scipy.stats.wasserstein_distance`` uses for the unweighted case).
+    """
+    u = np.sort(np.asarray(u, dtype=float))
+    v = np.sort(np.asarray(v, dtype=float))
+    all_values = np.sort(np.concatenate([u, v]))
+    deltas = np.diff(all_values)
+    u_cdf = np.searchsorted(u, all_values[:-1], side="right") / len(u)
+    v_cdf = np.searchsorted(v, all_values[:-1], side="right") / len(v)
+    return float(np.sum(np.abs(u_cdf - v_cdf) * deltas))
+
+
 def js_divergence_fn(p, q):
     """Standalone JS divergence function."""
     from stochpylib.information_theory.divergences import (
@@ -79,10 +94,8 @@ class WassersteinDistance:
     """Earth Mover's (Wasserstein-1) distance between samples."""
 
     def fit(self, x, y):
-        from scipy.stats import wasserstein_distance
-        self.result_ = float(wasserstein_distance(
-            np.asarray(x, dtype=float).ravel(),
-            np.asarray(y, dtype=float).ravel()))
+        self.result_ = _wasserstein_1d(
+            np.asarray(x, dtype=float).ravel(), np.asarray(y, dtype=float).ravel())
         return self
 
     @classmethod

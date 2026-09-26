@@ -142,7 +142,7 @@ def sensitivity_analysis(fn, input_distributions, n=100_000, method="correlation
     Samples each input independently from its distribution, evaluates ``fn``, and reports
     Pearson and Spearman correlations between every input and the output.
     """
-    from scipy import stats as spt
+    from stochpylib.experimental_design._common import _pearson, _spearman
 
     rng = np.random.default_rng(random_state)
     cols = [np.atleast_1d(d.rvs(n, random_state=rng)).astype(float) for d in input_distributions]
@@ -150,7 +150,5 @@ def sensitivity_analysis(fn, input_distributions, n=100_000, method="correlation
     y = np.asarray(fn(X), dtype=float).reshape(-1)
     out = {}
     for j, _ in enumerate(cols):
-        pearson = float(spt.pearsonr(X[:, j], y)[0])
-        spearman = float(spt.spearmanr(X[:, j], y)[0])
-        out[j] = {"pearson": pearson, "spearman": spearman}
+        out[j] = {"pearson": _pearson(X[:, j], y), "spearman": _spearman(X[:, j], y)}
     return out

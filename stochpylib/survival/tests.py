@@ -12,9 +12,13 @@ chi-square test with (groups - 1) degrees of freedom.
 """
 
 import numpy as np
-from scipy import stats as sps
+from scipy import special
 
 from stochpylib.survival._base import _check_durations_events
+
+
+def _chi2_sf(x, df):
+    return special.chdtrc(df, x)
 
 __all__ = [
     "LogRankTest", "WilcoxonSurvival", "TaroneWareTest", "PetoTest",
@@ -89,7 +93,7 @@ def _weighted_logrank(durations, events, groups, weight_fn):
     return {
         "test_statistic": stat,
         "degrees_of_freedom": dfree,
-        "p_value": float(sps.chi2.sf(stat, dfree)),
+        "p_value": float(_chi2_sf(stat, dfree)),
         "observed": obs_vec,
         "expected": exp_vec,
         "groups": g_labels,

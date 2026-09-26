@@ -2,13 +2,21 @@
 Aalen additive hazards and Fine-Gray subdistribution regression."""
 
 import numpy as np
-from scipy import optimize
+from scipy import optimize, special
 
 from stochpylib.survival._base import _check_durations_events
 from stochpylib.survival.nonparametric import (
     BreslowEstimator,
     KaplanMeier,
 )
+
+
+def _norm_sf(x):
+    return special.ndtr(-np.asarray(x, dtype=float))
+
+
+def _norm_ppf(p):
+    return special.ndtri(np.asarray(p, dtype=float))
 
 __all__ = [
     "CoxProportionalHazards", "StratifiedCox", "AcceleratedFailureTime",
@@ -187,13 +195,12 @@ class CoxProportionalHazards:
         self.variance_matrix_ = var
         se = np.sqrt(np.clip(np.diag(var), 0.0, np.inf))
         self.standard_errors_ = se
-        from scipy import stats as sps
         self.z_scores_ = beta / np.where(se > 0, se, np.nan)
-        self.p_values_ = 2.0 * sps.norm.sf(np.abs(self.z_scores_))
+        self.p_values_ = 2.0 * _norm_sf(np.abs(self.z_scores_))
         self.hazard_ratios_ = np.exp(beta)
         self.confidence_intervals_ = np.exp(np.column_stack(
-            [beta - sps.norm.ppf(1 - self.alpha / 2) * se,
-             beta + sps.norm.ppf(1 - self.alpha / 2) * se]))
+            [beta - _norm_ppf(1 - self.alpha / 2) * se,
+             beta + _norm_ppf(1 - self.alpha / 2) * se]))
         self.baseline_ = BreslowEstimator().fit(
             t, e, np.exp(np.clip(X @ beta, -300, 300)))
         self.concordance_index_ = _concordance_index(t, e, X @ beta)
@@ -315,9 +322,8 @@ class StratifiedCox(CoxProportionalHazards):
         self.variance_matrix_ = var
         se = np.sqrt(np.clip(np.diag(var), 0, np.inf))
         self.standard_errors_ = se
-        from scipy import stats as sps
         self.z_scores_ = beta / np.where(se > 0, se, np.nan)
-        self.p_values_ = 2.0 * sps.norm.sf(np.abs(self.z_scores_))
+        self.p_values_ = 2.0 * _norm_sf(np.abs(self.z_scores_))
         self.hazard_ratios_ = np.exp(beta)
         self.confidence_intervals_ = np.exp(np.column_stack(
             [beta - 1.96 * se, beta + 1.96 * se]))
@@ -543,9 +549,8 @@ class FineGrayModel:
         self.variance_matrix_ = var
         se = np.sqrt(np.clip(np.diag(var), 0, np.inf))
         self.standard_errors_ = se
-        from scipy import stats as sps
         self.z_scores_ = beta / np.where(se > 0, se, np.nan)
-        self.p_values_ = 2.0 * sps.norm.sf(np.abs(self.z_scores_))
+        self.p_values_ = 2.0 * _norm_sf(np.abs(self.z_scores_))
         self.hazard_ratios_ = np.exp(beta)
         self.censoring_survival_ = km_c
         return self

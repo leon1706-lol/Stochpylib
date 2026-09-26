@@ -7,7 +7,7 @@ time-rescaling residual KS test. Everything is seeded via ``random_state=``.
 """
 
 import numpy as np
-from scipy import optimize, stats
+from scipy import optimize
 
 __all__ = [
     "SemiMarkovProcess", "RenewalProcess", "BranchingProcess", "HawkesProcess",
@@ -151,8 +151,10 @@ class HawkesProcess:
         tail = mu * tail_gap + (alpha / beta) * (1.0 + R[-1]) \
             * (1.0 - np.exp(-beta * tail_gap))
         gaps = np.concatenate((comp, [tail]))
-        stat, p = stats.kstest(gaps, "expon", args=(0, 1))
-        return float(stat), float(p)
+        from stochpylib.statistics.hypothesis import ks_test
+
+        result = ks_test(gaps, "Exponential", args=(1.0,))
+        return float(result.statistic), float(result.pvalue)
 
 
 class MultivariateHawkes:

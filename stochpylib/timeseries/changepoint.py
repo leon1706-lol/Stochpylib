@@ -11,10 +11,15 @@ support truncated at ``max_run`` for memory.
 from dataclasses import dataclass, field
 
 import numpy as np
-from scipy import stats
 from scipy.special import logsumexp
 
+from stochpylib.copulas.elliptical import _marginal_logpdf_std
 from stochpylib.timeseries._utils import as_1d
+
+
+def _t_logpdf(x, df, loc, scale):
+    """Location-scale Student-t log-density, reusing the standardized-t density."""
+    return _marginal_logpdf_std((np.asarray(x, dtype=float) - loc) / scale, df) - np.log(scale)
 
 __all__ = [
     "ChangePointResult",
@@ -195,7 +200,7 @@ class BayesianChangePoint:
     @staticmethod
     def _student_logpdf(x, df, loc, scale):
         scale = max(scale, 1e-300)
-        return stats.t.logpdf(x, df, loc=loc, scale=scale)
+        return _t_logpdf(x, df, loc, scale)
 
     def fit(self, y):
         y = as_1d(y)
@@ -217,7 +222,7 @@ class BayesianChangePoint:
             mu_post = (kappa0 * mu0 + n * xbar) / kappa_n
             beta_n = beta0 + 0.5 * M2 + kappa0 * n * (xbar - mu0) ** 2 / (2.0 * kappa_n)
             scale2 = beta_n * (kappa_n + 1.0) / (alpha_n * kappa_n)
-            return stats.t.logpdf(x, df=2 * alpha_n, loc=mu_post, scale=np.sqrt(scale2))
+            return _t_logpdf(x, 2 * alpha_n, mu_post, np.sqrt(scale2))
 
         def add_observation(r, x):
             n, xbar, M2 = stats_by_run[r]
@@ -228,7 +233,7 @@ class BayesianChangePoint:
         def student_prior_pred(x):
             """Predictive of the RESET hypothesis: NIG prior, empty run."""
             scale2 = beta0 * (kappa0 + 1.0) / (alpha0 * kappa0)
-            return stats.t.logpdf(x, df=2 * alpha0, loc=mu0, scale=np.sqrt(scale2))
+            return _t_logpdf(x, 2 * alpha0, mu0, np.sqrt(scale2))
 
         log_R = np.full(max_run + 1, -np.inf)
         log_R[0] = 0.0
