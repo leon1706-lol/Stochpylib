@@ -171,3 +171,42 @@ def save(fig, path):
     mfig = to_matplotlib(fig)
     mfig.savefig(path)
     return path
+
+
+_NON_INTERACTIVE_BACKENDS = ("agg", "cairo", "pdf", "pgf", "ps", "svg", "template")
+
+
+def show(fig):
+    """Display ``fig`` with matplotlib.
+
+    A ``matplotlib.figure.Figure`` built directly (as ``to_matplotlib()`` does, by
+    design, to avoid pyplot's global state) has no canvas manager, so ``Figure.show()``
+    on it always raises -- that call only works for figures pyplot itself created. With
+    a genuinely interactive backend, build the figure through ``pyplot`` instead so
+    ``show()`` is supported; with a non-interactive one (Agg, PDF, ...) there is no
+    window to pop up regardless, so fall back to writing a temp image and opening it.
+    """
+    matplotlib, _ = _import_mpl()
+    backend = matplotlib.get_backend().lower()
+    if any(name in backend for name in _NON_INTERACTIVE_BACKENDS):
+        import os
+        import tempfile
+        import webbrowser
+
+        fd, path = tempfile.mkstemp(suffix=".png")
+        os.close(fd)
+        save(fig, path)
+        webbrowser.open(f"file://{path}")
+        return path
+
+    import matplotlib.pyplot as plt
+
+    pfig = plt.figure(figsize=(fig.width / 100.0, fig.height / 100.0), layout="constrained")
+    mpl_axes = pfig.subplots(nrows=fig.nrows, ncols=fig.ncols, squeeze=False)
+    for i, axes in enumerate(fig.axes):
+        row, col = divmod(i, fig.ncols)
+        draw_axes(mpl_axes[row][col], axes)
+    if fig.title:
+        pfig.suptitle(fig.title)
+    plt.show()
+    return pfig

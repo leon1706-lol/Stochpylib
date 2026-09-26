@@ -423,9 +423,9 @@ class Figure:
                 fh.write(self.to_svg())
             webbrowser.open(f"file://{path}")
             return path
-        fig = self.to_matplotlib()
-        fig.show()
-        return fig
+        from stochpylib.viz._mpl import show
+
+        return show(self)
 
     def __repr__(self):
         n_artists = sum(len(a.artists) for a in self.axes)
