@@ -146,13 +146,18 @@ def CWTTransform(x, scales=None, fs=1.0, wavelet="morlet", omega0=6.0):
         raise NotImplementedError("only the Morlet wavelet is implemented")
 
     n = len(x)
-    padded = np.concatenate([x[::-1], x, x[::-1]])
-    P_f = np.fft.rfft(padded)
+    # Pad by at least each wavelet's own half-support (not just n): a 'valid' convolution
+    # needs padded_len - wavelet_len + 1 >= n, which a fixed n-sample pad violates once a
+    # scale's wavelet exceeds ~2n in length (the default max scale n/8 always does).
+    max_length = max((int(np.ceil(10.0 * s)) for s in scales), default=0)
+    pad = max(n, max_length, 1)
+    padded = np.pad(x, pad, mode="reflect")
     coeffs = np.empty((len(scales), n), dtype=complex)
     for i, s in enumerate(scales):
         psi = morlet(s)
         conv = np.convolve(padded, np.conj(psi[::-1]), mode="valid")
-        coeffs[i] = conv[:n]
+        offset = (len(conv) - n) // 2
+        coeffs[i] = conv[offset : offset + n]
     return scales, coeffs
 
 

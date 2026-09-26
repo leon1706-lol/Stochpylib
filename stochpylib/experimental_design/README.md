@@ -96,9 +96,10 @@ S.first_order_[0].confidence_interval()            # each index is an MCResult
 
 ## Known limitations
 
-- **`InteractionPlot` and `NormalPlot` are data-only.** They compute the cell means,
-  effect quantiles and Lenth thresholds plus a text table; drawing them is left to the
-  planned `viz` module.
+- **`InteractionPlot` and `NormalPlot` are data-only at their core.** They compute the
+  cell means, effect quantiles and Lenth thresholds plus a text table (`to_text()`);
+  `to_figure()` renders them via `stochpylib.viz` (a lazy import, so this module itself
+  stays free of any plotting dependency).
 - **Construction coverage.** `BoxBehnken` is tabulated for 3–7 factors; `GraecoLatin`
   covers every order not congruent to 2 mod 4 (orders 2 and 6 are impossible; 10, 14, …
   exist but are not constructed); `Plackett_Burman` skips orders with no Sylvester/Paley

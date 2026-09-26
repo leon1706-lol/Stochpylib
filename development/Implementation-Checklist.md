@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 721 / 794 public names implemented.**
+**Progress: 756 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -923,49 +923,49 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `cluster_analysis()`
     - [x] `MDS()`
 
-## [viz](../Stochpylib-Obsidian-Vault/Modules/viz.md) — Statistical visualization (0/35)
+## [viz](../Stochpylib-Obsidian-Vault/Modules/viz.md) — Statistical visualization (35/35)
 
-- [ ] **stochpylib.viz** module overall
-  - [ ] `viz.distributions`
-    - [ ] `plot_pdf()`
-    - [ ] `plot_pmf()`
-    - [ ] `plot_cdf()`
-    - [ ] `plot_survival()`
-    - [ ] `plot_hazard()`
-    - [ ] `plot_qqplot()`
-    - [ ] `plot_ppplot()`
-    - [ ] `plot_histogram()`
-    - [ ] `plot_kde()`
-  - [ ] `viz.processes`
-    - [ ] `plot_process()`
-    - [ ] `plot_acf()`
-    - [ ] `plot_pacf()`
-    - [ ] `plot_periodogram()`
-    - [ ] `plot_spectrogram()`
-    - [ ] `plot_wavelet()`
-    - [ ] `plot_trajectory()`
-  - [ ] `viz.diagnostics`
-    - [ ] `trace_plot()`
-    - [ ] `posterior_plot()`
-    - [ ] `pair_plot()`
-    - [ ] `residual_plot()`
-    - [ ] `leverage_plot()`
-    - [ ] `influence_plot()`
-    - [ ] `funnel_plot()`
-  - [ ] `viz.multivariate`
-    - [ ] `plot_heatmap()`
-    - [ ] `plot_correlation()`
-    - [ ] `plot_copula()`
-    - [ ] `plot_scatter_matrix()`
-    - [ ] `plot_biplot()`
-    - [ ] `plot_dendrogram()`
-  - [ ] `viz.special`
-    - [ ] `plot_markov_chain()`
-    - [ ] `plot_brownian()`
-    - [ ] `plot_gp()`
-    - [ ] `plot_survival_km()`
-    - [ ] `plot_variogram()`
-    - [ ] `plot_eigenvalues()`
+- [x] **stochpylib.viz** module overall
+  - [x] `viz.distributions`
+    - [x] `plot_pdf()`
+    - [x] `plot_pmf()`
+    - [x] `plot_cdf()`
+    - [x] `plot_survival()`
+    - [x] `plot_hazard()`
+    - [x] `plot_qqplot()`
+    - [x] `plot_ppplot()`
+    - [x] `plot_histogram()`
+    - [x] `plot_kde()`
+  - [x] `viz.processes`
+    - [x] `plot_process()`
+    - [x] `plot_acf()`
+    - [x] `plot_pacf()`
+    - [x] `plot_periodogram()`
+    - [x] `plot_spectrogram()`
+    - [x] `plot_wavelet()`
+    - [x] `plot_trajectory()`
+  - [x] `viz.diagnostics`
+    - [x] `trace_plot()`
+    - [x] `posterior_plot()`
+    - [x] `pair_plot()`
+    - [x] `residual_plot()`
+    - [x] `leverage_plot()`
+    - [x] `influence_plot()`
+    - [x] `funnel_plot()`
+  - [x] `viz.multivariate`
+    - [x] `plot_heatmap()`
+    - [x] `plot_correlation()`
+    - [x] `plot_copula()`
+    - [x] `plot_scatter_matrix()`
+    - [x] `plot_biplot()`
+    - [x] `plot_dendrogram()`
+  - [x] `viz.special`
+    - [x] `plot_markov_chain()`
+    - [x] `plot_brownian()`
+    - [x] `plot_gp()`
+    - [x] `plot_survival_km()`
+    - [x] `plot_variogram()`
+    - [x] `plot_eigenvalues()`
 
 ## [utils](../Stochpylib-Obsidian-Vault/Modules/utils.md) — Infrastructure & utilities (0/38)
 

@@ -43,6 +43,7 @@ from stochpylib import (
     statistics,
     survival,
     timeseries,
+    viz,
 )
 
 _SPEC = json.load(open(os.path.join(os.path.dirname(__file__),
@@ -70,6 +71,7 @@ _MODULES = {
     "optimization": optimization,
     "experimental_design": experimental_design,
     "spatial_statistics": spatial_statistics,
+    "viz": viz,
 }
 
 # Documented public extras beyond the 229 spec names (utilities & result
@@ -108,6 +110,7 @@ _EXTRAS = {
                      "ConstrainedOptimizer", "OptimizeResult"},
     "experimental_design": {"Design", "DesignGenerator", "OptimalDesign"},
     "spatial_statistics": {"SpatialWeights", "SpatialFunction", "SARModel", "CARModel"},
+    "viz": {"Figure", "Axes"},
 }
 
 DISTRIBUTION_METHODS_DOC = (".pdf()/.pmf()", ".cdf()", ".ppf()", ".rvs()",
@@ -141,9 +144,9 @@ def test_total_spec_name_count():
                    "financial_stochastics", "statistics", "random_matrix",
                    "advanced_mcmc", "numerical_methods", "bayesian",
                    "robust_statistics", "nonparametric", "optimization",
-                   "experimental_design", "spatial_statistics")
+                   "experimental_design", "spatial_statistics", "viz")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 721  # 721/794 across the twenty-one implemented modules
+    assert total == 756  # 756/794 across the twenty-two implemented modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -177,7 +180,7 @@ def test_top_level_package_wiring():
         "financial_stochastics", "gaussian_processes", "information_theory", "levy_processes",
         "montecarlo", "nonparametric", "numerical_methods", "optimization",
         "probability", "queueing", "random_matrix", "robust_statistics", "spatial_statistics",
-        "statistics", "survival", "timeseries"}
+        "statistics", "survival", "timeseries", "viz"}
     # version consistency, never a literal: the installed metadata and the
     # in-code __version__ must agree (a hardcoded literal here broke CI on
     # every version bump — development/Probleme.md [39])
@@ -627,3 +630,79 @@ def test_spatial_statistics_agrees_with_gaussian_processes_experimental_design_a
     W = spatial_statistics.SpatialWeights.knn(coords, k=6)
     mi = spatial_statistics.MoransI(values, W)
     assert isinstance(mi, statistics.TestResult)
+
+
+def test_library_code_never_imports_matplotlib_outside_viz_backend():
+    """viz is SVG-native by default; matplotlib is an optional, lazily-imported backend
+    confined to stochpylib/viz/_mpl.py, and only inside function bodies there (never at
+    module import time, so `import stochpylib.viz` never requires matplotlib)."""
+    import ast
+    import pathlib
+
+    pkg_dir = pathlib.Path(stochpylib.__file__).parent
+
+    def _is_mpl_import(node):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            return node.module.startswith("matplotlib")
+        if isinstance(node, ast.Import):
+            return any(alias.name.startswith("matplotlib") for alias in node.names)
+        return False
+
+    found_any = False
+    for path in pkg_dir.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        module_level_nodes = set(tree.body)
+        for node in ast.walk(tree):
+            if not _is_mpl_import(node):
+                continue
+            assert path.name == "_mpl.py", f"matplotlib imported outside _mpl.py: {path}"
+            assert node not in module_level_nodes, \
+                "matplotlib must be imported inside a function, not at module level"
+            found_any = True
+    assert found_any, "expected at least one lazy matplotlib import in viz/_mpl.py"
+
+
+def test_viz_renders_real_models_from_five_modules():
+    """E2E: viz -> distributions/timeseries/survival/spatial_statistics/advanced_mcmc.
+    Every plot function computes its numbers by calling straight into the owning
+    module, never re-deriving them -- spot-check one plot per module here."""
+    import xml.etree.ElementTree as ET
+
+    from stochpylib import viz
+
+    rng = np.random.default_rng(9)
+
+    g = distributions.Gamma(shape=3.0, scale=2.0)
+    data = g.rvs(300, random_state=0)
+    fig = viz.plot_qqplot(data, dist=g)
+    assert fig.data["r"] > 0.9
+    ET.fromstring(fig.to_svg())
+
+    x = np.zeros(200)
+    for i in range(1, 200):
+        x[i] = 0.6 * x[i - 1] + rng.standard_normal()
+    fig = viz.plot_acf(x, nlags=5)
+    assert abs(fig.data["acf"][1] - 0.6) < 0.2
+
+    durations = rng.exponential(10, 40)
+    events = np.ones(40)
+    from stochpylib.survival import KaplanMeier
+
+    km = KaplanMeier().fit(durations, events)
+    fig = viz.plot_survival_km(km)
+    assert np.all(np.diff(fig.data["KM"]["survival"]) <= 1e-12)
+
+    coords = rng.uniform(0, 10, size=(60, 2))
+    values = rng.standard_normal(60)
+    fig = viz.plot_variogram(None, coords=coords, values=values, bins=6)
+    ev = spatial_statistics.ExperimentalVariogram(bins=6).fit(coords, values)
+    assert np.allclose(fig.data["gamma"], ev.gamma_)
+
+    def logp(theta):
+        return -0.5 * np.sum(theta ** 2)
+
+    sampler = advanced_mcmc.HamiltonianMonteCarlo(logp, n_samples=100, n_warmup=50,
+                                                  n_chains=2, step_size=0.5, n_leapfrog=8)
+    sampler.sample(np.zeros(2), random_state=1)
+    fig = viz.trace_plot(sampler)
+    assert np.allclose(fig.data["rhat"], advanced_mcmc.Rhat(sampler.get_chains()))

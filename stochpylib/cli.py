@@ -243,6 +243,16 @@ def _implemented_overview():
             "                   Matern-cluster/log-Gaussian-Cox point processes, Ripley's\n"
             "                   K and pair correlation, Moran's I/Geary's C/Getis-Ord and\n"
             "                   nearest-neighbour spatial autocorrelation tests",
+        "viz":
+            "statistical visualization: pdf/pmf/cdf/survival/hazard, QQ/PP-\n"
+            "                   plots, histograms, KDE; ACF/PACF, periodogram/\n"
+            "                   spectrogram/wavelet scalograms, trajectories; MCMC\n"
+            "                   trace/posterior/pair plots, regression residual/\n"
+            "                   leverage/influence, funnel plots; heatmaps,\n"
+            "                   correlation matrices, copula views, PCA biplots,\n"
+            "                   dendrograms; Markov-chain diagrams, Brownian fans, GP\n"
+            "                   bands, Kaplan-Meier curves, variograms, eigenvalue\n"
+            "                   spectra -- native SVG rendering, matplotlib optional",
     }
 
     blocks = []
@@ -518,7 +528,7 @@ Try a live mini-example:  spl demo <module>   (bare 'spl demo' lists them)
         epilog=(
             "subcommands: update, info, show, demo, cite - run 'spl <command> --help'\n"
             "for details.\n\n"
-            "roadmap: two more modules are planned (viz, utils) -\n"
+            "roadmap: one more module is planned (utils) -\n"
             "see the repository README and development/Implementation-Checklist.md.\n\n"
             "docs: README.md - contributing: CONTRIBUTING.md - security: SECURITY.md"
         ),

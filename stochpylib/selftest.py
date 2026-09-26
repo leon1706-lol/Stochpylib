@@ -349,6 +349,8 @@ def run(verbose=False):
                                      "ResponseSurface", "SobolIndex"]),
         "spatial_statistics": (32, ["Kriging", "OrdinaryKriging", "ExperimentalVariogram",
                                     "MaternField", "RipleyK", "MoransI"]),
+        "viz": (35, ["plot_pdf", "plot_qqplot", "plot_acf", "trace_plot", "plot_heatmap",
+                    "plot_survival_km"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -1043,6 +1045,67 @@ def run(verbose=False):
     st.check("SPATIAL: GaussianRandomField is ambiguous (levy_processes + spatial_statistics)",
              set(show_candidates.get("GaussianRandomField", [])) ==
              {"stochpylib.levy_processes", "stochpylib.spatial_statistics"})
+
+    # viz quick checks
+    import xml.etree.ElementTree as _VzET
+
+    from stochpylib.distributions import Normal as _VzNormal
+    from stochpylib.survival import KaplanMeier as _VzKM
+    from stochpylib.viz import plot_acf as _vz_acf, plot_heatmap as _vz_heat, \
+        plot_histogram as _vz_hist, plot_pdf as _vz_pdf, plot_survival_km as _vz_km
+    from stochpylib.viz._ticks import nice_ticks as _vz_nice_ticks
+
+    fig_vz = _vz_pdf(_VzNormal(0.0, 1.0))
+    svg_vz = fig_vz.to_svg()
+    _VzET.fromstring(svg_vz)
+    st.check("VIZ: SVG output parses as XML", svg_vz.startswith("<svg"))
+    st.check("VIZ: SVG rendering is deterministic", svg_vz == fig_vz.to_svg())
+    st.check("VIZ: plot_pdf matches Normal.pdf on its own grid",
+             bool(np.allclose(fig_vz.data["pdf"], _VzNormal(0.0, 1.0).pdf(fig_vz.data["x"]))))
+
+    fig_hist_vz = _vz_hist(np.random.default_rng(0).standard_normal(300))
+    widths_vz = np.diff(fig_hist_vz.data["edges"])
+    st.check("VIZ: histogram density integrates to 1",
+             abs(np.sum(fig_hist_vz.data["heights"] * widths_vz) - 1.0) < 1e-8)
+
+    ar1_vz = np.zeros(300)
+    rng_vz = np.random.default_rng(1)
+    for i_vz in range(1, 300):
+        ar1_vz[i_vz] = 0.5 * ar1_vz[i_vz - 1] + rng_vz.standard_normal()
+    fig_acf_vz = _vz_acf(ar1_vz)
+    st.check("VIZ: ACF at lag 0 is exactly 1", fig_acf_vz.data["acf"][0] == 1.0)
+
+    km_vz = _VzKM().fit(rng_vz.exponential(5, 30), np.ones(30))
+    fig_km_vz = _vz_km(km_vz)
+    s_vz = fig_km_vz.data["KM"]["survival"]
+    st.check("VIZ: Kaplan-Meier curve is non-increasing", bool(np.all(np.diff(s_vz) <= 1e-12)))
+
+    fig_heat_vz = _vz_heat(rng_vz.random((3, 4)))
+    st.check("VIZ: heatmap cell count matches input shape",
+             fig_heat_vz.data["Z"].shape == (3, 4))
+
+    ticks_vz = _vz_nice_ticks(0.0, 97.0)
+    st.check("VIZ: nice_ticks covers the requested range",
+             ticks_vz.min() <= 0.0 and ticks_vz.max() >= 97.0)
+
+    import sys as _vz_sys
+
+    _saved_mpl_vz = {k: v for k, v in _vz_sys.modules.items() if k.startswith("matplotlib")}
+    for _k_vz in list(_saved_mpl_vz):
+        del _vz_sys.modules[_k_vz]
+    _vz_sys.modules["matplotlib"] = None
+    try:
+        fig_vz.to_matplotlib()
+        raised_vz = False
+    except ImportError as _exc_vz:
+        raised_vz = "matplotlib is optional" in str(_exc_vz)
+    finally:
+        del _vz_sys.modules["matplotlib"]
+        _vz_sys.modules.update(_saved_mpl_vz)
+    st.check("VIZ: to_matplotlib() raises a clear ImportError when matplotlib is absent",
+             raised_vz)
+    st.check("VIZ: native SVG still renders once matplotlib is 'absent' again",
+             bool(fig_vz.to_svg()))
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

@@ -4,8 +4,9 @@ sensitivity analysis -- Morris screening, standardized/partial-rank regression
 coefficients, and variance-based Sobol indices with bootstrap standard errors.
 
 ``InteractionPlot`` and ``NormalPlot`` compute the numbers a plot shows (cell means,
-effect quantiles, significance thresholds) and a plain-text table; rendering them is the
-job of the planned ``viz`` module, so nothing here depends on a plotting library.
+effect quantiles, significance thresholds) and a plain-text table; ``to_figure()`` renders
+them via ``stochpylib.viz`` (a lazy import inside the method, so this module itself still
+carries no plotting dependency).
 """
 
 import itertools
@@ -271,6 +272,19 @@ class InteractionPlot:
                           for v, row in zip(la, self.cell_means_)]
         return "\n".join(lines)
 
+    def to_figure(self, ax=None):
+        """One line per trace-factor level (needs ``stochpylib.viz``, an optional extra)."""
+        from stochpylib.viz import Figure
+
+        fig = Figure() if ax is None else ax.figure
+        axes = fig.ax if ax is None else ax
+        name_a, name_b = self.factor_names_
+        for b, (la, means) in self.lines_.items():
+            axes.line(la, means, label=f"{name_b}={b:.4g}")
+        axes.set(title="Interaction plot", xlabel=name_a, ylabel="mean response",
+                 legend="best")
+        return fig
+
 
 # ------------------------------------------------------------------------ normal plot
 
@@ -328,6 +342,13 @@ class NormalPlot:
             lines.append(f"{lab:<10}{val:>12.4f}{q:>12.4f}{flag}")
         lines.append(f"PSE={self.pse_:.4f}  ME={self.me_:.4f}  SME={self.sme_:.4f}")
         return "\n".join(lines)
+
+    def to_figure(self, ax=None):
+        """(Half-)normal plot of effects with ME/SME reference lines (needs
+        ``stochpylib.viz``, an optional extra)."""
+        from stochpylib.viz import plot_qqplot
+
+        return plot_qqplot(self, ax=ax)
 
 
 # ------------------------------------------------------------------------- sensitivity

@@ -1554,3 +1554,55 @@ Suite: 2373 collected - 2371 passed / 2 skipped. Version 0.17.0.
   - all READMEs and `development/` docs synced, and the vault spec flipped to implemented.
 
 Suite: 2522 collected - 2520 passed / 2 skipped. Version 0.18.0.
+
+## Phase 36 — V0.19.0 viz: SVG-native statistical plots with an optional matplotlib backend (35 names)
+
+- **`viz` shipped end to end** across five submodules on top of a from-scratch scene-graph
+  renderer: `_figure.py`'s `Figure`/`Axes` and artist dataclasses, `_svg.py`'s zero-
+  dependency SVG output (nice-number ticks, per-axes clipping, deterministic rendering),
+  and `_mpl.py`'s optional matplotlib backend (`Figure.to_matplotlib()`/`.save('*.png'/
+  '*.pdf')`) — lazily imported, confined to one file, never a runtime dependency.
+- **`viz.distributions`** — `plot_pdf`/`plot_pmf`/`plot_cdf`/`plot_survival`/`plot_hazard`,
+  `plot_qqplot`/`plot_ppplot` (Filliben plotting positions, exact-matching
+  `scipy.stats.probplot`), `plot_histogram`, `plot_kde` — all computed via the
+  distribution/nonparametric contract already in the library, never re-derived.
+- **`viz.processes`** — `plot_process`, `plot_acf`/`plot_pacf` (a new Durbin-Levinson
+  helper reused nowhere else, matching `statsmodels` to float precision), `plot_periodogram`/
+  `plot_spectrogram` (delegating to `timeseries.spectral`), `plot_wavelet` (Morlet CWT or
+  DWT detail levels), `plot_trajectory`.
+- **`viz.diagnostics`** — `trace_plot`/`posterior_plot`/`pair_plot` for MCMC (reusing
+  `advanced_mcmc.Rhat`/`ESS` and `bayesian.Posterior`'s HPD helper), `residual_plot`/
+  `leverage_plot`/`influence_plot` for regression (hat values, studentized residuals,
+  Cook's distance matching `statsmodels.OLSInfluence` to float precision), `funnel_plot`
+  for meta-analysis (inverse-variance pooling, Egger's regression test).
+- **`viz.multivariate`** — `plot_heatmap`, `plot_correlation`, `plot_copula` (scatter or
+  density), `plot_scatter_matrix`, `plot_biplot` (PCA, SVD-exact), `plot_dendrogram`
+  (agglomerative linkage, leaf order matching `scipy.cluster.hierarchy.dendrogram` exactly).
+- **`viz.special`** — `plot_markov_chain`, `plot_brownian`/GBM, `plot_gp` (posterior band +
+  optional Cholesky-sampled draws), `plot_survival_km` (matching `lifelines` to float
+  precision, real censoring ticks, per-group log-rank test), `plot_variogram` (experimental
+  points, a fitted-model curve, or a `SpatialFunction` envelope), `plot_eigenvalues`
+  (semicircle/Marchenko-Pastur overlay, complex-spectrum scatter, spacing vs. Wigner surmise).
+- **Cross-module hooks**: `experimental_design.InteractionPlot`/`NormalPlot` gained a
+  `to_figure()` method (a lazy `stochpylib.viz` import, so the owning module stays
+  dependency-free); `viz.plot_variogram` renders `spatial_statistics`' variogram/covariance/
+  summary-function objects directly.
+- **A `viz-matplotlib` CI job** (ubuntu + windows) is the only place `tests/viz/backend_mpl.py`
+  runs — it installs matplotlib and checks the real backend (PNG/PDF bytes, mpl artist
+  mapping, categorical/log axes); every other viz test, and the module's own import, needs
+  no matplotlib installed at all (two AST guards enforce this: no `scipy.stats` anywhere,
+  and `matplotlib` only inside `_mpl.py` function bodies).
+- **One real pre-existing bug found and fixed**: `timeseries.CWTTransform`'s default scale
+  range always crashed (Probleme.md #120) — no prior test exercised the default scales,
+  only small explicit ones. Also fixed a rendering-completeness gap in `plot_markov_chain`
+  (silently dropped self-loops, overlapping edge labels — #121), caught by manually
+  rendering a real chain rather than by any numeric assertion.
+- **Every Essential-Tasks.md wrap-up item completed**: `tests/viz/{tests,e2e}.py` added
+  (182 cases) plus `tests/viz/backend_mpl.py` for the optional backend; the library suite
+  gained a matplotlib-import-location guard and a five-module cross-suite integration test;
+  `tests/docs` counts and stale-claim blacklist updated; `selftest.py` 264 -> 275 checks
+  (`VIZ:` block + 1 `CONFORM` entry); `spl demo viz` added, `ci.yml` gained the
+  `viz-matplotlib` job and the `module-smoke` matrix entry; all READMEs and `development/`
+  docs synced, and the vault spec flipped to implemented.
+
+Suite: 2709 collected - 2707 passed / 2 skipped. Version 0.19.0.

@@ -59,6 +59,7 @@ jobs:
           - optimization
           - experimental_design
           - spatial_statistics
+          - viz
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -73,6 +74,30 @@ jobs:
         run: |
           spl demo ${{ matrix.module }}
           python -c "import stochpylib.${{ matrix.module }} as m; print(len(m.__all__), 'public names')"
+
+  # Optional backend: viz renders natively to SVG with no runtime dependency beyond
+  # numpy/scipy; this job installs matplotlib and exercises the Figure.to_matplotlib()/
+  # save('*.png'/'*.pdf') path the core jobs above never touch (they run with no
+  # matplotlib installed, proving that path is truly optional).
+  viz-matplotlib:
+    name: viz (matplotlib backend)
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]" matplotlib
+      - run: pytest tests/viz/backend_mpl.py -v
+      - run: pytest tests/viz/tests.py tests/viz/e2e.py -v
+      - run: spl demo viz
 
   # Cross-module conformance, documentation-consistency and CLI suites.
   cross-suite:

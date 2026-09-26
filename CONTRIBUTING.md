@@ -1,7 +1,7 @@
 # Contributing to stochpylib
 
-Thanks for your interest! This project is early-stage (currently 721/794 planned public names
-across twenty-one implemented modules),
+Thanks for your interest! This project is early-stage (currently 756/794 planned public names
+across twenty-two implemented modules),
 so the most useful contributions implement or improve **one module at a time**.
 
 ## Development setup
@@ -17,7 +17,7 @@ Verify your installation any time with the shipped CLI:
 
 ```bash
 spl --version   # prints the installed version
-spl --test      # embedded self-check suite (264 checks, no pytest needed)
+spl --test      # embedded self-check suite (275 checks, no pytest needed)
 ```
 
 Python >= 3.10 required. NumPy/SciPy are the only runtime dependencies.

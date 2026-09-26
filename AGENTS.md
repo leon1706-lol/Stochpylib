@@ -13,9 +13,11 @@ advanced MCMC, numerical methods, optimization, design of experiments, spatial
 statistics — native on NumPy/SciPy, no wrapper deps. Thesis: one coherent package
 replaces scipy.stats + statsmodels + lifelines + copulas.
 
-- **State:** 21 modules implemented (721 / 794 spec names), 2 remaining as spec.
+- **State:** 22 modules implemented (756 / 794 spec names), 1 remaining as spec.
 - **Runtime deps:** NumPy, SciPy (`special`/`optimize`/`integrate` only).
-  **Test deps:** pytest. Nothing else, ever.
+  **Test deps:** pytest. Nothing else, ever — except `matplotlib`, an optional,
+  lazily-imported `viz` backend (`stochpylib/viz/_mpl.py` only, never at module import
+  time); `viz` and its default SVG rendering never require it installed.
 - **Docs move with code:** a change not reflected in the relevant docs in the
   same task isn't done (§5 step 5).
 
@@ -129,7 +131,9 @@ preference.
 
 - `ci.yml`: full pytest on push/PR, Python 3.10–3.13, ubuntu + windows
   (`fail-fast: false`); `smoke (<module>)` per module (oracle suite + e2e sweep
-  + `spl demo`); `cross-suite` (library/docs/cli); `install-smoke` (wheel ships
+  + `spl demo`); `viz-matplotlib` (ubuntu + windows) installs matplotlib and runs
+  `tests/viz/backend_mpl.py` (the only place that file runs) plus `viz`'s suites again;
+  `cross-suite` (library/docs/cli); `install-smoke` (wheel ships
   every spec name).
 - `publish.yml` on `v*` tags: build, smoke-test (`spl --version`,
   `spl --test`), publish via Trusted Publisher. `release.yml` creates the

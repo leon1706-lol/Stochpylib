@@ -9,30 +9,33 @@ are for — see `AGENTS.md`).
 
 -----
 
-## V0.18.0 — done
+## V0.19.0 — done
 
-`spatial_statistics` shipped end to end (32/32 spec names, 721/794 overall, twenty-one
-modules): variograms and fitting, simple/ordinary/universal/co-/indicator/disjunctive
-kriging, covariance-driven random fields, point processes with Ripley's K/pair
-correlation, and spatial autocorrelation tests, plus `SARModel`/`CARModel` lattice extras
-(closing the vault's CAR/SAR gap) and its `smoke (spatial_statistics)` CI job. Also: every
-remaining `scipy.stats` import removed from library code (9 files, Probleme.md #114) with
-a permanent AST guard test, and `spl show` now disambiguates public names exported by more
-than one module (`GaussianRandomField`: `levy_processes` + `spatial_statistics`). Five real
-bugs surfaced and were fixed on the way (Probleme.md #115-#118).
+`viz` shipped end to end (35/35 spec names, 756/794 overall, twenty-two modules): a native,
+zero-dependency SVG renderer (scene graph in `_figure.py`, rendering in `_svg.py`, nice-number
+ticks, categorical + viridis/RdBu colormaps) with matplotlib as an optional, lazily-imported
+backend (`_mpl.py`, confined there and guarded by an AST test) for `Figure.to_matplotlib()`/
+raster-PDF output. All 35 functions reuse the rest of the library's own numbers rather than
+re-deriving them — distributions' ppf-based grids, timeseries' spectral functions,
+advanced_mcmc's Rhat/ESS, statsmodels-matching ACF/PACF, spatial_statistics' variograms,
+random_matrix's limit laws, lifelines-matching Kaplan-Meier, and more. `experimental_design`'s
+`InteractionPlot`/`NormalPlot` gained a `to_figure()` hook. A new `viz-matplotlib` CI job
+(ubuntu + windows) installs matplotlib and runs the real-backend suite
+(`tests/viz/backend_mpl.py`, excluded from the main pytest collection); every other viz test
+passes with no matplotlib installed at all. One real pre-existing bug was found and fixed on
+the way: `timeseries.CWTTransform`'s default scale range always crashed (the reflect-padding
+was sized to the series length, not to the wavelet's own support, so any scale beyond ~n/20
+overran the valid-convolution length) — Probleme.md #120.
 
 ## Next candidate
 
-Two modules remain: `viz` (35), `utils` (38). Each needs an explicit decision before it can
-start:
+One module remains: `utils` (38). It needs an explicit decision before it can start:
 
-- `viz`: a plotting-backend decision — matplotlib as a dev-only oracle/example dependency,
-  or a from-scratch SVG/ASCII renderer to keep the zero-runtime-dep policy. It would also
-  render `experimental_design`'s data-only `InteractionPlot`/`NormalPlot`, and
-  `spatial_statistics.SpatialCovariance`/`Semivariogram`/`SpatialFunction` are natural
-  `plot_variogram()`/`plot_...` targets.
-- `utils.performance` (`GPUBackend`, `JIT_compile()`): optional torch/cupy/numba deps and a
-  lazy-import design pass first.
+- `utils.performance` (`GPUBackend`, `JIT_compile()`) and `utils.compat` (`torch_interface()`,
+  `jax_interface()`, `pandas_interface()`): optional torch/cupy/numba/jax/pandas deps behind
+  a lazy-import design, mirroring the pattern `viz`'s optional matplotlib backend just
+  established (confine each optional import to one file, guard with an AST test, add a CI job
+  that installs the real backend rather than skipping it).
 
 -----
 
@@ -45,3 +48,5 @@ start:
   often very slow wall-clock speed (minutes of wall time for near-zero CPU time on some
   invocations) — an I/O/scheduling artifact of this box, not a code performance issue;
   budget generous timeouts and prefer background runs for anything beyond a single module.
+  `pytest --collect-only -q tests/` (no execution, just AST collection) completes fine on
+  the whole tree even though a full run doesn't — use it to get an exact test count.

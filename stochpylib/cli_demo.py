@@ -551,6 +551,43 @@ def _demo_spatial_statistics():
           f"K(1.0)={tp.K(1.0):.3f}  (CSR reference {np.pi:.3f})")
 
 
+def _demo_viz():
+    from stochpylib.distributions import Gamma
+    from stochpylib.survival import KaplanMeier
+    from stochpylib.viz import plot_acf, plot_qqplot, plot_survival_km
+
+    print("Visualization - SVG-native statistical plots (matplotlib optional):")
+    rng = np.random.default_rng(0)
+
+    g = Gamma(shape=3.0, scale=2.0)
+    data = g.rvs(400, random_state=0)
+    qq = plot_qqplot(data, dist=g)
+    svg_qq = qq.to_svg()
+    print(f"  QQ-plot of 400 Gamma(3,2) draws vs the fitting distribution: "
+          f"r={qq.data['r']:.4f}  ({len(svg_qq)} bytes of SVG)")
+
+    x = np.zeros(300)
+    for i in range(1, 300):
+        x[i] = 0.6 * x[i - 1] + rng.standard_normal()
+    acf = plot_acf(x, nlags=10)
+    print(f"  ACF of an AR(1) series (phi=0.6): lag-1 ACF={acf.data['acf'][1]:.3f} "
+          f"({len(acf.ax.artists)} artists)")
+
+    durations = rng.exponential(10, 60)
+    events = (rng.random(60) > 0.3).astype(float)
+    km = plot_survival_km(KaplanMeier().fit(durations, events))
+    median_t = KaplanMeier().fit(durations, events).median_survival_time_
+    print(f"  Kaplan-Meier curve on 60 simulated lifetimes: median survival="
+          f"{median_t:.2f} ({km.nrows}x{km.ncols} panel)")
+
+    from stochpylib.viz._mpl import is_available as _mpl_available
+
+    if _mpl_available():
+        print("  matplotlib: installed (Figure.to_matplotlib()/.save('*.png') available)")
+    else:
+        print("  matplotlib: not installed (SVG only -- Figure.to_svg()/.save('*.svg'))")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -573,6 +610,7 @@ DEMOS = {
     "optimization": _demo_optimization,
     "experimental_design": _demo_experimental_design,
     "spatial_statistics": _demo_spatial_statistics,
+    "viz": _demo_viz,
 }
 DEMO_MODULES = tuple(DEMOS)
 

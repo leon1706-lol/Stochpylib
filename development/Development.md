@@ -24,7 +24,7 @@ along the way.
   during a task — this is not a general changelog (that's CHANGELOG.md).
 - [`Implementation-Checklist.md`](Implementation-Checklist.md) — every planned
   public name as a checkbox; the single-glance progress tracker (currently
-  721/794). Update it whenever you implement.
+  756/794). Update it whenever you implement.
 
 ## Package layout decisions (for context)
 

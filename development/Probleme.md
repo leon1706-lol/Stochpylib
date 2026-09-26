@@ -2563,3 +2563,52 @@ honest "near its cap" range/sill rather than an arbitrary large number.
 3 * 6.438`, the capped boundary) on the same data; `tests/spatial_statistics/tests.py`'s
 `TestVariogramFitting` (whose true ranges sit well inside the bound) is unaffected, and the
 full `tests/spatial_statistics` suite (141 cases) stays green.
+
+---
+
+### 120. `timeseries.CWTTransform`'s default scale range always crashed
+
+**Severity:** 6/10 · **Status:** 🟢 `fixed` (V0.19.0)
+
+**Problem:** The reflect-padding was fixed at one series length (`n`) on each side
+regardless of the wavelet's own support, but the largest default scale (`len(x) / 8`) needs
+a Morlet wavelet roughly `2.5x` a series length long; once a scale's wavelet exceeded ~2n
+samples, the `'valid'`-mode convolution produced fewer than `n` output samples and
+`coeffs[i] = conv[:n]` raised a `ValueError` — so `CWTTransform(x)` with no explicit
+`scales=` crashed for essentially any input, a case no existing test exercised (both the
+oracle suite and the e2e exercise always pass an explicit small `scales=`). Caught while
+building `viz.plot_wavelet`'s manual repro (AGENTS.md §5.2).
+
+**Fix:** Pad by `max(n, max_wavelet_half_length)` via `np.pad(..., mode="reflect")`
+(handles any pad size, unlike the previous fixed-length manual reflect) and take the
+`n`-sample window centered in the (now always long enough) valid-convolution output. Also
+dropped a dead `np.fft.rfft(padded)` computed but never used.
+
+**Verification:** `CWTTransform(x, fs=1.0)` (default scales) no longer raises for any input
+length; a synthetic `sin(2*pi*t/40)` series' scalogram peaks at scale `38.2` vs. the
+theoretical `omega0 * period / (2*pi) = 38.2`; the existing small-`scales=` e2e exercise
+(shape `(7, 256)`) is unaffected.
+
+---
+
+### 121. `viz.plot_markov_chain` silently dropped self-loops and overlapped bidirectional edge labels
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.19.0)
+
+**Problem:** The edge-drawing loop explicitly skipped `i == j` (diagonal/self-transition
+probabilities), so the most common case in practice — a state that mostly stays in
+itself — never appeared on the diagram at all, despite the design (and this same file's
+docstring) calling for self-loops. Separately, a bidirectional pair's two edge-probability
+labels were both placed at the shared segment midpoint, rendering as illegible overlapping
+text. Caught by rendering a real 3-state regime-switching chain (AGENTS.md §5.2), not by
+any oracle test (the numeric `fig.data["stationary"]`/`P` values were already correct —
+this was a rendering-completeness gap invisible to a numbers-only check).
+
+**Fix:** Self-loops `>= threshold` draw a small unfilled ring tangent to the node plus its
+probability, and node/edge labels moved off the shared midpoint (labels sit near each
+edge's source end) and off the node interior (state names sit just below the circle, so a
+long name can't overflow a small low-probability node).
+
+**Verification:** Re-rendered the same 3-state chain; all three self-loop probabilities and
+all six directed-edge labels are now visible and non-overlapping (checked visually via a
+saved PNG); `test_plot_markov_chain_self_loops_drawn` asserts the self-loop ring count.

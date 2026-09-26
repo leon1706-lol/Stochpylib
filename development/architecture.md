@@ -1,6 +1,6 @@
 # stochpylib Architecture
 
-**Status:** twenty-one of 23 planned modules are implemented and tested (721/794
+**Status:** twenty-two of 23 planned modules are implemented and tested (756/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state). Everything else in the module map below
 remains design spec, not shipped code.
@@ -49,6 +49,7 @@ flowchart LR
     A --> V["stochpylib.optimization<br/>gradient & quasi-Newton methods, metaheuristics, stochastic approximation, constrained solvers"]
     D --> W["stochpylib.experimental_design<br/>classical, optimal & space-filling designs, response surfaces, sensitivity analysis"]
     F --> X["stochpylib.spatial_statistics<br/>variograms, kriging, random fields, point processes, spatial autocorrelation"]
+    C --> Y["stochpylib.viz<br/>SVG-native statistical plots, matplotlib optional"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -66,6 +67,7 @@ flowchart LR
     V --> L
     W --> L
     X --> L
+    Y --> L
 ```
 
 ## Tech Stack
@@ -75,12 +77,13 @@ flowchart TB
     A["Runtime"] --> A1["Python >= 3.10"]
     A --> A2["NumPy"]
     A --> A3["SciPy (special / optimize / integrate only)"]
+    A --> A4["matplotlib (optional, lazy -- viz raster/PDF backend only)"]
     B["Packaging"] --> B1["setuptools + pyproject.toml"]
     B --> B2["PyPI via Trusted Publisher (OIDC)"]
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (264 checks)"]
+    C --> C3["spl --test embedded self-check (275 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -245,9 +248,15 @@ README per module):
   Poisson/Thomas/Matern-cluster/log-Gaussian-Cox point processes fit by Diggle
   minimum-contrast on Ripley's K; Moran's I/Geary's C/Getis-Ord/Clark-Evans spatial
   autocorrelation tests; `SARModel`/`CARModel` lattice-model extras.
+- `viz/` — SVG-native statistical plots (`_figure.py`'s scene graph + `_svg.py`'s
+  from-scratch renderer; matplotlib is an optional, lazily-imported backend confined to
+  `_mpl.py`). Every `plot_*()` reuses the owning module's own computation (distributions'
+  ppf-based grid, timeseries' spectral functions, advanced_mcmc's Rhat/ESS,
+  spatial_statistics' variograms, random_matrix's limit laws, ...) rather than re-deriving
+  it; `experimental_design.InteractionPlot`/`NormalPlot` and spatial_statistics's
+  variogram/covariance/summary-function classes gained a `to_figure()` hook for this.
 
-Planned modules (2, in rough implementation order):
-viz, utils — each lands with the same bar:
+Planned modules (1): utils — lands with the same bar:
 native implementations, the shared conventions, full tests against independent
 oracles, honest documentation of deviations.
 
@@ -257,8 +266,8 @@ Every class in `stochpylib/distributions/` exposes the same 13-method surface �
 `.pdf()/.pmf()`, `.cdf()`, `.ppf()`, `.rvs()`, `.mean()`, `.var()`,
 `.skewness()`, `.kurtosis()`, `.entropy()`, `.mgf()`, `.cf()`, `.fit()`,
 `.ks_test()` — because the rest of the library (Monte Carlo applications,
-survival wrappers, future plotting) is built against this surface, not against
-individual classes. The one sanctioned deviation: the 7 multivariate classes
+survival wrappers, `viz.plot_pdf`/`plot_qqplot`/etc.) is built against this surface, not
+against individual classes. The one sanctioned deviation: the 7 multivariate classes
 expose `.pdf()` instead of `.pmf()` and omit scalar-argument `.mgf()/.cf()`,
 asserted as such in `tests/library/tests.py`. Generic numerical fallbacks in
 `_base.py` guarantee the surface exists for every class; closed forms override
@@ -283,7 +292,9 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
 - **scipy policy**: no `scipy.stats` distribution objects inside library code;
   `scipy.special/optimize/integrate` are raw numerical building blocks;
   `scipy.stats`, `statsmodels` and `lifelines` are test oracles only — dev
-  extras, never runtime dependencies.
+  extras, never runtime dependencies. `matplotlib` follows the same never-a-hard-
+  dependency spirit for `viz`: lazily imported, confined to one file
+  (`viz/_mpl.py`), only inside function bodies — an AST guard enforces both.
 - **Kernel composability**: GP kernels support algebraic composition
   (`RBFKernel(...) + MaternKernel(...)`) with flattened `part<i>__<name>`
   parameter trees for optimizers; sparse engines solve only in the whitened
@@ -364,6 +375,19 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
   `levy_processes`) ships as a genuinely separate class rather than a re-export — `spl
   show` was extended to list every owner and accept a qualified `module.Name` — and only
   delegates to the earlier one when its own documented `method="spectral"` option is used.
+- **Viz conventions** (established by `viz`): every `plot_*()` takes `ax=None` and returns
+  a `Figure` (the composition contract — pass an `Axes` in, get its owning `Figure` back);
+  `Figure.data` carries the plotted numbers (what the tests assert against), never just
+  pixels. Numbers are always computed by calling into the module that owns the underlying
+  model (never re-derived) — `_common.py`'s `_extract_chains`/`_extract_samples` distinguish
+  a raw chains array (`(n_chains, n_samples)`, per `advanced_mcmc` convention) from a flat
+  samples table, since the same 2-D shape means different things to `trace_plot` vs.
+  `posterior_plot`/`pair_plot`. Rendering is two-tier: a native, zero-dependency SVG
+  renderer (`_svg.py`) is the only path every other module can assume works, and
+  `Figure.to_matplotlib()`/`.save('*.png'/'*.pdf')` are an optional, lazily-imported
+  backend (`_mpl.py`) for raster/PDF output — the scipy-policy bullet above covers the
+  import discipline this requires. `Figure`/`Axes` are the only new result-shaped types
+  (a scene graph, not an estimate).
 
 ## Package Layout Convention
 
