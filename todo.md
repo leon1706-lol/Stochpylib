@@ -9,11 +9,39 @@ are for — see `AGENTS.md`).
 
 -----
 
-## V0.20.1 — CI fixes for the pushed V0.20.0 commit (`70c1626`), ready for manual commit
+## V0.20.1 round 2 — two more CI-only bugs found after the owner's first v0.20.1 commit
+
+The owner committed/pushed the round-1 fixes below as `d8f49dc` ("V0.20.0 fixed ci jobs").
+The next run (`36317307837`) still had 2 failures, both genuinely new (not the same bugs):
+
+1. **`utils (optional backends) (ubuntu-latest)`** —
+   `tests/utils/tests.py::TestCompat::test_jax_interface_import_error_when_missing` never hid jax
+   via `sys.modules` (unlike its pandas/torch siblings) and instead relied on jax simply not being
+   installed; CI's `utils-optional` job genuinely installs jax, so `jax_interface(...)` succeeded
+   instead of raising. Fixed by adding the same `monkeypatch.setitem(sys.modules, "jax", None)`
+   guard already used for pandas/torch.
+2. **`utils (optional backends) (windows-latest)`** —
+   `tests/utils/backend_optional.py::TestTorchBackend::test_hmc_driven_by_torch_autodiff_gradient`
+   asserted a hardcoded `abs(samples.mean()) < 0.2`; HMC's leapfrog trajectory is chaotic, so even
+   at a fixed seed, platform float-rounding differences in torch's gradients can diverge the
+   accept/reject path (failed at 0.214 on windows, passed on ubuntu and locally). Fixed by
+   replacing the magic number with this codebase's established MCSE convention (`ESS`-based
+   standard error, `abs(mean) < 5*se`), the same pattern `tests/advanced_mcmc/tests.py` already
+   uses everywhere.
+
+Write-ups in `development/Probleme.md` #131-132. Verified locally: full
+`pytest tests/utils/tests.py tests/utils/e2e.py tests/utils/backend_optional.py -v` →
+193 passed, 6 skipped (jax/numba skip here as before), 0 failed. Not committed — owner is
+committing this round manually too. Did not re-check whether the full `test (X.Y, os)` matrix
+also hits either of these two (round-1's torch-in-financial_stochastics fix already covers that
+matrix; these two bugs live only in `tests/utils/*`, which the main `test` job also runs — worth
+a glance at whichever run covers this commit, same as last time).
+
+## V0.20.1 round 1 — CI fixes for the pushed V0.20.0 commit (`70c1626`)
 
 The owner pushed V0.20.0 directly. GitHub Actions run `36316453989` on `main` then showed 3
-real failing jobs, all now fixed in the working tree (not yet committed — the owner is
-committing this patch manually):
+real failing jobs (11 total once every matrix job was checked, but all 11 reduced to these
+same 2 root causes), fixed and committed by the owner as `d8f49dc`:
 
 1. **`smoke (financial_stochastics)`** — `TestParallelAndGPURetrofit.test_price_backend_torch_matches_numpy`/
    `test_simulate_paths_backend_torch_matches_numpy` assumed torch is always installed; that job's
@@ -33,9 +61,10 @@ Both write-ups are in `development/Probleme.md` #129-130. Verified locally:
 Checked every job in the completed run (`36316453989`): 11 failed in total, not just the 3 first
 flagged — all 8 `test (3.10-3.13, ubuntu/windows)` matrix jobs failed too, but on the exact same
 two torch tests (`2 failed, 2934 passed, 2 skipped` on every one of them). No other distinct
-failures anywhere in the run; both fixes above cover all 11. Not committed — per instruction, the owner is committing this as v0.20.1
-themselves; no `spl`/`__init__.py`/`pyproject.toml` version bump was made since only tests changed
-(no library behavior changed), so bump those only if the owner wants an actual version tag for this.
+failures anywhere in the run; both fixes above cover all 11. Committed by the owner as `d8f49dc`
+("V0.20.0 fixed ci jobs") — but that commit's own CI run (`36317307837`) surfaced 2 more, unrelated
+bugs, see "round 2" above. No `spl`/`__init__.py`/`pyproject.toml` version bump was made either
+round since only tests changed (no library behavior changed).
 
 -----
 

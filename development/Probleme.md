@@ -2781,3 +2781,35 @@ the test there; CI's `utils-optional` job installs a genuinely working numba and
 **Verification:** Reasoned through against CI's log (`assert None == 'numba'` on both ubuntu and
 windows `utils-optional` jobs); locally the test now skips cleanly instead of ever reaching the
 assertion, since numba is unusable in this sandbox.
+
+### 131. `tests/utils/tests.py::TestCompat::test_jax_interface_import_error_when_missing` never actually hid jax
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.20.1)
+
+**Problem:** Unlike its `pandas`/`torch` siblings, this test relied on jax simply not being
+installed rather than hiding it via `monkeypatch.setitem(sys.modules, "jax", None)`. It passed
+locally (jax isn't installed here) but failed on CI's `utils-optional` job (`DID NOT RAISE
+ImportError`), which genuinely installs jax.
+
+**Fix:** Added the same `monkeypatch.setitem(sys.modules, "jax", None)` guard the pandas/torch
+tests already use.
+
+**Verification:** `pytest tests/utils/tests.py -k test_jax_interface_import_error_when_missing -v`
+passes locally.
+
+### 132. `tests/utils/backend_optional.py`'s HMC-via-torch-autodiff test used a flaky fixed threshold
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.20.1)
+
+**Problem:** `test_hmc_driven_by_torch_autodiff_gradient` asserted `abs(samples.mean()) < 0.2`, a
+hardcoded magic number instead of an MCSE-based bound. HMC's leapfrog trajectory is chaotic, so
+even at a fixed `random_state`, platform-dependent floating-point rounding in torch's gradient
+evaluation can diverge the accept/reject path; it failed on CI's `utils-optional
+(windows-latest)` job (`0.214 < 0.2`) while passing on ubuntu and locally.
+
+**Fix:** Replaced the fixed threshold with this codebase's established MCSE convention (already
+used throughout `tests/advanced_mcmc/tests.py`): per-dimension `ESS`-based standard error,
+asserting `abs(mean) < 5 * se`.
+
+**Verification:** `pytest tests/utils/backend_optional.py -k test_hmc_driven_by_torch_autodiff_gradient -v`
+passes locally.

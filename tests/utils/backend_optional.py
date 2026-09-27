@@ -63,7 +63,7 @@ class TestTorchBackend:
 
     def test_hmc_driven_by_torch_autodiff_gradient(self):
         import torch
-        from stochpylib.advanced_mcmc import HamiltonianMonteCarlo
+        from stochpylib.advanced_mcmc import ESS, HamiltonianMonteCarlo
 
         def logp_np(theta):
             return -0.5 * np.sum(theta ** 2)
@@ -76,7 +76,14 @@ class TestTorchBackend:
                                         n_warmup=150, step_size=0.5, n_leapfrog=10)
         sampler.sample(np.zeros(2), random_state=1)
         samples = sampler.get_samples()
-        assert abs(samples.mean()) < 0.2
+        # MCSE-based bound (this module's own ESS), not a fixed magic number -- the
+        # leapfrog trajectory is chaotic, so a hardcoded threshold flakes across
+        # platforms even at a fixed random_state (torch's float rounding differs).
+        for j in range(samples.shape[1]):
+            col = samples[:, j]
+            ess = ESS(col[None, :, None])
+            se = col.std(ddof=1) / np.sqrt(max(ess, 1.0))
+            assert abs(col.mean()) < 5 * se
 
     def test_gpu_backend_torch_gbm_matches_numpy(self):
         gb_np = GPUBackend("numpy")

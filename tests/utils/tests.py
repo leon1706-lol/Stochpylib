@@ -1038,8 +1038,9 @@ class TestCompat:
             torch_interface(np.array([1, 2, 3]))
         assert "stochpylib[torch]" in str(exc.value)
 
-    def test_jax_interface_import_error_when_missing(self):
+    def test_jax_interface_import_error_when_missing(self, monkeypatch):
         from stochpylib.utils.compat import jax_interface
+        monkeypatch.setitem(sys.modules, "jax", None)
         with pytest.raises(ImportError) as exc:
             jax_interface(np.array([1, 2, 3]))
         assert "stochpylib[jax]" in str(exc.value)
