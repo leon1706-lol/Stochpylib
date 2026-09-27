@@ -60,6 +60,7 @@ jobs:
           - experimental_design
           - spatial_statistics
           - viz
+          - utils
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -98,6 +99,34 @@ jobs:
       - run: pytest tests/viz/backend_mpl.py -v
       - run: pytest tests/viz/tests.py tests/viz/e2e.py -v
       - run: spl demo viz
+
+  # Optional backends: utils' pandas/torch/jax/numba interop is lazily imported and
+  # confined to utils/_backends.py (an AST guard in tests/library enforces this); every
+  # other job above runs with none of them installed, proving that path is truly
+  # optional. This job installs the real backends (CPU torch/jax; numba may downgrade
+  # numpy) and runs the real-backend suite (tests/utils/backend_optional.py, excluded
+  # from the main pytest collection the same way tests/viz/backend_mpl.py is).
+  # cupy/CUDA can't run on a GitHub-hosted runner (no GPU) so it stays untested here.
+  utils-optional:
+    name: utils (optional backends)
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      STOCHPYLIB_REQUIRE_BACKENDS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: pip install -e ".[dev]" pandas numba jax
+      - run: pytest tests/utils/backend_optional.py -v
+      - run: pytest tests/utils/tests.py tests/utils/e2e.py -v
+      - run: spl demo utils
 
   # Cross-module conformance, documentation-consistency and CLI suites.
   cross-suite:

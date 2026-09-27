@@ -7,6 +7,7 @@ import numpy as np
 from scipy import special
 
 from stochpylib.distributions._base import MultivariateDistribution
+from stochpylib._rng import as_generator as _rng
 
 
 class MultivariateNormal(MultivariateDistribution):
@@ -31,7 +32,7 @@ class MultivariateNormal(MultivariateDistribution):
         return self.cov_matrix
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         n = size if isinstance(size, int) else int(np.prod(size))
         z = rng.normal(size=(n, self.k))
         out = self.mean_vec + z @ self._L.T
@@ -70,7 +71,7 @@ class Dirichlet(MultivariateDistribution):
         return cov
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.dirichlet(self.alpha, size=size)
 
     def entropy(self):
@@ -126,7 +127,7 @@ class Wishart(MultivariateDistribution):
         return n * (V**2 + np.outer(diag, diag))
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         n = size if isinstance(size, int) else int(np.prod(size))
         out = np.empty((n, self.p, self.p))
         for i in range(n):
@@ -170,7 +171,7 @@ class InverseWishart(MultivariateDistribution):
         return self.scale**2 / max(self.df - self.p - 1, 1e-6) ** 2
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         n = size if isinstance(size, int) else int(np.prod(size))
         out = np.empty((n, self.p, self.p))
         scale_inv = np.linalg.inv(self.scale)
@@ -215,7 +216,7 @@ class MultivariateT(MultivariateDistribution):
         return self.shape_matrix * self.df / (self.df - 2) if self.df > 2 else np.full_like(self.shape_matrix, np.inf)
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         n = size if isinstance(size, int) else int(np.prod(size))
         L = np.linalg.cholesky(self.shape_matrix)
         z = rng.normal(size=(n, self.k)) @ L.T
@@ -269,7 +270,7 @@ class MultivariatePareto(MultivariateDistribution):
         return cov
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         n = size if isinstance(size, int) else int(np.prod(size))
         g = rng.gamma(self.alpha, 1.0, size=n)
         e = rng.exponential(1.0, size=(n, self.d))

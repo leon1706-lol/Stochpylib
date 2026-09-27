@@ -10,6 +10,7 @@ serve as the convergence-study oracles in the tests.
 """
 
 import numpy as np
+from stochpylib._rng import as_generator as _rng
 
 __all__ = [
     "SDE", "Euler_Maruyama", "Milstein", "Runge_Kutta_SDE",
@@ -54,7 +55,7 @@ def _assemble(x0, incs):
 
 def Euler_Maruyama(sde, T=1.0, n_steps=100, n_paths=1, random_state=None):
     """Strong order 0.5 Euler-Maruyama; returns ``(n_paths, n_steps + 1)``."""
-    rng = np.random.default_rng(random_state)
+    rng = _rng(random_state)
     dt = T / n_steps
     dW = _brownian_increments(n_steps, n_paths, dt, rng)
     x = np.full(n_paths, sde.x0, dtype=float)
@@ -70,7 +71,7 @@ def Euler_Maruyama(sde, T=1.0, n_steps=100, n_paths=1, random_state=None):
 
 def Milstein(sde, T=1.0, n_steps=100, n_paths=1, random_state=None):
     """Strong order 1.0 Milstein scheme (numeric derivative of sigma)."""
-    rng = np.random.default_rng(random_state)
+    rng = _rng(random_state)
     dt = T / n_steps
     dW = _brownian_increments(n_steps, n_paths, dt, rng)
     x = np.full(n_paths, sde.x0, dtype=float)
@@ -99,7 +100,7 @@ def Runge_Kutta_SDE(sde, T=1.0, n_steps=100, n_paths=1, random_state=None):
     used previously here, lacks this Ito correction term and only achieves
     strong order 0.5 — no better than Euler-Maruyama (development/Probleme.md).
     """
-    rng = np.random.default_rng(random_state)
+    rng = _rng(random_state)
     dt = T / n_steps
     sqdt = np.sqrt(dt)
     dW = _brownian_increments(n_steps, n_paths, dt, rng)
@@ -137,7 +138,7 @@ def StochasticTaylor(sde, T=1.0, n_steps=100, n_paths=1, random_state=None):
     All drift/diffusion derivatives are central finite differences, keeping
     the user API to two plain callables.
     """
-    rng = np.random.default_rng(random_state)
+    rng = _rng(random_state)
     dt = T / n_steps
     dW = _brownian_increments(n_steps, n_paths, dt, rng)
     eps = 1e-5
@@ -181,7 +182,7 @@ def WeakApproximation(sde, T=1.0, n_steps=50, n_paths=100_000,
     functional and average; the estimator carries Monte-Carlo standard errors
     (see the tests for the E[GBM_T] check).
     """
-    rng = np.random.default_rng(random_state)
+    rng = _rng(random_state)
     dt = T / n_steps
     sq3 = np.sqrt(3.0)
     eps = 1e-5
@@ -236,9 +237,9 @@ def StrongApproximation(sde, exact_solver, scheme_solvers, step_sizes,
         hs, errs = [], []
         for n_steps in step_sizes:
             exact = exact_solver(sde, 1.0, n_steps, n_paths,
-                                 np.random.default_rng(random_state))
+                                 _rng(random_state))
             approx = solver(sde, 1.0, n_steps, n_paths,
-                            np.random.default_rng(random_state))
+                            _rng(random_state))
             err = np.sqrt(np.mean((approx[:, -1] - exact[:, -1]) ** 2))
             hs.append(1.0 / n_steps)
             errs.append(float(err))

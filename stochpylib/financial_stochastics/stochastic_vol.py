@@ -8,6 +8,7 @@ import math
 import numpy as np
 from scipy import optimize, special
 
+from stochpylib._parallel import parallelizable
 from stochpylib.financial_stochastics._common import (
     _bs_price,
     _check_kind,
@@ -163,6 +164,7 @@ class HestonModel:
             return S, v
         return S
 
+    @parallelizable("n_paths")
     def call_price_mc(self, K, T, n_paths=100_000, N=100, scheme="qe", random_state=None):
         S = self.simulate(T, N=N, n_paths=n_paths, scheme=scheme, random_state=random_state)
         disc = math.exp(-self.r * T)
@@ -420,6 +422,7 @@ class RoughHeston:
             return S, v
         return S
 
+    @parallelizable("n_paths")
     def call_price_mc(self, K, T, n_paths=50_000, N=100, random_state=None):
         S = self.simulate(T, N=N, n_paths=n_paths, random_state=random_state)
         payoff = np.maximum(S[:, -1] - K, 0.0)
@@ -505,6 +508,7 @@ class RoughBergomi:
             return S, v_full
         return S
 
+    @parallelizable("n_paths")
     def call_price_mc(self, K, T, n_paths=20_000, N=100, random_state=None):
         S = self.simulate(T, N=N, n_paths=n_paths, random_state=random_state)
         payoff = np.maximum(S[:, -1] - K, 0.0)
@@ -540,6 +544,7 @@ class LocalVol:
             t += dt
         return S
 
+    @parallelizable("n_paths")
     def price_mc(self, K, T, kind="call", n_paths=50_000, N=252, random_state=None):
         _check_kind(kind)
         S = self.simulate(T, N=N, n_paths=n_paths, random_state=random_state)
@@ -710,6 +715,7 @@ class LVSV:
             return S_hist, v_hist
         return S_hist
 
+    @parallelizable("n_paths")
     def price_mc(self, K, T, kind="call", n_paths=10_000, N=252, random_state=None):
         _check_kind(kind)
         S = self.simulate(T, N=N, n_paths=n_paths, random_state=random_state)

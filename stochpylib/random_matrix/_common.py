@@ -8,8 +8,8 @@ import numpy as np
 from scipy import interpolate
 
 
-def _rng(random_state):
-    return np.random.default_rng(random_state)
+# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
+from stochpylib._rng import as_generator as _rng
 
 
 def _as_1d(x, name="eigenvalues"):

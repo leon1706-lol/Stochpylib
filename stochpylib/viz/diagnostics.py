@@ -4,6 +4,7 @@ leverage/influence plots, and meta-analysis funnel plots.
 
 import numpy as np
 
+from stochpylib._rng import as_generator as _rng
 from stochpylib.viz._common import _as_1d, _extract_chains, _extract_samples, _get_fig_ax, \
     _leverage_stats
 
@@ -94,7 +95,7 @@ def pair_plot(samples, names=None, max_points=2000, random_state=None, ax=None, 
         raise ValueError("pair_plot needs at least 2 parameters")
     labels = names or [f"p{i}" for i in range(dim)]
     if n > max_points:
-        idx = np.random.default_rng(random_state).choice(n, size=max_points, replace=False)
+        idx = _rng(random_state).choice(n, size=max_points, replace=False)
         idx.sort()
         arr = arr[idx]
     fig, corr = _scatter_grid(arr, labels, diagonal="hist", title=title)

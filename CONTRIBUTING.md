@@ -1,8 +1,8 @@
 # Contributing to stochpylib
 
-Thanks for your interest! This project is early-stage (currently 756/794 planned public names
-across twenty-two implemented modules),
-so the most useful contributions implement or improve **one module at a time**.
+Thanks for your interest! This project has shipped all 794/794 planned public names
+across twenty-three implemented modules,
+so the most useful contributions improve or extend **one module at a time**.
 
 ## Development setup
 
@@ -17,10 +17,13 @@ Verify your installation any time with the shipped CLI:
 
 ```bash
 spl --version   # prints the installed version
-spl --test      # embedded self-check suite (275 checks, no pytest needed)
+spl --test      # embedded self-check suite (291 checks, no pytest needed)
 ```
 
-Python >= 3.10 required. NumPy/SciPy are the only runtime dependencies.
+Python >= 3.10 required. NumPy/SciPy are the only runtime dependencies; `stochpylib.utils`
+optionally interops with pandas/torch/jax/numba/cupy (`pip install "stochpylib[pandas,torch,jax,numba]"`,
+or `[gpu]` for cupy) — all five are lazily imported, confined to
+`stochpylib/utils/_backends.py`, and never required just to import the library.
 
 ## Ground rules
 

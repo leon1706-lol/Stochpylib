@@ -1606,3 +1606,81 @@ Suite: 2522 collected - 2520 passed / 2 skipped. Version 0.18.0.
   docs synced, and the vault spec flipped to implemented.
 
 Suite: 2709 collected - 2707 passed / 2 skipped. Version 0.19.0.
+
+## Phase 37 — V0.20.0 utils: seeds & streams, parallel/GPU/JIT backends, reproducibility, data utilities, serialization, interop (38 names) + library-wide RNG/parallel retrofit
+
+- **`utils` shipped end to end** across six submodules, the last module on the design spec
+  (794/794 public names, twenty-three modules): `random.py` (`set_seed`/`random_state`/
+  `spawn_generator`, the public face of the new shared `stochpylib._rng`),
+  `performance.py` (`Benchmark`/`Profiler`, `ParallelSimulation`/`GPUBackend`/`JIT_compile`
+  over the new shared `stochpylib._parallel`, `VectorizedOps`, `MemoryPool`),
+  `reproducibility.py` (`Reproducibility`/`RandomStream`/`VersionLock`/`EnvironmentCapture`/
+  `ExperimentLogger`), `data.py` (`fit`/`goodness_of_fit`/`moment_matching`/`ecdf`/
+  `DataValidation`/`outlier_detection`/`missing_imputation`, all delegating to
+  `distributions`/`statistics`/`nonparametric`/`robust_statistics` rather than
+  re-deriving anything), `io.py` (`to_dict`/`from_dict`/`to_json`/`from_json`/`to_pickle`/
+  `Serialization`/`Configuration`/`Logging`/`summary`), and `compat.py` (`numpy_interface`/
+  `scipy_interface`/`pandas_interface`/`torch_interface`/`jax_interface`).
+- **A new `stochpylib._rng`** (`as_generator`/`spawn`/`legacy_spawn`/`set_root`) is the one
+  canonical place every module resolves `random_state=` — the ten copy-pasted `_rng()`
+  helpers and ~130 inline `np.random.default_rng(random_state)` calls across
+  `distributions`/`copulas`/`levy_processes`/`timeseries`/`nonparametric`/`montecarlo`/
+  `spatial_statistics`/`gaussian_processes`/`numerical_methods`/`bayesian`/`viz`/
+  `financial_stochastics`/`experimental_design`/`statistics`/`random_matrix`/
+  `advanced_mcmc`/`queueing` now delegate to it, so `utils.set_seed()` makes
+  `random_state=None` reproducible library-wide. A new AST guard
+  (`test_rng_goes_through_the_shared_helper`) pins this: a bare or non-constant
+  `np.random.default_rng`/`.seed`/`RandomState(` call may only exist in the helper itself,
+  the CLI demo/self-check suites, or `utils.random`'s own `numpy_global=` path.
+- **`n_jobs=`/`parallel_backend=`** (via a new `stochpylib._parallel`) were retrofitted onto
+  every Monte Carlo function/method that returns one `MCResult` from a chunkable `n`:
+  `montecarlo.{crude_mc,simulate,pi_estimation,option_pricing_mc,reliability_mc}` and, in
+  `financial_stochastics`, `MonteCarloOptionPricing.{price,price_path_dependent,
+  asian_price}` and the Heston/rough-Heston/rough-Bergomi/local-vol/LVSV/Black-Karasinski/
+  LMM/HJM Monte Carlo pricers. Each chunk draws an independently spawned child RNG, so a
+  parallel run is reproducible and worker-count-invariant but **not** bit-identical to the
+  legacy single-stream serial run at the same seed; `n_jobs=None` (the default everywhere)
+  is byte-identical to the pre-V0.20.0 code path, verified with a golden-stream hash
+  harness run before and after every retrofit edit. `price(qmc=True)` rejects `n_jobs`
+  (scrambling loses its low-discrepancy guarantee once split into independent chunks).
+  `advanced_mcmc.MCMCSampler.sample` gained the same `n_jobs=`/`backend=` (each chain on
+  its own deep-copied sampler, so adaptation state never leaks across chains) for the
+  eleven samplers that use the base implementation directly; `HamiltonianMonteCarlo`/
+  `NoUTurnSampler`/`NeutraHMC` override `sample()` for divergence tracking and don't yet
+  forward it. `MonteCarloOptionPricing.simulate_paths`/`.price` and
+  `montecarlo.option_pricing_mc` additionally accept `backend=` (`utils.GPUBackend`) to
+  move the GBM arithmetic, never the random draw, onto numpy/torch/jax/cupy.
+- **Optional backends** (pandas/torch/jax/numba/cupy) are lazily imported and confined to
+  `utils/_backends.py`, mirroring `viz`'s matplotlib discipline exactly, including a new
+  AST guard; `import_backend()` turns a missing *or* installed-but-broken package (e.g.
+  numba against a newer numpy than it supports — the actual state of this dev box) into
+  one clear `ImportError` naming the pip extra. `GPUBackend`/`torch_interface`/
+  `jax_interface` were validated against the real torch (CPU) and pandas installs in this
+  environment; jax/numba are covered only by a new `utils-optional` CI job (ubuntu +
+  windows) that installs the real backends and runs `tests/utils/backend_optional.py`
+  (excluded from the main pytest collection, the same mechanism as `viz/backend_mpl.py`);
+  cupy is exercised only through an injected fake module (no CI GPU).
+- **Seven real bugs found and fixed** while building and wiring this up (Probleme.md
+  #122-128): a Generator crashed `MonteCarloOptionPricing.price(qmc=True)`; `queueing`'s
+  `DiscreteEventSim`/`QueueSimulation` had hidden implicit seeds (42/12345) and rejected a
+  Generator; `missing_imputation(method="knn")` produced NaN for an all-missing row;
+  `DataValidation.validate`'s NaN-stripping condition was inverted; `jax_interface`'s
+  distribution `.sample()` computed an unused PRNG key; `ParallelSimulation.map` called
+  `fn(*task)` instead of `fn(task)`; and `compat.py`/`performance.py` each had their own
+  direct `jax.numpy`/`jax.scipy.stats` import instead of routing through
+  `utils/_backends.py`.
+- **`spl info`** now builds its environment report from `utils.EnvironmentCapture`
+  instead of ad hoc `platform`/`numpy`/`scipy` calls, and prints an `optional backends:`
+  line; `spl demo utils` and `spl show <utils name>` (e.g. `Generator`, `fit`) added.
+- **Every Essential-Tasks.md wrap-up item completed**: `tests/utils/{tests,e2e}.py` added
+  (188 cases) plus `tests/utils/backend_optional.py`/`_workers.py` for the optional
+  backends and process-pool tests; retrofit tests added to
+  `montecarlo`/`financial_stochastics`/`advanced_mcmc`/`queueing`/`distributions`'s own
+  suites; the library suite gained an optional-backend-import-location guard, an
+  RNG-shared-helper guard, a subprocess sys.modules check and a cross-module utils e2e
+  test; `tests/docs` counts and stale-claim blacklist updated; `selftest.py` 275 -> 291
+  checks (`UTILS:` block + 1 `CONFORM` entry); `ci.yml` gained the `utils-optional` job
+  and the `module-smoke` matrix entry; all READMEs and `development/` docs synced, and
+  the vault spec flipped to implemented.
+
+Suite: 2938 collected - 2936 passed / 2 skipped. Version 0.20.0.

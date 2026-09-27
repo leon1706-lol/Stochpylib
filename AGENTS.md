@@ -10,14 +10,16 @@ Complete stochastic-computing library — probability, distributions, Monte
 Carlo, time series, GPs, copulas, survival, queueing, information theory,
 Lévy processes, financial stochastics, statistics, random matrix theory,
 advanced MCMC, numerical methods, optimization, design of experiments, spatial
-statistics — native on NumPy/SciPy, no wrapper deps. Thesis: one coherent package
-replaces scipy.stats + statsmodels + lifelines + copulas.
+statistics, visualization, utilities — native on NumPy/SciPy, no wrapper deps.
+Thesis: one coherent package replaces scipy.stats + statsmodels + lifelines + copulas.
 
-- **State:** 22 modules implemented (756 / 794 spec names), 1 remaining as spec.
+- **State:** all 23 planned modules implemented (794 / 794 spec names).
 - **Runtime deps:** NumPy, SciPy (`special`/`optimize`/`integrate` only).
   **Test deps:** pytest. Nothing else, ever — except `matplotlib`, an optional,
   lazily-imported `viz` backend (`stochpylib/viz/_mpl.py` only, never at module import
-  time); `viz` and its default SVG rendering never require it installed.
+  time), and pandas/torch/jax/numba/cupy, optional lazily-imported `utils` interop
+  (`stochpylib/utils/_backends.py` only, never at module import time); `viz`'s default
+  SVG rendering and every other module never require any of them installed.
 - **Docs move with code:** a change not reflected in the relevant docs in the
   same task isn't done (§5 step 5).
 
@@ -90,7 +92,14 @@ manual real repro — green unit tests alone have missed real bugs here.
    `pytest tests/` over the whole tree plus one `smoke (<module>)` job per
    module; a new module must be added to the `module-smoke` matrix
    (`tests/docs` asserts it equals `stochpylib.__all__`).
-4. **`pytest tests/ -v`** must be green; fix failures now, not later.
+4. **`pytest tests/ -v`** must be green; fix failures now, not later. This sandbox's
+   ~4GB RAM can't run it monolithically (verify in 1-3-module `run_in_background`
+   batches instead — see `todo.md`'s environment note for the exact pattern). A
+   backgrounded run already delivers its own completion notification automatically;
+   **don't poll `ReadNotifications`/process-CPU in a tight loop while waiting** — that
+   burns tokens for no new information. Either just continue the turn (the notification
+   arrives on its own) or arm one `Monitor` on the run's own log/exit rather than
+   repeated manual checks.
 5. **Update docs** (style in §6):
    `stochpylib/<module>/README.md` · `tests/README.md` (test count) ·
    `development/CHANGELOG.md` · `development/Probleme.md` ·
@@ -133,8 +142,10 @@ preference.
   (`fail-fast: false`); `smoke (<module>)` per module (oracle suite + e2e sweep
   + `spl demo`); `viz-matplotlib` (ubuntu + windows) installs matplotlib and runs
   `tests/viz/backend_mpl.py` (the only place that file runs) plus `viz`'s suites again;
-  `cross-suite` (library/docs/cli); `install-smoke` (wheel ships
-  every spec name).
+  `utils-optional` (ubuntu + windows) installs CPU torch/pandas/numba/jax and runs
+  `tests/utils/backend_optional.py` plus `utils`'s suites again (cupy/CUDA can't run
+  on a hosted runner, so it stays untested there); `cross-suite` (library/docs/cli);
+  `install-smoke` (wheel ships every spec name).
 - `publish.yml` on `v*` tags: build, smoke-test (`spl --version`,
   `spl --test`), publish via Trusted Publisher. `release.yml` creates the
   GitHub Release. Bump both version files before tagging.

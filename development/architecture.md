@@ -1,9 +1,8 @@
 # stochpylib Architecture
 
-**Status:** twenty-two of 23 planned modules are implemented and tested (756/794
+**Status:** all 23 planned modules are implemented and tested (794/794
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
-for the authoritative per-name state). Everything else in the module map below
-remains design spec, not shipped code.
+for the authoritative per-name state).
 
 **How to read this document:** read top to bottom. The objective and the two
 diagrams give the whole picture; the contract sections describe what every
@@ -50,6 +49,7 @@ flowchart LR
     D --> W["stochpylib.experimental_design<br/>classical, optimal & space-filling designs, response surfaces, sensitivity analysis"]
     F --> X["stochpylib.spatial_statistics<br/>variograms, kriging, random fields, point processes, spatial autocorrelation"]
     C --> Y["stochpylib.viz<br/>SVG-native statistical plots, matplotlib optional"]
+    A --> Z["stochpylib.utils<br/>seeds/streams, parallel/GPU/JIT backends, reproducibility, data, io, compat"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -68,6 +68,7 @@ flowchart LR
     W --> L
     X --> L
     Y --> L
+    Z --> L
 ```
 
 ## Tech Stack
@@ -78,12 +79,13 @@ flowchart TB
     A --> A2["NumPy"]
     A --> A3["SciPy (special / optimize / integrate only)"]
     A --> A4["matplotlib (optional, lazy -- viz raster/PDF backend only)"]
+    A --> A5["pandas/torch/jax/numba/cupy (optional, lazy -- utils/_backends.py only)"]
     B["Packaging"] --> B1["setuptools + pyproject.toml"]
     B --> B2["PyPI via Trusted Publisher (OIDC)"]
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (275 checks)"]
+    C --> C3["spl --test embedded self-check (291 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -255,10 +257,17 @@ README per module):
   spatial_statistics' variograms, random_matrix's limit laws, ...) rather than re-deriving
   it; `experimental_design.InteractionPlot`/`NormalPlot` and spatial_statistics's
   variogram/covariance/summary-function classes gained a `to_figure()` hook for this.
+- `utils/` — seeding/reproducible streams (`stochpylib._rng`, shared by every other
+  module), benchmarking/profiling and parallel/GPU/JIT execution (`stochpylib._parallel`
+  plus `utils/_backends.py`'s lazy pandas/torch/jax/numba/cupy imports), reproducibility
+  scaffolding, distribution fitting/goodness-of-fit/outlier-detection/imputation built on
+  `distributions`/`statistics`/`nonparametric`/`robust_statistics`, serialization, and
+  interop. `n_jobs=`/`backend=` were retrofitted onto `montecarlo`/`financial_stochastics`
+  (Monte Carlo pricers/estimators) and `advanced_mcmc` (the base `MCMCSampler.sample`).
 
-Planned modules (1): utils — lands with the same bar:
-native implementations, the shared conventions, full tests against independent
-oracles, honest documentation of deviations.
+All 23 modules in the map are now implemented, at the same bar: native implementations,
+the shared conventions, full tests against independent oracles, honest documentation of
+deviations.
 
 ## The Common Distribution Contract
 
@@ -276,7 +285,11 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
 ## Cross-Cutting Conventions (established by shipped modules)
 
 - **Seeds**: every stochastic method takes `random_state=None` (anything
-  `np.random.default_rng` accepts) — never a bare global seed.
+  `np.random.default_rng` accepts) — never a bare global seed. Every module resolves it
+  through the shared `stochpylib._rng.as_generator` (V0.20.0), so `utils.set_seed()`
+  makes `random_state=None` reproducible library-wide; an AST guard pins that no
+  `np.random.default_rng`/`.seed`/`RandomState(` call with a non-constant or missing
+  argument exists outside that one helper.
 - **Result objects**: Monte Carlo estimators return `MCResult` (`.estimate`,
   `.std_error`, `.confidence_interval()`); specialized results subclass it
   (`RiskResult` adds expected shortfall). Forecasting returns `ForecastResult`
@@ -295,6 +308,8 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
   extras, never runtime dependencies. `matplotlib` follows the same never-a-hard-
   dependency spirit for `viz`: lazily imported, confined to one file
   (`viz/_mpl.py`), only inside function bodies — an AST guard enforces both.
+  `pandas`/`torch`/`jax`/`numba`/`cupy` follow the identical pattern for `utils`,
+  confined to `utils/_backends.py` and enforced by the same kind of guard.
 - **Kernel composability**: GP kernels support algebraic composition
   (`RBFKernel(...) + MaternKernel(...)`) with flattened `part<i>__<name>`
   parameter trees for optimizers; sparse engines solve only in the whitened
@@ -388,6 +403,17 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
   backend (`_mpl.py`) for raster/PDF output — the scipy-policy bullet above covers the
   import discipline this requires. `Figure`/`Axes` are the only new result-shaped types
   (a scene graph, not an estimate).
+- **Utils conventions** (established by `utils`, V0.20.0): `fit()`/`goodness_of_fit()`/
+  `moment_matching()`/`ecdf()`/`outlier_detection()` delegate to `distributions`/
+  `statistics`/`nonparametric`/`robust_statistics` rather than re-deriving anything, and
+  return `montecarlo.MCResult`/`statistics.TestResult` rather than a new result type
+  (`FitResult`/`OutlierResult` are reports, not estimates). `n_jobs=`/`backend=` results
+  are reproducible and worker-count-invariant (each chunk/chain draws its own
+  independently spawned child RNG) but not bit-identical to the legacy single-stream
+  serial run at the same seed; `n_jobs=None`/`backend=None` (the defaults everywhere)
+  keep the exact pre-V0.20.0 behavior. `set_seed()` sets an opt-in library-wide root that
+  `random_state=None` spawns children from — it never touches numpy's or Python's own
+  global random state unless asked to.
 
 ## Package Layout Convention
 

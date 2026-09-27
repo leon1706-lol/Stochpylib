@@ -5,6 +5,7 @@ and phase portraits.
 import numpy as np
 
 from stochpylib.viz._common import _as_1d, _durbin_levinson, _get_fig_ax
+from stochpylib._rng import as_generator as _rng
 
 __all__ = ["plot_process", "plot_acf", "plot_pacf", "plot_periodogram", "plot_spectrogram",
            "plot_wavelet", "plot_trajectory"]
@@ -30,7 +31,7 @@ def plot_process(paths, t=None, max_paths=50, band=(0.05, 0.95), ax=None, title=
     if t.shape[0] != n_steps:
         raise ValueError("t must have one entry per step")
 
-    rng = np.random.default_rng(random_state)
+    rng = _rng(random_state)
     if n_paths > max_paths:
         idx = rng.choice(n_paths, size=max_paths, replace=False)
         idx.sort()

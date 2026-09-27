@@ -1231,3 +1231,65 @@ def test_random_state_reproducibility():
     p1 = v.simulate(T=1, N=50, n_paths=20, random_state=11)
     p2 = v.simulate(T=1, N=50, n_paths=20, random_state=11)
     assert np.array_equal(p1, p2)
+
+
+# --------------------------------------------------- V0.20.0 n_jobs=/backend= retrofit
+
+
+class TestParallelAndGPURetrofit:
+    """MC pricers across option_pricing/stochastic_vol/rate_models gained n_jobs=
+    (utils.ParallelSimulation) and GBM path simulation gained backend= (utils.GPUBackend)
+    -- AGENTS.md's shared GPU/parallel-backend convention."""
+
+    def test_n_jobs_none_is_bit_identical_to_legacy(self):
+        m = fs_op.MonteCarloOptionPricing(100, 100, 1, 0.05, 0.2)
+        r_legacy = m.price(n_paths=5000, random_state=1)
+        r_default = m.price(n_paths=5000, random_state=1, n_jobs=None)
+        assert r_legacy.estimate == r_default.estimate
+
+    def test_price_n_jobs_1_equals_n_jobs_4(self):
+        m = fs_op.MonteCarloOptionPricing(100, 100, 1, 0.05, 0.2)
+        r1 = m.price(n_paths=8000, random_state=2, n_jobs=1)
+        r4 = m.price(n_paths=8000, random_state=2, n_jobs=4)
+        assert r1.estimate == r4.estimate and r1.std_error == r4.std_error
+
+    def test_price_qmc_rejects_n_jobs(self):
+        m = fs_op.MonteCarloOptionPricing(100, 100, 1, 0.05, 0.2)
+        with pytest.raises(ValueError):
+            m.price(n_paths=2048, qmc=True, random_state=3, n_jobs=2)
+
+    def test_price_path_dependent_and_asian_n_jobs_invariance(self):
+        m = fs_op.MonteCarloOptionPricing(100, 100, 1, 0.05, 0.2)
+        r1 = m.price_path_dependent(lambda p: np.maximum(p[:, -1] - 100, 0),
+                                    n_paths=4000, random_state=4, n_jobs=1)
+        r2 = m.price_path_dependent(lambda p: np.maximum(p[:, -1] - 100, 0),
+                                    n_paths=4000, random_state=4, n_jobs=2)
+        assert r1.estimate == r2.estimate
+        a1 = m.asian_price(n_paths=4000, random_state=5, n_jobs=1)
+        a2 = m.asian_price(n_paths=4000, random_state=5, n_jobs=2)
+        assert a1.estimate == a2.estimate
+
+    def test_heston_call_price_mc_n_jobs_invariance(self):
+        h = fs_vol.HestonModel(S0=100, v0=0.04, kappa=2, theta=0.04, xi=0.3, rho=-0.7, r=0.02)
+        r1 = h.call_price_mc(K=100, T=1, n_paths=1500, N=30, random_state=6, n_jobs=1)
+        r2 = h.call_price_mc(K=100, T=1, n_paths=1500, N=30, random_state=6, n_jobs=2)
+        assert r1.estimate == r2.estimate
+
+    def test_lmm_caplet_price_mc_n_jobs_invariance(self):
+        lmm = fs_rate.LMM(forwards=[0.02, 0.025, 0.03], tau=[0.5, 0.5, 0.5],
+                          vols=[0.2, 0.2, 0.2])
+        r1 = lmm.caplet_price_mc(1, K=0.025, n_paths=1500, random_state=7, n_jobs=1)
+        r2 = lmm.caplet_price_mc(1, K=0.025, n_paths=1500, random_state=7, n_jobs=2)
+        assert r1.estimate == r2.estimate
+
+    def test_price_backend_torch_matches_numpy(self):
+        m = fs_op.MonteCarloOptionPricing(100, 100, 1, 0.05, 0.2)
+        r_np = m.price(n_paths=5000, random_state=8, backend="numpy")
+        r_torch = m.price(n_paths=5000, random_state=8, backend="torch")
+        assert abs(r_np.estimate - r_torch.estimate) < 1e-8
+
+    def test_simulate_paths_backend_torch_matches_numpy(self):
+        m = fs_op.MonteCarloOptionPricing(100, 100, 1, 0.05, 0.2)
+        a = m.simulate_paths(500, 30, random_state=9)
+        b = m.simulate_paths(500, 30, random_state=9, backend="torch")
+        assert np.allclose(a, b, atol=1e-8)

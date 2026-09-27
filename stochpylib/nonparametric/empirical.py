@@ -8,6 +8,7 @@ from scipy import optimize
 from stochpylib.nonparametric._base import NonparametricDensity
 from stochpylib.nonparametric._common import _dkw_band, _el_logstar, _el_logstar1, _el_logstar2
 from stochpylib.statistics._result import TestResult
+from stochpylib._rng import as_generator as _rng
 
 __all__ = ["EmpiricalDistribution", "EmpiricalCDF", "EmpiricalCharFn",
            "GlivenkoCantelli", "EmpiricalLikelihood"]
@@ -69,7 +70,7 @@ class EmpiricalDistribution(NonparametricDensity):
         return float(out[0]) if scalar else out
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.choice(self._x_sorted, size=size, replace=True, p=self._w_sorted)
 
     def mean(self):
@@ -206,7 +207,7 @@ class GlivenkoCantelli:
     def convergence(self, sizes, dist, random_state=None):
         """Sup-distance of the empirical CDF from ``dist`` across sample sizes
         ``sizes`` (fresh draws from ``dist`` at each size)."""
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         out = []
         for n in sizes:
             x = np.asarray(dist.rvs(size=int(n), random_state=rng), dtype=float)

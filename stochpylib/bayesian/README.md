@@ -64,7 +64,10 @@ expectation propagation's moment matching delegates to `stochpylib.numerical_met
   siblings of `statistics.EstimateResult`/`TestResult` — a point answer plus enough to
   quantify it (`credible_interval()`, `sample()`, `float(ICResult)`).
 - **`.fit(X, y)` returns `self`**, fitted attributes end in `_`, every stochastic method
-  takes `random_state=` — the same fluent convention as the rest of the library.
+  takes `random_state=` — the same fluent convention as the rest of the library
+  (`BayesianLogistic.predict_proba(..., method="mc")`'s Monte Carlo draw gained an
+  explicit `random_state=0` default, in place of a hardcoded seed, as part of V0.20.0's
+  library-wide RNG retrofit).
 - **Delegation, not duplication.** MCMC posteriors run through `advanced_mcmc`'s
   samplers, `MFVariational` through `MeanFieldVI`/`ADVI`, SMC evidence through
   `SequentialMonteCarlo`, and EP's per-site moment matching through

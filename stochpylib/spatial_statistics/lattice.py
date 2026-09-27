@@ -13,6 +13,7 @@ import numpy as np
 from scipy.optimize import minimize_scalar
 
 from stochpylib.statistics._common import _numeric_hessian
+from stochpylib._rng import as_generator as _rng
 
 __all__ = ["SARModel", "CARModel"]
 
@@ -170,7 +171,7 @@ class CARModel:
         n = len(self.X_)
         Q = (np.eye(n) - self.rho_ * self._W) / self.sigma2_
         L, _ = cholesky_with_jitter(np.linalg.inv(Q))
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return self.X_ @ self.beta_ + L @ rng.standard_normal(n)
 
     def predict(self):

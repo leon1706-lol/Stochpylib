@@ -494,10 +494,11 @@ def test_cli_help_shows_library_overview(capsys):
         "--test",
     ):
         assert token in out, f"help output missing {token!r}"
-    # implemented modules must not be listed as roadmap/planned anymore
-    roadmap = out[out.index("roadmap:"):]
+    # nothing is left on the roadmap -- the epilog states this, not a per-module list
+    assert "status:" in out
+    status = out[out.index("status:"):]
     for planned_away in ("timeseries,", "gaussian_processes,", "montecarlo,"):
-        assert planned_away not in roadmap
+        assert planned_away not in status
 
 
 def test_cli_selftest_flag_green(capsys):
@@ -524,3 +525,24 @@ def test_doctests_pass():
                     probability_pkg.independence):
             total_failed += doctest.testmod(mod, verbose=False).failed
     assert total_failed == 0, buf.getvalue()
+
+
+# --------------------------------------------------- V0.20.0 random_state= retrofit
+
+
+def test_set_seed_makes_unseeded_rvs_reproducible():
+    """Every distribution now resolves random_state= through the shared
+    stochpylib._rng helper, so utils.set_seed() makes random_state=None calls
+    reproducible library-wide (AGENTS.md's seeding convention)."""
+    from stochpylib.utils import set_seed
+    from stochpylib.distributions import Normal, Gamma, Poisson
+
+    set_seed(2024)
+    a = (Normal(0, 1).rvs(5, random_state=None), Gamma(3, 2).rvs(5, random_state=None),
+        Poisson(4).rvs(5, random_state=None))
+    set_seed(2024)
+    b = (Normal(0, 1).rvs(5, random_state=None), Gamma(3, 2).rvs(5, random_state=None),
+        Poisson(4).rvs(5, random_state=None))
+    set_seed(None)
+    for x, y in zip(a, b):
+        assert np.array_equal(np.asarray(x), np.asarray(y))

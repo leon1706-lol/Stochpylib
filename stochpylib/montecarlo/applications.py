@@ -3,6 +3,8 @@
 import numpy as np
 from dataclasses import dataclass
 
+from stochpylib._parallel import parallelizable
+from stochpylib._rng import as_generator as _rng
 from stochpylib.montecarlo._result import MCResult
 from stochpylib.montecarlo.simulation import crude_mc
 from stochpylib.montecarlo.variance_reduction import AntitheticVariates
@@ -44,9 +46,10 @@ class MonteCarloIntegration:
                         random_state=self.random_state)
 
 
+@parallelizable("n")
 def pi_estimation(n=1_000_000, random_state=None):
     """Estimate pi by sampling the unit square and counting quarter-circle hits."""
-    rng = np.random.default_rng(random_state)
+    rng = _rng(random_state)
     pts = rng.uniform(size=(n, 2))
     hits = np.sum(pts[:, 0] ** 2 + pts[:, 1] ** 2 <= 1.0)
     p_hat = hits / n
@@ -55,17 +58,32 @@ def pi_estimation(n=1_000_000, random_state=None):
                     method="pi_estimation")
 
 
+@parallelizable("n", even=True)
 def option_pricing_mc(S=100.0, K=100.0, T=1.0, r=0.05, sigma=0.2, n=100_000,
-                      kind="call", antithetic=True, random_state=None):
-    """European option price under GBM via Monte Carlo (antithetic by default)."""
+                      kind="call", antithetic=True, random_state=None, backend=None):
+    """European option price under GBM via Monte Carlo (antithetic by default).
+
+    ``backend=None`` (default): unchanged numpy formula. ``backend=`` a device
+    name or :class:`~stochpylib.utils.GPUBackend` moves the exp/arithmetic
+    (not the random draw itself) to that device.
+    """
     if kind not in ("call", "put"):
         raise ValueError("kind must be 'call' or 'put'")
+    gb = None
+    if backend is not None:
+        from stochpylib.utils.performance import GPUBackend
+        gb = backend if isinstance(backend, GPUBackend) else GPUBackend(backend)
     if antithetic:
         av = AntitheticVariates(n_simulations=n, random_state=random_state)
         m = n // 2
-        z = av.rng.standard_normal(m)
-        up = S * np.exp((r - sigma**2 / 2) * T + sigma * np.sqrt(T) * z)
-        down = S * np.exp((r - sigma**2 / 2) * T - sigma * np.sqrt(T) * z)
+        if gb is None:
+            z = av.rng.standard_normal(m)
+            up = S * np.exp((r - sigma**2 / 2) * T + sigma * np.sqrt(T) * z)
+            down = S * np.exp((r - sigma**2 / 2) * T - sigma * np.sqrt(T) * z)
+        else:
+            z = gb.standard_normal((m,), random_state=av.rng)
+            up = gb.to_numpy(S * gb.exp((r - sigma**2 / 2) * T + sigma * np.sqrt(T) * z))
+            down = gb.to_numpy(S * gb.exp((r - sigma**2 / 2) * T - sigma * np.sqrt(T) * z))
         if kind == "call":
             payoffs = 0.5 * (np.maximum(up - K, 0) + np.maximum(down - K, 0))
         else:
@@ -75,9 +93,13 @@ def option_pricing_mc(S=100.0, K=100.0, T=1.0, r=0.05, sigma=0.2, n=100_000,
         se = disc * float(payoffs.std(ddof=1) / np.sqrt(m))
         return MCResult(estimate=est, std_error=se, n_samples=n,
                         method=f"mc-{kind}-antithetic")
-    rng = np.random.default_rng(random_state)
-    z = rng.standard_normal(n)
-    terminal = S * np.exp((r - sigma**2 / 2) * T + sigma * np.sqrt(T) * z)
+    rng = _rng(random_state)
+    if gb is None:
+        z = rng.standard_normal(n)
+        terminal = S * np.exp((r - sigma**2 / 2) * T + sigma * np.sqrt(T) * z)
+    else:
+        z = gb.standard_normal((n,), random_state=rng)
+        terminal = gb.to_numpy(S * gb.exp((r - sigma**2 / 2) * T + sigma * np.sqrt(T) * z))
     if kind == "call":
         payoffs = np.maximum(terminal - K, 0)
     else:
@@ -114,6 +136,7 @@ def risk_analysis(samples, alpha=0.95):
     return res
 
 
+@parallelizable("n")
 def reliability_mc(performance_fn, input_distributions, threshold=0.0, n=100_000,
                    random_state=None):
     """Failure probability ``P(performance_fn(X) <= threshold)``.
@@ -121,7 +144,7 @@ def reliability_mc(performance_fn, input_distributions, threshold=0.0, n=100_000
     ``input_distributions`` is a list of stochpylib ``Distribution`` objects (their
     ``.rvs()`` supplies independent inputs).
     """
-    rng = np.random.default_rng(random_state)
+    rng = _rng(random_state)
     draws = [np.atleast_1d(d.rvs(n, random_state=rng)).astype(float) for d in input_distributions]
     X = np.column_stack(draws)
     g = np.asarray(performance_fn(X), dtype=float).reshape(-1)
@@ -144,7 +167,7 @@ def sensitivity_analysis(fn, input_distributions, n=100_000, method="correlation
     """
     from stochpylib.experimental_design._common import _pearson, _spearman
 
-    rng = np.random.default_rng(random_state)
+    rng = _rng(random_state)
     cols = [np.atleast_1d(d.rvs(n, random_state=rng)).astype(float) for d in input_distributions]
     X = np.column_stack(cols)
     y = np.asarray(fn(X), dtype=float).reshape(-1)

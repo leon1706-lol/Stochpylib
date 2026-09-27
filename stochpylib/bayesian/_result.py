@@ -8,6 +8,7 @@ diagnostics) -- the ``bayesian`` sibling of ``statistics.EstimateResult``/``Test
 
 import numpy as np
 from scipy import special
+from stochpylib._rng import as_generator as _rng
 
 __all__ = ["Posterior", "PosteriorApproximation", "ICResult", "EmpiricalPredictive"]
 
@@ -61,7 +62,7 @@ class Posterior:
         return self.mode_
 
     def sample(self, n=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         if self.dist is not None:
             out = np.atleast_2d(np.asarray(self.dist.rvs(n, random_state=rng)))
             if self.dim == 1 and out.ndim == 2 and out.shape[1] != 1:
@@ -196,7 +197,7 @@ class PosteriorApproximation:
         return np.sqrt(np.diag(self.cov_))
 
     def sample(self, n=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         if self.samples_ is not None:
             w = self.weights_
             if w is None:
@@ -312,7 +313,7 @@ class EmpiricalPredictive:
         return np.quantile(self.draws, q)
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.choice(self.draws, size=size, replace=True)
 
     def mean(self):

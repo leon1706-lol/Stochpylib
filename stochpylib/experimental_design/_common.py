@@ -16,8 +16,8 @@ import numpy as np
 _LETTERS = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
 
 
-def _rng(random_state):
-    return np.random.default_rng(random_state)
+# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
+from stochpylib._rng import as_generator as _rng
 
 
 def _factor_names(k):

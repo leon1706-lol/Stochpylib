@@ -29,7 +29,11 @@ cross-check them all.
 
 - All analytical models return a shared immutable `QueueResult` with fields
   `L`, `Lq`, `W`, `Wq`, `rho` and model-specific extras.
-- Native numpy/scipy only; simulation seeds via `random_state=`.
+- Native numpy/scipy only; simulation seeds via `random_state=` (resolved through the
+  shared `stochpylib._rng` helper, accepting a `Generator` too). `DiscreteEventSim`/
+  `QueueSimulation` no longer default an unseeded call to a hidden fixed seed (42/12345
+  before V0.20.0) — `random_state=None` now means fresh entropy, matching every other
+  module (Probleme.md #123).
 
 ## Known limitations
 

@@ -253,6 +253,15 @@ def _implemented_overview():
             "                   dendrograms; Markov-chain diagrams, Brownian fans, GP\n"
             "                   bands, Kaplan-Meier curves, variograms, eigenvalue\n"
             "                   spectra -- native SVG rendering, matplotlib optional",
+        "utils":
+            "infrastructure & utilities: seeding/reproducible streams,\n"
+            "                   benchmarking/profiling, parallel/GPU/JIT backends,\n"
+            "                   reproducibility (version locks, environment capture,\n"
+            "                   experiment logging), distribution fitting & goodness-\n"
+            "                   of-fit, outlier detection, missing-data imputation,\n"
+            "                   serialization (JSON/pickle/npz), and interop with\n"
+            "                   numpy/scipy/pandas/torch/jax -- the last four lazily\n"
+            "                   imported, never a hard dependency",
     }
 
     blocks = []
@@ -376,17 +385,15 @@ def cmd_update(vers=None, yes=False, dry_run=False, force=False,
 
 def cmd_info():
     """Environment report: interpreter, dependencies, install mode, inventory."""
-    import platform
-
-    import numpy
-    import scipy
-
     import stochpylib
+    from stochpylib.utils import EnvironmentCapture
+
+    env = EnvironmentCapture().capture().to_dict()
 
     print(f"stochpylib {get_version()} ({install_mode()} install)")
-    print(f"  python : {platform.python_version()} ({platform.system()} {platform.release()})")
-    print(f"  numpy  : {numpy.__version__}")
-    print(f"  scipy  : {scipy.__version__}")
+    print(f"  python : {env['python_version']} ({env['platform_system']} {env['platform_release']})")
+    print(f"  numpy  : {env['numpy_version']}")
+    print(f"  scipy  : {env['scipy_version']}")
     total = 0
     print("  modules:")
     for name in stochpylib.__all__:
@@ -394,6 +401,9 @@ def cmd_info():
         total += n
         print(f"    {name:<20}{n:>4} public names")
     print(f"  total  : {total} public names across {len(stochpylib.__all__)} modules")
+    backends = ", ".join(f"{k}={'yes' if v else 'no'}" for k, v in
+                         sorted(env["available_backends"].items()))
+    print(f"  optional backends: {backends}")
     print("  verify : spl --test (offline self-check suite, no pytest needed)")
     return 0
 
@@ -528,7 +538,7 @@ Try a live mini-example:  spl demo <module>   (bare 'spl demo' lists them)
         epilog=(
             "subcommands: update, info, show, demo, cite - run 'spl <command> --help'\n"
             "for details.\n\n"
-            "roadmap: one more module is planned (utils) -\n"
+            "status: all 23 planned modules are implemented (794/794 spec names) -\n"
             "see the repository README and development/Implementation-Checklist.md.\n\n"
             "docs: README.md - contributing: CONTRIBUTING.md - security: SECURITY.md"
         ),

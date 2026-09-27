@@ -8,8 +8,9 @@ import numpy as np
 from scipy import special
 
 
-def _rng(random_state):
-    return np.random.default_rng(random_state)
+# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
+from stochpylib._rng import as_generator as _rng
+from stochpylib._rng import legacy_spawn as _spawn_rngs
 
 
 def _as_1d(x, name="x"):
@@ -30,12 +31,6 @@ def _as_2d(X, name="X"):
     if not np.all(np.isfinite(arr)):
         raise ValueError(f"{name} contains non-finite values")
     return arr
-
-
-def _spawn_rngs(rng, n):
-    """Independent child generators, seeded off ``rng`` so a run is reproducible."""
-    seeds = rng.integers(0, np.iinfo(np.int64).max, size=n)
-    return [np.random.default_rng(int(s)) for s in seeds]
 
 
 def _broadcast_init(theta_init, n_chains):

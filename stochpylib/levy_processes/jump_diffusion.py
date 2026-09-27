@@ -12,6 +12,7 @@ import math
 import numpy as np
 from scipy import integrate, special
 
+from stochpylib._rng import as_generator as _rng
 from stochpylib.levy_processes.levy import LevyProcess
 from stochpylib.levy_processes.subordinators import (
     GammaSubordinator,
@@ -141,7 +142,7 @@ class MertonJumpDiffusion(JumpDiffusion):
         """
         from stochpylib.montecarlo._result import MCResult
 
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         x = self.b * T + self.sigma * math.sqrt(T) * rng.standard_normal(n_paths)
         n = rng.poisson(self.jump_rate * T, n_paths)
         x = x + n * self.jump_mean + np.sqrt(n) * self.jump_std \
@@ -226,7 +227,7 @@ class KouJumpDiffusion(JumpDiffusion):
         """Monte-Carlo cross-check returning an ``MCResult``."""
         from stochpylib.montecarlo._result import MCResult
 
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         x = self.b * T + self.sigma * math.sqrt(T) * rng.standard_normal(n_paths)
         n = rng.poisson(self.jump_rate * T, n_paths)
         up = rng.random(n.sum()) < self.p_up
@@ -270,7 +271,7 @@ class BatesModel:
 
     def simulate(self, T, n_steps, n_paths=1, random_state=None):
         """Return ``(price_paths, var_paths)`` of shape ``(n_paths, n_steps+1)``."""
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         dt = T / n_steps
         S = np.empty((n_paths, n_steps + 1))
         v = np.empty((n_paths, n_steps + 1))
@@ -413,7 +414,7 @@ class CGMYProcess:
         return float(total)
 
     def simulate(self, T, n_steps, n_paths=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         dt = float(T) / n_steps
         incs = np.array([[self._increment(dt, rng) for _ in range(n_steps)]
                          for _ in range(n_paths)])
@@ -456,7 +457,7 @@ class NormalInverseGaussianProcess:
             - math.sqrt(a2 - self.beta ** 2)))
 
     def simulate(self, T, n_steps, n_paths=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         dt = float(T) / n_steps
         incs = np.array([[self._increment(dt, rng) for _ in range(n_steps)]
                          for _ in range(n_paths)])

@@ -7,6 +7,7 @@ library's validated Chambers-Mallows-Stuck machinery in
 """
 
 import numpy as np
+from stochpylib._rng import as_generator as _rng
 
 __all__ = [
     "LevyProcess", "StableProcess", "AlphaStableDistribution",
@@ -46,7 +47,7 @@ class LevyProcess:
 
     def simulate(self, T, n_steps, n_paths=1, random_state=None):
         """Paths on ``[0, T]``; returns array of shape ``(n_paths, n_steps+1)``."""
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         dt = float(T) / n_steps
         incs = np.array([[self._increment(dt, rng) for _ in range(n_steps)]
                          for _ in range(n_paths)])
@@ -172,14 +173,14 @@ class SubordinatedProcess:
         """Values of X at ``times``: base increments evaluated at the
         subordinator's realized time increments (one coupled path)."""
         times = np.asarray(times, dtype=float)
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         dts = np.diff(np.concatenate(([0.0], times)))
         taus = np.array([self.subordinator._increment(dt, rng) for dt in dts])
         xs = np.array([self._base_increment(t, rng) for t in taus])
         return np.cumsum(xs)
 
     def simulate(self, T, n_steps, n_paths=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         dt = float(T) / n_steps
         paths = np.empty((n_paths, n_steps + 1))
         paths[:, 0] = 0.0

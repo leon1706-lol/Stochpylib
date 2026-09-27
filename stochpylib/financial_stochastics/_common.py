@@ -29,8 +29,8 @@ def _check_kind(kind):
         raise ValueError("kind must be 'call' or 'put'")
 
 
-def _rng(random_state):
-    return np.random.default_rng(random_state)
+# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
+from stochpylib._rng import as_generator as _rng
 
 
 def _black_price(F, K, T, sigma, df=1.0, kind="call"):

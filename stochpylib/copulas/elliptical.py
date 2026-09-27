@@ -13,6 +13,7 @@ from scipy import integrate, optimize, special
 
 from stochpylib.copulas._base import BaseCopula
 from stochpylib.copulas._utils import as_u_matrix, kendall_tau_estimate, student_t_ppf
+from stochpylib._rng import as_generator as _rng
 
 __all__ = ["GaussianCopula", "StudentTCopula"]
 
@@ -179,7 +180,7 @@ class GaussianCopula(_EllipticalBase):
     def sample(self, n, random_state=None):
         self._require_fit()
         n = self._validate_sample_n(n)
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         L = np.linalg.cholesky(self.correlation_)
         Z = rng.standard_normal((n, len(L))) @ L.T
         return _norm_cdf(Z)
@@ -275,7 +276,7 @@ class StudentTCopula(_EllipticalBase):
         self._require_fit()
         n = self._validate_sample_n(n)
         nu = self.df_
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         L = np.linalg.cholesky(self.correlation_)
         Z = rng.standard_normal((n, len(L))) @ L.T
         W = rng.chisquare(nu, size=n)

@@ -118,6 +118,13 @@ def _numeric_hessian_of_grad(grad_fn, x, eps):
     return 0.5 * (H + H.T)
 
 
+def _run_chain_worker(sampler, init, r, d):
+    """Module-level (hence picklable, unlike a closure) worker for
+    ``MCMCSampler.sample(..., n_jobs=)``'s ``backend="process"`` path."""
+    draws, logps, acc_rate = sampler._run_chain(init, r, d)
+    return draws, logps, acc_rate, sampler
+
+
 class MCMCSampler:
     """Base class for every MCMC sampler: chain bookkeeping around a ``_step`` kernel.
 
@@ -162,32 +169,66 @@ class MCMCSampler:
 
     # ---- public API ----
 
-    def sample(self, theta_init, random_state=None):
+    def _run_chain(self, init, rng, dim):
+        """Run one full chain (warmup + kept draws) and return
+        ``(draws, logps, acceptance_rate)``. Split out of :meth:`sample` so it
+        can run either inline (serial) or on a worker (``n_jobs=``)."""
+        state = self._init_state(init, rng)
+        if not np.isfinite(state["logp"]):
+            raise ValueError("theta_init has zero density under log_prob")
+        self._start_chain(dim, rng)
+        for _ in range(self.n_warmup):
+            state, _ = self._step(state, rng, True)
+        self._end_warmup()
+        draws = np.empty((self.n_samples, dim))
+        logps = np.empty(self.n_samples)
+        n_acc = 0.0
+        n_total = self.n_samples * self.thin
+        for i in range(n_total):
+            state, a = self._step(state, rng, False)
+            n_acc += float(a)
+            if (i + 1) % self.thin == 0:
+                draws[i // self.thin] = state["theta"]
+                logps[i // self.thin] = state["logp"]
+        return draws, logps, n_acc / n_total
+
+    def sample(self, theta_init, random_state=None, n_jobs=None, backend="thread"):
+        """Run every chain and set ``chains_``/``log_probs_``/``acceptance_rates_``.
+
+        ``n_jobs=None`` (default) runs chains one after another in-process --
+        byte-identical to the pre-V0.20.0 behavior. ``n_jobs=`` an int runs
+        chains on separate workers (each on its own deep-copied sampler, so
+        per-chain adaptation state never leaks across chains); the numeric
+        chains themselves are identical either way since each chain already
+        draws from its own independent child RNG.
+        """
         rng = _rng(random_state)
         inits = _broadcast_init(theta_init, self.n_chains)
         dim = inits.shape[1]
         rngs = _spawn_rngs(rng, self.n_chains)
-        chains = np.empty((self.n_chains, self.n_samples, dim))
-        logps = np.empty((self.n_chains, self.n_samples))
-        acc = np.zeros(self.n_chains)
-        for c in range(self.n_chains):
-            r = rngs[c]
-            state = self._init_state(inits[c], r)
-            if not np.isfinite(state["logp"]):
-                raise ValueError("theta_init has zero density under log_prob")
-            self._start_chain(dim, r)
-            for _ in range(self.n_warmup):
-                state, _ = self._step(state, r, True)
-            self._end_warmup()
-            n_acc = 0.0
-            n_total = self.n_samples * self.thin
-            for i in range(n_total):
-                state, a = self._step(state, r, False)
-                n_acc += float(a)
-                if (i + 1) % self.thin == 0:
-                    chains[c, i // self.thin] = state["theta"]
-                    logps[c, i // self.thin] = state["logp"]
-            acc[c] = n_acc / n_total
+
+        if n_jobs is None:
+            results = [self._run_chain(inits[c], rngs[c], dim) for c in range(self.n_chains)]
+        else:
+            import copy
+
+            from stochpylib._parallel import execute
+
+            tasks = [(copy.deepcopy(self), inits[c], rngs[c], dim) for c in range(self.n_chains)]
+            raw = execute(_run_chain_worker, tasks, n_jobs=n_jobs, backend=backend)
+            results = [(d, l, a) for d, l, a, _ in raw]
+            # match the serial path's post-sample adaptation state: the last
+            # chain processed is the one whose per-chain state `self` ends with.
+            # Reads the sampler each worker actually mutated (not the pre-dispatch
+            # copy), so this is correct for both thread and process backends.
+            last_sampler = raw[-1][3]
+            for key, value in last_sampler.__dict__.items():
+                if key != "target":
+                    self.__dict__[key] = value
+
+        chains = np.stack([r[0] for r in results])
+        logps = np.stack([r[1] for r in results])
+        acc = np.array([r[2] for r in results])
         self.chains_ = chains
         self.log_probs_ = logps
         self.acceptance_rates_ = acc

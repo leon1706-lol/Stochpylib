@@ -29,6 +29,7 @@ import numpy as np
 from stochpylib.copulas._base import BaseCopula
 from stochpylib.copulas._utils import as_u_matrix, kendall_tau_estimate, pseudo_obs
 from stochpylib.copulas.pair import PAIR_FAMILIES, PairCopulaConstruction
+from stochpylib._rng import as_generator as _rng
 
 __all__ = [
     "CVine", "DVine", "RVine", "VineStructureSelect", "VineCopula",
@@ -356,7 +357,7 @@ class _VineBase(BaseCopula):
         conditioning column is used."""
         self._require_fit()
         n = self._validate_sample_n(n)
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         d = self.dimension
         sim = np.full((n, d), np.nan)
         cache = {}

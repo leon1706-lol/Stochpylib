@@ -368,3 +368,59 @@ def test_confidence_interval_half_width_is_the_normal_quantile(level):
     assert lo == pytest.approx(1.0 - 2.0 * z) and hi == pytest.approx(1.0 + 2.0 * z)
     with pytest.raises(ValueError):
         M.MCResult(1.0, 1.0).confidence_interval(1.0)
+
+
+# --------------------------------------------------- V0.20.0 n_jobs= retrofit (utils)
+
+
+class TestParallelRetrofit:
+    """crude_mc/simulate/pi_estimation/option_pricing_mc/reliability_mc gained
+    n_jobs=/backend= via utils.ParallelSimulation (AGENTS.md's GPU/parallel-backend
+    convention: a shared utility every simulation-heavy module opts into)."""
+
+    def test_n_jobs_none_is_bit_identical_to_legacy(self):
+        r_legacy = M.crude_mc(lambda p: p[:, 0] ** 2, n=5000, random_state=5)
+        r_default = M.crude_mc(lambda p: p[:, 0] ** 2, n=5000, random_state=5, n_jobs=None)
+        assert r_legacy.estimate == r_default.estimate
+        assert r_legacy.std_error == r_default.std_error
+
+    def test_crude_mc_n_jobs_1_equals_n_jobs_4(self):
+        r1 = M.crude_mc(lambda p: p[:, 0] ** 2, n=8000, random_state=7, n_jobs=1)
+        r4 = M.crude_mc(lambda p: p[:, 0] ** 2, n=8000, random_state=7, n_jobs=4)
+        assert r1.estimate == r4.estimate and r1.std_error == r4.std_error
+
+    def test_crude_mc_pooled_estimate_close_to_closed_form(self):
+        # integral of x over [0,1] is 0.5
+        res = M.crude_mc(lambda p: p[:, 0], n=200_000, random_state=8, n_jobs=4)
+        assert abs(res.estimate - 0.5) < 4 * res.std_error
+
+    def test_pi_estimation_n_jobs_invariance(self):
+        r2 = M.pi_estimation(n=20_000, random_state=9, n_jobs=2)
+        r3 = M.pi_estimation(n=20_000, random_state=9, n_jobs=3)
+        assert r2.estimate == r3.estimate and r2.std_error == r3.std_error
+        assert abs(r2.estimate - np.pi) < 4 * r2.std_error
+
+    def test_option_pricing_mc_n_jobs_invariance(self):
+        r2 = M.option_pricing_mc(n=20_000, random_state=10, n_jobs=2)
+        r3 = M.option_pricing_mc(n=20_000, random_state=10, n_jobs=3)
+        assert r2.estimate == r3.estimate
+
+    def test_option_pricing_mc_backend_numpy_matches_default(self):
+        r_default = M.option_pricing_mc(n=5000, random_state=11)
+        r_np = M.option_pricing_mc(n=5000, random_state=11, backend="numpy")
+        assert abs(r_default.estimate - r_np.estimate) < 1e-9
+
+    def test_reliability_mc_n_jobs_invariance(self):
+        from stochpylib.distributions import Weibull
+        r2 = M.reliability_mc(lambda X: X[:, 0], [Weibull(2.0, 10.0)], threshold=5.0,
+                              n=20_000, random_state=12, n_jobs=2)
+        r3 = M.reliability_mc(lambda X: X[:, 0], [Weibull(2.0, 10.0)], threshold=5.0,
+                              n=20_000, random_state=12, n_jobs=3)
+        assert r2.estimate == r3.estimate
+
+    def test_simulate_n_jobs_invariance(self):
+        r2 = M.simulate(np.mean, lambda r: r.standard_normal(30), n_simulations=4000,
+                        random_state=13, n_jobs=2)
+        r3 = M.simulate(np.mean, lambda r: r.standard_normal(30), n_simulations=4000,
+                        random_state=13, n_jobs=3)
+        assert r2.estimate == r3.estimate

@@ -8,6 +8,7 @@ import math
 import numpy as np
 from scipy import optimize
 
+from stochpylib._parallel import parallelizable
 from stochpylib.financial_stochastics._common import _bs_price, _mc_result, _norm_cdf, _rng
 
 __all__ = [
@@ -515,6 +516,7 @@ class BlackKarasinski:
         Var_x = sigma**2 * (1.0 - ekt**2) / (2.0 * kappa) if kappa > 1e-10 else sigma**2 * t
         return math.exp(E_x + 0.5 * Var_x)
 
+    @parallelizable("n_paths")
     def zcb_price(self, T, N=100, n_paths=100_000, random_state=None):
         r = self.simulate(T, N=N, n_paths=n_paths, random_state=random_state)
         dt = T / N
@@ -592,6 +594,7 @@ class LMM:
             disc *= 1.0 / (1.0 + self.tau[k] * self.forwards[k])
         return self.tau[i] * disc * _bs_price(F_i, K, T_i, 0.0, vol, 0.0, "call")
 
+    @parallelizable("n_paths")
     def caplet_price_mc(self, i, K, n_paths=50_000, substeps=4, random_state=None):
         paths = self.simulate(n_paths, substeps, random_state)
         F_iT = paths[:, i * substeps, i]
@@ -659,6 +662,7 @@ class HJM:
         _, f0 = self._initial_curve()
         return self.zcb_from_curve(f0, T)
 
+    @parallelizable("n_paths")
     def zcb_price_mc(self, T, n_paths=10_000, random_state=None):
         dt = self.dx
         n_steps = int(round(T / dt))

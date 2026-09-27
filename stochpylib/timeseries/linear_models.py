@@ -20,6 +20,7 @@ import warnings
 import numpy as np
 from scipy import optimize
 
+from stochpylib._rng import as_generator as _rng
 from stochpylib.timeseries._result import ForecastResult
 from stochpylib.timeseries._utils import (
     aic_bic,
@@ -165,7 +166,7 @@ class _UnivariateBase:
     def simulate(self, n=500, burnin=200, random_state=None):
         if self.sigma2_ is None:
             raise RuntimeError("fit() must be called before simulate()")
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         total = int(n) + int(burnin)
         ar_map, ma_map = self._maps()
         max_lag = max(max(ar_map, default=0), max(ma_map, default=0), 1)
@@ -647,7 +648,7 @@ class VAR:
         return ForecastResult(means, std)
 
     def simulate(self, n=500, burnin=200, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         total = int(n) + int(burnin)
         y = np.zeros((total, self.k))
         innov = rng.multivariate_normal(np.zeros(self.k), self.sigma_cov_, size=total)

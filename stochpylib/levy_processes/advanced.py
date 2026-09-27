@@ -8,6 +8,7 @@ time-rescaling residual KS test. Everything is seeded via ``random_state=``.
 
 import numpy as np
 from scipy import optimize
+from stochpylib._rng import as_generator as _rng
 
 __all__ = [
     "SemiMarkovProcess", "RenewalProcess", "BranchingProcess", "HawkesProcess",
@@ -52,7 +53,7 @@ class HawkesProcess:
         The thinning bound is exact: after the last event the intensity is
         ``mu + a`` and decays monotonically until the next event.
         """
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         events = []
         t = 0.0
         while t < T:
@@ -186,7 +187,7 @@ class MultivariateHawkes:
 
     def simulate(self, T, random_state=None):
         """Thinning simulation; returns ``(times, dims)`` sorted by time."""
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         d = self.mu.size
         times, dims = [], []
         event_times_by_dim = [[] for _ in range(d)]
@@ -234,7 +235,7 @@ class CoxProcess:
         Returns ``(events, Lambda_T)``. The cap is auto-estimated on a grid
         when not given (times a 1.2 safety factor).
         """
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         grid = np.linspace(0.0, T, n_grid)
         vals = np.array([float(self.intensity_fn(t)) for t in grid])
         if np.any(vals < 0):
@@ -263,7 +264,7 @@ class RenewalProcess:
         self.dist = interarrival_dist
 
     def simulate(self, T, random_state=None, batch=256):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         arrivals = []
         t = 0.0
         while True:
@@ -276,7 +277,7 @@ class RenewalProcess:
 
     def renewal_function(self, T, n_paths=2000, random_state=None):
         """Monte-Carlo estimate of m(T) = E[N(T)] with standard error."""
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         counts = np.empty(n_paths)
         for p in range(n_paths):
             counts[p] = self.simulate(T, rng).size
@@ -296,7 +297,7 @@ class BranchingProcess:
         self.offspring_sampler = offspring_sampler
 
     def simulate(self, generations=20, z0=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         pop = np.empty(generations + 1, dtype=int)
         pop[0] = int(z0)
         for g in range(generations):
@@ -308,7 +309,7 @@ class BranchingProcess:
 
     def extinction_probability(self, generations=30, n_paths=2000,
                                random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         extinct = 0
         for _ in range(n_paths):
             path = self.simulate(generations, 1, rng)
@@ -338,7 +339,7 @@ class SemiMarkovProcess:
 
     def simulate(self, T, random_state=None, x0=0):
         """Returns ``(jump_times, states)`` including the initial state."""
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         n_states = self.P.shape[0]
         t = 0.0
         state = int(x0)
@@ -369,7 +370,7 @@ class GaussianRandomField:
         self.length = float(length)
 
     def sample(self, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         noise = rng.standard_normal(self.shape)
         f = np.fft.rfftn(noise)
         # wave numbers on the rfft grid
@@ -413,7 +414,7 @@ class RandomMeasure:
             raise ValueError("interval must satisfy a <= b")
         if length == 0:
             return 0.0
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         if self.kind == "gamma":
             return float(rng.gamma(self.shape_per_unit * length, self.scale))
         from stochpylib.distributions import StableDistribution

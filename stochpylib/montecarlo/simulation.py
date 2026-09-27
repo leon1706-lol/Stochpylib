@@ -11,6 +11,8 @@ Conventions (ARCHITECTURE.md):
 
 import numpy as np
 
+from stochpylib._parallel import parallelizable
+from stochpylib._rng import as_generator as _rng
 from stochpylib.montecarlo._result import MCResult
 
 __all__ = [
@@ -23,10 +25,6 @@ __all__ = [
 ]
 
 
-def _rng(random_state):
-    return np.random.default_rng(random_state)
-
-
 def _eval_integrand(f, pts):
     vals = np.asarray(f(pts), dtype=float)
     if vals.shape != (pts.shape[0],):
@@ -37,6 +35,7 @@ def _eval_integrand(f, pts):
     return vals
 
 
+@parallelizable("n_simulations")
 def simulate(statistic, sampler, n_simulations=10_000, random_state=None):
     """Generic driver: repeat ``sampler() -> statistic(sample)`` ``n_simulations`` times.
 
@@ -56,6 +55,7 @@ def simulate(statistic, sampler, n_simulations=10_000, random_state=None):
     )
 
 
+@parallelizable("n")
 def crude_mc(integrand, n=100_000, dim=1, bounds=None, random_state=None):
     """Crude Monte Carlo integral of ``integrand`` over a box domain.
 

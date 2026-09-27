@@ -20,6 +20,7 @@ from scipy import optimize
 
 from stochpylib.timeseries._result import ForecastResult
 from stochpylib.timeseries._utils import as_1d, frac_diff_weights
+from stochpylib._rng import as_generator as _rng
 
 
 # ---------------------------------------------------------------------------
@@ -183,7 +184,7 @@ class _VolatilityBase:
     def simulate(self, n=500, burnin=200, random_state=None):
         if self.sigma2_ is None:
             raise RuntimeError("fit() must be called before simulate()")
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         total = int(n) + int(burnin)
         e = rng.standard_normal(total)
         y = np.zeros(total)

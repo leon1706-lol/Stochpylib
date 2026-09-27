@@ -11,10 +11,10 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10%2B-FF8C00?style=flat-square&labelColor=1A1A1A&logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/%F0%9F%93%84%20license-MIT-8B5CF6?style=flat-square&labelColor=1A1A1A" alt="License: MIT">
-  <img src="https://img.shields.io/badge/tests-2707%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="2707 of 2709 tests passing">
+  <img src="https://img.shields.io/badge/tests-2936%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="2936 of 2938 tests passing">
   <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&style=flat-square&labelColor=1A1A1A&label=CI&logo=githubactions&logoColor=white" alt="CI status"></a>
   <a href="https://pypi.org/project/stochpylib/"><img src="https://img.shields.io/pypi/v/stochpylib?style=flat-square&labelColor=1A1A1A&color=FF8C00&logo=pypi&logoColor=white" alt="PyPI version"></a>
-  <img src="https://img.shields.io/badge/public%20names-756%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="756 of 794 spec names implemented">
+  <img src="https://img.shields.io/badge/public%20names-794%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="794 of 794 spec names implemented">
 </p>
 
 <p align="center">
@@ -36,7 +36,7 @@ exposes the same method set
 (`.pdf()/.cdf()/.ppf()/.rvs()/.mean()/.var()/.skewness()/.kurtosis()/.entropy()/.mgf()/.cf()/.fit()/.ks_test()`),
 every stochastic method takes a `random_state=` seed, and every Monte Carlo estimator returns a
 shared result object carrying its point estimate together with an honest standard error and
-confidence interval. Around that contract, twenty-two modules are live today: a **probability
+confidence interval. Around that contract, twenty-three modules are live today: a **probability
 engine** (sample spaces, Bayes' theorem, exact-integer combinatorics, independence
 testing), **47 distributions** across discrete/continuous/multivariate/heavy-tailed
 families — including stable laws with Chambers–Mallows–Leckie sampling and numerically
@@ -107,9 +107,17 @@ portraits; MCMC trace/posterior/pair plots, regression residual/leverage/influen
 meta-analysis funnel plots; heatmaps, correlation matrices, copula views, PCA biplots,
 dendrograms; Markov-chain diagrams, Brownian-motion fans, GP posterior bands,
 Kaplan-Meier curves, variograms and eigenvalue spectra — a from-scratch SVG renderer by
-default, with matplotlib as an optional, lazily-imported backend for raster/PDF output).
-The roadmap takes it onward through utilities
-(23 modules, ~794 public names planned). The
+default, with matplotlib as an optional, lazily-imported backend for raster/PDF output),
+and **utilities** (library-wide seeding and reproducible streams; benchmarking/profiling
+and parallel/GPU/JIT execution — retrofitted as `n_jobs=`/`backend=` onto the Monte Carlo
+pricers/estimators and MCMC sampling; reproducibility scaffolding — version locks,
+environment capture, experiment logging; distribution fitting/goodness-of-fit/outlier-
+detection/missing-data imputation built on the library's own distributions/statistics/
+nonparametric/robust_statistics; JSON/pickle/npz serialization; and interop with numpy/
+scipy/pandas/torch/jax, the last three lazily imported and never a runtime dependency).
+All 23 modules of the design spec are now implemented — see
+[Known Limitations](#known-limitations) and [Roadmap](#roadmap) for what's still evolving
+beyond that. The
 [Architecture](#architecture) section
 below has the structural picture; [`development/architecture.md`](development/architecture.md)
 goes deeper still.
@@ -117,12 +125,26 @@ goes deeper still.
 ## Known Limitations
 
 - **PyPI lags the repository.** The latest published release is `0.6.4`; the code here is at
-  `0.19.0`. Releases are tag-triggered (see [Release Process](#release-process)) and no tag has
+  `0.20.0`. Releases are tag-triggered (see [Release Process](#release-process)) and no tag has
   been pushed since the early modules — `pip install stochpylib` gets 0.6.4, so for the
   current state of the library, install from source (`pip install -e .`).
-- **1 of 23 planned modules remains.** The implemented twenty-two are complete and tested
-  against their spec; everything else in the roadmap is design spec, not shipped code. Exact
-  per-name state: [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md).
+- **All 23 planned modules are implemented and tested against their spec** (794/794 public
+  names). Exact per-name state:
+  [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md).
+- **`utils`'s optional pandas/torch/jax/numba/cupy interop is lazily imported and confined to
+  one file** (`utils/_backends.py`), mirroring `viz`'s matplotlib discipline — never a runtime
+  dependency, and every other test passes with none of them installed (a separate CI job
+  installs the real ones). `cupy` specifically is exercised in CI only through an injected fake
+  module (GitHub-hosted runners have no GPU) — `GPUBackend("cupy")` is untested against real
+  hardware. `n_jobs=`/`backend=` on `montecarlo`/`financial_stochastics`/`advanced_mcmc` give a
+  result that's reproducible and worker-count-invariant but **not** bit-identical to the
+  pre-V0.20.0 single-stream serial run at the same seed (each chunk/chain draws its own
+  independently spawned child RNG) — `n_jobs=None`/`backend=None` (the defaults everywhere)
+  keep the exact legacy behavior. `goodness_of_fit`'s KS/Anderson-Darling/Cramer-von Mises
+  p-values aren't corrected for parameters estimated from the same data. `queueing`'s
+  `DiscreteEventSim`/`QueueSimulation` dropped their previous hidden implicit seeds (42/12345)
+  for an unseeded call — only unseeded calls are affected, see
+  `stochpylib/utils/README.md`.
 - **`viz` renders natively to SVG; matplotlib is an optional, lazily-imported backend** for
   `Figure.to_matplotlib()`/`.save('*.png'/'*.pdf')` only — never a runtime dependency, and
   every plot function's numbers and the native SVG path are tested with no matplotlib
@@ -137,9 +159,11 @@ goes deeper still.
   tests.
 - **GP expectation propagation is experimental** — documented convergence issues; prefer
   Laplace or variational inference (see `stochpylib/gaussian_processes/README.md`).
-- **Gradient-based MCMC has no autodiff.** `advanced_mcmc` takes an optional
+- **Gradient-based MCMC has no built-in autodiff.** `advanced_mcmc` takes an optional
   `grad_log_prob=`; without it HMC/NUTS/MALA fall back to central finite differences
-  (`2 * dim` density evaluations per gradient) — see `stochpylib/advanced_mcmc/README.md`.
+  (`2 * dim` density evaluations per gradient). `utils.torch_interface(fn).grad`/
+  `jax_interface`-derived wrappers now supply an exact alternative when torch/jax are
+  installed — see `stochpylib/advanced_mcmc/README.md`.
 - **`numerical_methods`'s `FEniCS_Interface` never depends on FEniCS** — it solves
   natively via the module's own `FiniteElement` by default, and only lazily imports
   dolfinx/dolfin for `.to_fenics()` (a clear `ImportError` otherwise); its BDF solver is
@@ -287,7 +311,7 @@ For local development (this repo cloned, a virtual environment active):
 pip install -e ".[dev]"     # runtime deps + pytest
 pytest tests/ -v            # full test suite must be green before you start changing things
 spl --version               # verify your editable install
-spl --test                  # embedded self-check (275 checks), no pytest needed
+spl --test                  # embedded self-check (291 checks), no pytest needed
 ```
 
 Then implement or improve one module at a time and run the wrap-up procedure described in
@@ -302,6 +326,9 @@ Then implement or improve one module at a time and run the wrap-up procedure des
 - **matplotlib is optional** — `stochpylib.viz` renders natively to SVG with no extra
   dependency; installing matplotlib additionally unlocks `Figure.to_matplotlib()` and
   `.save('*.png'/'*.pdf')`
+- **pandas/torch/jax/numba/cupy are optional** — `stochpylib.utils` needs none of them;
+  each is lazily imported only when a function that needs it is called (`pip install
+  "stochpylib[pandas,torch,jax,numba]"`, or `[gpu]` for cupy)
 
 ## Architecture
 
@@ -340,6 +367,7 @@ flowchart LR
     D --> W["stochpylib.experimental_design<br/>classical, optimal & space-filling designs, response surfaces, sensitivity analysis"]
     F --> X["stochpylib.spatial_statistics<br/>variograms, kriging, random fields, point processes, spatial autocorrelation"]
     C --> Y["stochpylib.viz<br/>SVG-native statistical plots, matplotlib optional"]
+    A --> Z["stochpylib.utils<br/>seeds/streams, parallel/GPU/JIT backends, reproducibility, data, io, compat"]
     D --> K["shared result objects<br/>MCResult / ForecastResult / QueueResult"]
     E --> K
     F --> K
@@ -358,6 +386,7 @@ flowchart LR
     W --> L
     X --> L
     Y --> L
+    Z --> L
 ```
 
 #### Tech Stack
@@ -368,12 +397,13 @@ flowchart TB
     A --> A2["NumPy"]
     A --> A3["SciPy (special / optimize / integrate only)"]
     A --> A4["matplotlib (optional, lazy -- viz raster/PDF backend only)"]
+    A --> A5["pandas/torch/jax/numba/cupy (optional, lazy -- utils/_backends.py only)"]
     B["Packaging"] --> B1["setuptools + pyproject.toml"]
     B --> B2["PyPI via Trusted Publisher (OIDC)"]
     B --> B3["spl console CLI (cli.py)"]
     C["Testing"] --> C1["pytest (tests/, outside the package)"]
     C --> C2["scipy.stats / statsmodels / lifelines as test oracles"]
-    C --> C3["spl --test embedded self-check (275 checks)"]
+    C --> C3["spl --test embedded self-check (291 checks)"]
     D["CI / release"] --> D1["GitHub Actions: ci.yml, publish.yml, release.yml"]
     E["Design vault"] --> E1["Stochpylib-Obsidian-Vault (private, generated code graph)"]
 ```
@@ -385,7 +415,7 @@ module must follow — see
 
 ## Current Status
 
-Twenty-two modules implemented and tested — **756 / 794 spec names**:
+Twenty-three modules implemented and tested — **794 / 794 spec names**:
 
 | Module | Public names | What's inside |
 |---|---|---|
@@ -411,10 +441,11 @@ Twenty-two modules implemented and tested — **756 / 794 spec names**:
 | `stochpylib.experimental_design` | 29 | full/fractional factorials (searched maximum resolution + minimum aberration, alias structure, fold-over), Plackett-Burman (Sylvester/Paley), central composite (rotatable/orthogonal/face/inscribed), Box-Behnken, Latin and Graeco-Latin squares with ANOVA; D/A/G/I/T-optimal and Bayesian (linear and pseudo-Bayesian nonlinear) designs by point exchange; Latin hypercube, Morris-Mitchell maximin, minimax, good-lattice-point uniform and Bush orthogonal-array (Tang OA-LHS) designs; response surfaces with canonical analysis, steepest ascent and lack-of-fit ANOVA, polynomial chaos with analytic Sobol indices, universal kriging with expected-improvement sequential design, CV surrogate selection; DOE ANOVA, main effects, interaction and Lenth normal-plot data, Morris/SRC/PRCC screening, Saltelli/Jansen Sobol indices |
 | `stochpylib.spatial_statistics` | 32 | variogram models (spherical/exponential/gaussian/general-nu-Matern/cubic/linear/power/nugget) and fitting, simple/ordinary/universal/co-/indicator/disjunctive kriging, covariance-driven Gaussian random fields (exact Cholesky/circulant embedding), Matern fields, Ornstein-Uhlenbeck fields, Brownian and fractional-Brownian sheets, Poisson/inhomogeneous-Poisson/Thomas/Matern-cluster/log-Gaussian-Cox point processes with Ripley's K and the pair correlation function, Moran's I/Geary's C/Getis-Ord/nearest-neighbour spatial autocorrelation tests |
 | `stochpylib.viz` | 35 | pdf/pmf/cdf/survival/hazard, QQ/PP-plots, histograms and KDE; ACF/PACF, periodogram/Welch/spectrogram, Morlet/DWT wavelets, phase portraits; MCMC trace/posterior/pair plots, OLS residual/leverage/influence, meta-analysis funnel plots; heatmaps, correlation matrices, copula scatter/density, PCA biplots, dendrograms; Markov-chain diagrams, Brownian/GBM fans, GP posterior bands, Kaplan-Meier curves, variograms, eigenvalue spectra — native SVG renderer, matplotlib optional |
+| `stochpylib.utils` | 38 | seeding & reproducible streams (`set_seed`/`random_state`/`spawn_generator`/`Generator`/`SeedSequence`); benchmarking/profiling and parallel/GPU/JIT execution (`Benchmark`/`Profiler`/`ParallelSimulation`/`GPUBackend`/`JIT_compile`/`VectorizedOps`/`MemoryPool`); reproducibility (`Reproducibility`/`RandomStream`/`VersionLock`/`EnvironmentCapture`/`ExperimentLogger`); distribution fitting, goodness-of-fit, outlier detection, missing-data imputation; JSON/pickle/npz serialization, nested configuration, logging; numpy/scipy/pandas/torch/jax interop |
 
 Exact progress against the full design spec lives in
 [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md)
-(currently **756 / 794 public names**).
+(currently **794 / 794 public names**).
 
 ## Project Layout
 
@@ -424,7 +455,7 @@ as an entry-point guide:
 
 | Folder | Guide | What lives there |
 |---|---|---|
-| `stochpylib/` | [package guide](stochpylib/README.md) | the installable package: twenty-two module subpackages, `cli.py`, `selftest.py` |
+| `stochpylib/` | [package guide](stochpylib/README.md) | the installable package: twenty-three module subpackages, `cli.py`, `selftest.py` |
 | `tests/` | [suite guide](tests/README.md) | per module: an oracle suite (`tests.py`) and an end-to-end API sweep (`e2e.py`), plus the cross-module library/docs/cli suites, outside the installed package |
 | `development/` | [dev-docs guide](development/README.md) | architecture, infrastructure runbook, build history, bug audit log, progress checklist |
 | `.github/` | — | CI / PyPI-publish / GitHub-Release workflows, issue & PR templates |
@@ -459,6 +490,7 @@ conventions and its documented limitations — this table is the index:
 | `stochpylib/experimental_design/` | Classical, optimal and space-filling designs, response surfaces & surrogates, effect and sensitivity analysis | [README](stochpylib/experimental_design/README.md) |
 | `stochpylib/spatial_statistics/` | Variograms and fitting, kriging (simple/ordinary/universal/co-/indicator/disjunctive), covariance-driven random fields, point processes, spatial autocorrelation tests | [README](stochpylib/spatial_statistics/README.md) |
 | `stochpylib/viz/` | SVG-native statistical plots (matplotlib optional): distribution/process/diagnostic/multivariate/special-purpose plots, all reusing the rest of the library's numbers | [README](stochpylib/viz/README.md) |
+| `stochpylib/utils/` | Seeds/streams, parallel/GPU/JIT backends, reproducibility, distribution fitting & data cleaning, serialization, numpy/scipy/pandas/torch/jax interop | [README](stochpylib/utils/README.md) |
 
 ## Development Documentation
 
@@ -490,7 +522,7 @@ conventions and its documented limitations — this table is the index:
 pytest tests/ -v
 ```
 
-**2707 passed / 2 skipped** as of the V0.19.0 `viz` implementation (the 2 permanent skips
+**2936 passed / 2 skipped** as of the V0.20.0 `utils` implementation (the 2 permanent skips
 are the VonMises/Kumaraswamy scipy cross-checks — no direct scipy mapping, covered by
 dedicated checks instead). Tests are deterministic (fixed seeds everywhere), live outside
 the installed package, and use `scipy.stats`, `statsmodels` and brute-force references as
@@ -520,7 +552,7 @@ interface, and a runnable quick-start snippet. Running bare `spl` shows the same
 
 ```bash
 $ spl --version
-0.19.0
+0.20.0
 latest on PyPI: 0.6.4  (installed version is newer / unreleased)
 ```
 
@@ -535,7 +567,7 @@ entirely by setting `STOCHPYLIB_SKIP_UPDATE_CHECK=1`.
 
 ```bash
 $ spl --version --list
-0.19.0
+0.20.0
 latest on PyPI: 0.6.4  (installed version is newer / unreleased)
 3 published versions:
   0.1.0
@@ -549,7 +581,7 @@ served from the 24 h cache).
 
 ### `spl --test`
 
-Runs the embedded self-check suite shipped inside the wheel (**275 checks**): package sanity and per-module spec
+Runs the embedded self-check suite shipped inside the wheel (**291 checks**): package sanity and per-module spec
 conformance, one closed-form spot check per distribution family, Monte Carlo
 convergence sanity, cross-module workflows, and the offline CLI-helper logic. This works
 after any `pip install` — no pytest, no source checkout — making it the quickest way to verify
@@ -618,9 +650,11 @@ structure + Lenth's method on Montgomery's unreplicated 2^4 + a D-optimal quadra
 efficiencies + a CCD response-surface stationary point + Ishigami Sobol indices vs their
 analytic values + a maximin Latin hypercube, and a fitted variogram + ordinary kriging with
 a confidence interval + a Moran's I test + a Ripley-K CSR envelope verdict + a Thomas
-cluster process, and a QQ-plot of Gamma-fitted draws + an AR(1) ACF + a Kaplan-Meier
-median with an availability check for the optional matplotlib backend). Bare `spl demo`
-lists the available demos.
+cluster process, a QQ-plot of Gamma-fitted draws + an AR(1) ACF + a Kaplan-Meier
+median with an availability check for the optional matplotlib backend, and a
+`set_seed()` reproducibility check + an AIC-ranked distribution fit + a parallel-pooled
+pi estimate + a benchmark timing + an optional-backend availability report). Bare
+`spl demo` lists the available demos.
 
 ### `spl cite`
 
@@ -647,12 +681,11 @@ Publishing.
 
 ## Roadmap
 
-One module remains on the spec: utilities.
-Each lands with the same bar: native implementations, the shared
-interface conventions, full tests against independent oracles, and honest documentation of
-deviations. All finished work and changes can be found in
-[`development/CHANGELOG.md`](development/CHANGELOG.md), kept separate to keep this README
-short.
+All 23 modules of the design spec are implemented (794/794 public names). Ongoing work is
+incremental: closing the documented Known Limitations above, and whatever the owner's
+[`todo.md`](todo.md) sets as the next objective. All finished work and changes can be found
+in [`development/CHANGELOG.md`](development/CHANGELOG.md), kept separate to keep this
+README short.
 
 ---
 

@@ -11,6 +11,7 @@ import numpy as np
 from stochpylib.gaussian_processes._utils import _as_2d
 from stochpylib.gaussian_processes.kernels import RBFKernel
 from stochpylib.gaussian_processes.sparse import VFE
+from stochpylib._rng import as_generator as _rng
 
 
 class DeepGP:
@@ -35,7 +36,7 @@ class DeepGP:
     def fit(self, X, y):
         X = _as_2d(X)
         y = np.asarray(y, dtype=float).ravel()
-        rng = np.random.default_rng(self.random_state)
+        rng = _rng(self.random_state)
         idx = rng.choice(len(X), size=min(self.n_inducing, len(X)), replace=False)
         Z = X[np.sort(idx)]
 

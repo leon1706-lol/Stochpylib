@@ -10,6 +10,7 @@ import numpy as np
 from scipy import special
 
 from stochpylib.distributions._base import Distribution, MultivariateDistribution
+from stochpylib._rng import as_generator as _rng
 
 
 class Bernoulli(Distribution):
@@ -42,7 +43,7 @@ class Bernoulli(Distribution):
         return self.p * (1 - self.p)
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.binomial(1, self.p, size=size)
 
     @classmethod
@@ -90,7 +91,7 @@ class Binomial(Distribution):
         return self.n * self.p * (1 - self.p)
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.binomial(self.n, self.p, size=size)
 
     @classmethod
@@ -134,7 +135,7 @@ class Poisson(Distribution):
         return self.lam
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.poisson(self.lam, size=size)
 
     @classmethod
@@ -174,7 +175,7 @@ class Geometric(Distribution):
         return (1 - self.p) / self.p**2
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.geometric(self.p, size=size)
 
     @classmethod
@@ -223,7 +224,7 @@ class NegBinomial(Distribution):
         return self.r * (1 - self.p) / self.p**2
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.negative_binomial(self.r, self.p, size=size)
 
     @classmethod
@@ -277,7 +278,7 @@ class Hypergeometric(Distribution):
         return n * p * (1 - p) * (N - n) / (N - 1)
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.hypergeometric(self.K, self.N - self.K, self.n, size=size)
 
     @classmethod
@@ -321,7 +322,7 @@ class DiscreteUniform(Distribution):
         return (n**2 - 1) / 12.0
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.integers(self.low, self.high + 1, size=size)
 
     @classmethod
@@ -357,7 +358,7 @@ class Multinomial(MultivariateDistribution):
         return self.n * (np.diag(self.p) - np.outer(self.p, self.p))
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.multinomial(self.n, self.p, size=size)
 
     def entropy(self):
@@ -414,7 +415,7 @@ class ZipfDistribution(Distribution):
         return self._zeta(self.a - 2) / self._zeta(self.a) - self.mean() ** 2
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.zipf(self.a, size=size)
 
     @classmethod
@@ -467,7 +468,7 @@ class BetaBinomial(Distribution):
         return n * a * b * (a + b + n) / ((a + b) ** 2 * (a + b + 1))
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         p = rng.beta(self.a, self.b, size=size)
         return rng.binomial(self.n, p)
 

@@ -14,8 +14,8 @@ from stochpylib.experimental_design._common import _min_distance, _nearest_dista
 __all__ = []  # private module
 
 
-def _rng(random_state):
-    return np.random.default_rng(random_state)
+# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
+from stochpylib._rng import as_generator as _rng
 
 
 def _as_coords(X, name="coords"):

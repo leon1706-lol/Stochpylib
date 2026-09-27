@@ -10,8 +10,8 @@ import numpy as np
 from scipy import special
 
 
-def _rng(random_state):
-    return np.random.default_rng(random_state)
+# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
+from stochpylib._rng import as_generator as _rng
 
 
 def _as_1d(x, name="x"):
@@ -198,7 +198,7 @@ def _as_log_density(target):
 
 def _slice_step_1d(logf, x, w=1.0, m=50, rng=None):
     """Neal (2003) stepping-out + shrinkage slice update for one scalar."""
-    rng = rng if rng is not None else np.random.default_rng()
+    rng = rng if rng is not None else _rng(None)
     fx = logf(x)
     log_y = fx - rng.exponential(1.0)
     u = rng.uniform()

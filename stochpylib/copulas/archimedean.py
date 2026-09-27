@@ -22,6 +22,7 @@ numerically integrated tau.
 import numpy as np
 from scipy import integrate
 
+from stochpylib._rng import as_generator as _rng
 from stochpylib.copulas._base import BaseCopula
 from stochpylib.copulas._utils import as_u_matrix, brentq_on_bracket, \
     kendall_tau_estimate
@@ -237,7 +238,7 @@ class _ArchimedeanBase(BaseCopula):
         """Marshall–Olkin fast path when available, else conditional inversion."""
         self._require_fit()
         n = self._validate_sample_n(n)
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         mixer = self._mixing_sampler(rng, n)
         if mixer is not None:
             e = rng.exponential(size=(n, self.dimension))
@@ -829,7 +830,7 @@ class PlackettCopula(BaseCopula):
         """
         self._require_fit()
         n = self._validate_sample_n(n)
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         th = self.theta_
         out = np.empty((n, 2))
         out[:, 0] = rng.random(n)

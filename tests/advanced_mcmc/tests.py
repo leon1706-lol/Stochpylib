@@ -1074,3 +1074,70 @@ def test_sampler_errors():
         am.MetropolisHastings(_log_prob2, n_samples=100).get_chains()
     with pytest.raises(ValueError):
         am.MetropolisHastings(_log_prob2, n_samples=0)
+
+
+# --------------------------------------------------- V0.20.0 n_jobs= retrofit (utils)
+
+
+_BASE_SAMPLE_SAMPLERS = [
+    name for name in am.__all__
+    if isinstance(getattr(am, name), type)
+    and issubclass(getattr(am, name), am_base.MCMCSampler)
+    and "sample" not in getattr(am, name).__dict__
+]
+
+
+def test_base_sample_subclasses_cover_the_expected_set():
+    # samplers that override sample() themselves (HMC/NUTS/MALA-with-divergence-
+    # tracking) are out of scope for the n_jobs= retrofit -- this pins the exact set
+    # that IS in scope so a future sampler silently landing outside it is caught.
+    assert set(_BASE_SAMPLE_SAMPLERS) == {
+        "AdaptiveMetropolis", "EllipticalSliceSampling", "GibbsSampler",
+        "IndependenceSampler", "MALA", "MMALA", "MetropolisHastings",
+        "Polar_Slice", "RiemannianHMC", "RobustAdaptiveMetropolis", "SliceSampling",
+    }
+
+
+def _make_pair(name, kwargs):
+    cls = getattr(am, name)
+    init = np.zeros(2)
+    if name == "GibbsSampler":
+        cond = [lambda theta, r: 0.8 * theta[1] + np.sqrt(1 - 0.64) * r.standard_normal(),
+               lambda theta, r: 0.8 * theta[0] + np.sqrt(1 - 0.64) * r.standard_normal()]
+        return cls(conditionals=cond, **kwargs), cls(conditionals=cond, **kwargs), init
+    if name == "EllipticalSliceSampling":
+        loglik = lambda theta: -0.5 * np.sum(theta ** 2)
+        return (cls(loglik, prior_cov=np.eye(2), **kwargs),
+               cls(loglik, prior_cov=np.eye(2), **kwargs), init)
+    if name == "IndependenceSampler":
+        prop_sampler = lambda r: r.standard_normal(2)
+        prop_logp = lambda theta: -0.5 * np.sum(theta ** 2)
+        return (cls(_log_prob2, prop_sampler, prop_logp, **kwargs),
+               cls(_log_prob2, prop_sampler, prop_logp, **kwargs), init)
+    return cls(_log_prob2, **kwargs), cls(_log_prob2, **kwargs), init
+
+
+@pytest.mark.parametrize("name", sorted(_BASE_SAMPLE_SAMPLERS))
+def test_parallel_sample_matches_serial_for_every_base_sampler(name):
+    kwargs = dict(n_samples=150, n_warmup=60, n_chains=3)
+    sampler1, sampler2, init = _make_pair(name, kwargs)
+    sampler1.sample(init, random_state=17)
+    sampler2.sample(init, random_state=17, n_jobs=2, backend="thread")
+    assert np.array_equal(sampler1.chains_, sampler2.chains_)
+    assert np.array_equal(sampler1.log_probs_, sampler2.log_probs_)
+    assert np.array_equal(sampler1.acceptance_rates_, sampler2.acceptance_rates_)
+
+
+def test_n_jobs_none_is_bit_identical_to_legacy_sample():
+    a = am.MetropolisHastings(_log_prob2, n_samples=100, n_warmup=40, n_chains=2)
+    a.sample(np.zeros(2), random_state=20)
+    b = am.MetropolisHastings(_log_prob2, n_samples=100, n_warmup=40, n_chains=2)
+    b.sample(np.zeros(2), random_state=20, n_jobs=None)
+    assert np.array_equal(a.chains_, b.chains_)
+
+
+def test_backend_process_runs_with_a_picklable_target():
+    from tests.utils._workers import logp_std_normal
+    sampler = am.MetropolisHastings(logp_std_normal, n_samples=100, n_warmup=40, n_chains=2)
+    sampler.sample(np.zeros(2), random_state=21, n_jobs=2, backend="process")
+    assert sampler.chains_.shape == (2, 100, 2)

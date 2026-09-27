@@ -12,6 +12,7 @@ import math
 import numpy as np
 from scipy import special
 
+from stochpylib._rng import as_generator as _rng
 from stochpylib.nonparametric._base import NonparametricTest
 from stochpylib.nonparametric._common import (
     _chi2_ppf, _chi2_sf, _norm_cdf, _norm_ppf, _rank_ties,
@@ -88,7 +89,7 @@ class PermutationTest(NonparametricTest):
         return float(min(1.0, 2.0 * min(p_greater, p_less)))
 
     def _fit(self, *samples):
-        rng = np.random.default_rng(self.random_state)
+        rng = _rng(self.random_state)
         B = self.n_resamples
 
         if self.permutation_type == "independent":
@@ -176,7 +177,7 @@ class BootstrapTest(NonparametricTest):
         self.random_state = random_state
 
     def _fit(self, *samples):
-        rng = np.random.default_rng(self.random_state)
+        rng = _rng(self.random_state)
         B = self.n_boot
         n_args = len(samples)
         fn = self.statistic if callable(self.statistic) else (

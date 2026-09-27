@@ -11,6 +11,7 @@ import numpy as np
 
 from stochpylib.numerical_methods._common import _numeric_jacobian
 from stochpylib.numerical_methods._result import ODESolution, SDESolution
+from stochpylib._rng import as_generator as _rng
 
 __all__ = [
     "EulerMethod", "RungeKutta4", "DormandPrince", "Adams_Bashforth", "BDF",
@@ -383,7 +384,7 @@ class Euler_Maruyama_SDE:
         self.n_brownian = n_brownian
 
     def solve(self, t_span, x0, n_steps=100, n_paths=1, random_state=None, brownian=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         t0, tf = float(t_span[0]), float(t_span[1])
         dt = (tf - t0) / n_steps
         x0a = np.atleast_1d(np.asarray(x0, dtype=float))
@@ -428,7 +429,7 @@ class Milstein_SDE:
         return (gp - gm) / (2 * eps)
 
     def solve(self, t_span, x0, n_steps=100, n_paths=1, random_state=None, brownian=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         t0, tf = float(t_span[0]), float(t_span[1])
         dt = (tf - t0) / n_steps
         x0a = np.atleast_1d(np.asarray(x0, dtype=float))

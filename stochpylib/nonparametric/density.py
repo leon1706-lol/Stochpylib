@@ -10,6 +10,7 @@ anything not given a closed form here.
 import numpy as np
 from scipy import special
 
+from stochpylib._rng import as_generator as _rng
 from stochpylib.nonparametric._base import NonparametricDensity
 from stochpylib.nonparametric._common import (
     _kernel_fn, _norm_cdf, _select_bandwidth,
@@ -125,7 +126,7 @@ class KernelDensityEstimate(NonparametricDensity):
         return np.cov(self.data_, rowvar=False)
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         idx = rng.integers(0, self.n_, size=size)
         if getattr(self, "_d", 1) == 1:
             base = self.data_[idx]
@@ -192,7 +193,7 @@ class AdaptiveKDE(NonparametricDensity):
         return float(out[0]) if scalar else out
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         idx = rng.integers(0, self.n_, size=size)
         base = self.data_[idx]
         h = self.local_bandwidth_[idx]

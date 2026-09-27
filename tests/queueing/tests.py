@@ -300,3 +300,28 @@ def test_module_wiring():
                 "DiscreteEventSim", "SimStats"}
     missing = expected - set(qm.__all__)
     assert not missing, f"missing: {missing}"
+
+
+# --------------------------------------------------- V0.20.0 random_state= retrofit
+
+
+class TestRandomStateRetrofit:
+    """V0.20.0 dropped DiscreteEventSim's hidden implicit seeds (42/12345) and its
+    int(random_state) cast, which used to reject a Generator -- Probleme.md."""
+
+    def test_discrete_event_sim_accepts_a_generator(self):
+        gen = np.random.default_rng(3)
+        res = DiscreteEventSim(simulate_duration=2000, warmup=200, random_state=gen).run()
+        assert res.extras.get("n_served", 0) > 0
+
+    def test_discrete_event_sim_explicit_seed_is_reproducible(self):
+        r1 = DiscreteEventSim(simulate_duration=2000, warmup=200, random_state=5).run()
+        r2 = DiscreteEventSim(simulate_duration=2000, warmup=200, random_state=5).run()
+        assert r1.L == r2.L and r1.Wq == r2.Wq
+
+    def test_queue_simulation_accepts_a_generator(self):
+        qs = QueueSimulation("MM1", arrival_rate=.5, service_rate=1.,
+                             simulate_duration=5000, warmup=500,
+                             random_state=np.random.default_rng(6))
+        sm = qs.simulate()
+        assert sm.extras.get("n_served", 0) > 0

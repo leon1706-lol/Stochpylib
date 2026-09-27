@@ -4,6 +4,7 @@ import heapq
 
 import numpy as np
 
+from stochpylib._rng import as_generator as _rng
 from stochpylib.queueing._base import QueueResult
 
 __all__ = [
@@ -88,7 +89,10 @@ class DiscreteEventSim:
     n_servers : int
     simulate_duration : float
     warmup : float — stats collected only after this time
-    random_state : int or None
+    random_state : anything ``np.random.default_rng`` accepts (int, Generator, ...),
+        or ``None`` for fresh entropy (or a reproducible child of a library-wide
+        seed set via ``utils.set_seed`` -- see AGENTS.md's seeding convention;
+        V0.20.0 dropped the previous implicit default of 42, Probleme.md).
     """
 
     def __init__(self, arrival_dist=None, service_dist=None, n_servers=1,
@@ -99,12 +103,12 @@ class DiscreteEventSim:
         self._c = max(1, int(n_servers))
         self._duration = float(simulate_duration)
         self._warmup = min(float(warmup), self._duration * 0.9)
-        self._seed = int(random_state) if random_state is not None else 42
+        self.random_state = random_state
         self.stats = SimStats(n_servers=self._c)
         self.stats._warmup = self._warmup
 
     def run(self):
-        rng = np.random.default_rng(self._seed)
+        rng = _rng(self.random_state)
         st = self.stats
         cal = []                        # heap of (time, seq, kind)
         seq = [0]
@@ -224,9 +228,6 @@ class QueueSimulation:
         return inst.fit(self.arrival_rate, self.service_rate, **kw)
 
     def simulate(self):
-        import numpy as _np
-        rng = _np.random.default_rng(
-            12345 if self.random_state is None else int(self.random_state))
         mu = self.service_rate
         if self.model_name == "MD1":
             svc_fn = lambda r: 1.0 / mu

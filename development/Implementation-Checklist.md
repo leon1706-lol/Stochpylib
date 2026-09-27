@@ -7,7 +7,7 @@ not part of the design spec. Check off a submodule's box only once every item in
 and tested per [Essential-Tasks.md](../Stochpylib-Obsidian-Vault/Essential-Tasks.md). Update this
 file as part of wrapping up any implementation task — see Essential-Tasks.md step 4.
 
-**Progress: 756 / 794 public names implemented.**
+**Progress: 794 / 794 public names implemented.**
 
 ## [probability](../Stochpylib-Obsidian-Vault/Modules/probability.md) — Core probability engine (21/21)
 
@@ -967,51 +967,51 @@ file as part of wrapping up any implementation task — see Essential-Tasks.md s
     - [x] `plot_variogram()`
     - [x] `plot_eigenvalues()`
 
-## [utils](../Stochpylib-Obsidian-Vault/Modules/utils.md) — Infrastructure & utilities (0/38)
+## [utils](../Stochpylib-Obsidian-Vault/Modules/utils.md) — Infrastructure & utilities (38/38)
 
-- [ ] **stochpylib.utils** module overall
-  - [ ] `utils.random`
-    - [ ] `set_seed()`
-    - [ ] `random_state()`
-    - [ ] `Generator`
-    - [ ] `SeedSequence`
-    - [ ] `spawn_generator()`
-  - [ ] `utils.performance`
-    - [ ] `Benchmark`
-    - [ ] `Profiler`
-    - [ ] `ParallelSimulation`
-    - [ ] `GPUBackend`
-    - [ ] `JIT_compile()`
-    - [ ] `VectorizedOps`
-    - [ ] `MemoryPool`
-  - [ ] `utils.reproducibility`
-    - [ ] `Reproducibility`
-    - [ ] `RandomStream`
-    - [ ] `VersionLock`
-    - [ ] `EnvironmentCapture`
-    - [ ] `ExperimentLogger`
-  - [ ] `utils.data`
-    - [ ] `fit()`
-    - [ ] `goodness_of_fit()`
-    - [ ] `moment_matching()`
-    - [ ] `ecdf()`
-    - [ ] `DataValidation`
-    - [ ] `outlier_detection()`
-    - [ ] `missing_imputation()`
-  - [ ] `utils.io`
-    - [ ] `to_dict()`
-    - [ ] `from_dict()`
-    - [ ] `to_json()`
-    - [ ] `from_json()`
-    - [ ] `to_pickle()`
-    - [ ] `Serialization`
-    - [ ] `Configuration`
-    - [ ] `Logging`
-    - [ ] `summary()`
-  - [ ] `utils.compat`
-    - [ ] `numpy_interface()`
-    - [ ] `scipy_interface()`
-    - [ ] `pandas_interface()`
-    - [ ] `torch_interface()`
-    - [ ] `jax_interface()`
+- [x] **stochpylib.utils** module overall
+  - [x] `utils.random`
+    - [x] `set_seed()`
+    - [x] `random_state()`
+    - [x] `Generator`
+    - [x] `SeedSequence`
+    - [x] `spawn_generator()`
+  - [x] `utils.performance`
+    - [x] `Benchmark`
+    - [x] `Profiler`
+    - [x] `ParallelSimulation`
+    - [x] `GPUBackend`
+    - [x] `JIT_compile()`
+    - [x] `VectorizedOps`
+    - [x] `MemoryPool`
+  - [x] `utils.reproducibility`
+    - [x] `Reproducibility`
+    - [x] `RandomStream`
+    - [x] `VersionLock`
+    - [x] `EnvironmentCapture`
+    - [x] `ExperimentLogger`
+  - [x] `utils.data`
+    - [x] `fit()`
+    - [x] `goodness_of_fit()`
+    - [x] `moment_matching()`
+    - [x] `ecdf()`
+    - [x] `DataValidation`
+    - [x] `outlier_detection()`
+    - [x] `missing_imputation()`
+  - [x] `utils.io`
+    - [x] `to_dict()`
+    - [x] `from_dict()`
+    - [x] `to_json()`
+    - [x] `from_json()`
+    - [x] `to_pickle()`
+    - [x] `Serialization`
+    - [x] `Configuration`
+    - [x] `Logging`
+    - [x] `summary()`
+  - [x] `utils.compat`
+    - [x] `numpy_interface()`
+    - [x] `scipy_interface()`
+    - [x] `pandas_interface()`
+    - [x] `torch_interface()`
+    - [x] `jax_interface()`
 

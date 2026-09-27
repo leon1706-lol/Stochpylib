@@ -13,6 +13,7 @@ from scipy import special
 from stochpylib.gaussian_processes._utils import cholesky_with_jitter
 from stochpylib.spatial_statistics._common import _as_coords, _pairwise
 from stochpylib.spatial_statistics.variogram import SpatialCovariance, Variogram, _matern_corr
+from stochpylib._rng import as_generator as _rng
 
 __all__ = [
     "GaussianRandomField", "MaternField", "OrnsteinUhlenbeckField", "BrownianSheet",
@@ -74,7 +75,7 @@ class GaussianRandomField:
         X = _as_coords(coords)
         C = self._cov_fn(_pairwise(X))
         L, _ = cholesky_with_jitter(C)
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         Z = rng.standard_normal((len(X), int(n_samples)))
         out = self.mean + (L @ Z).T
         return out[0] if n_samples == 1 else out
@@ -84,7 +85,7 @@ class GaussianRandomField:
             from stochpylib.levy_processes import GaussianRandomField as _LevyGRF
 
             grf = _LevyGRF(self.spectrum, shape=tuple(shape), length=float(np.atleast_1d(spacing)[0]))
-            rng = np.random.default_rng(random_state)
+            rng = _rng(random_state)
             samples = [self.mean + grf.sample(random_state=rng) for _ in range(int(n_samples))]
             return samples[0] if n_samples == 1 else np.stack(samples)
 
@@ -115,7 +116,7 @@ class GaussianRandomField:
             raise np.linalg.LinAlgError("circulant embedding is not positive semi-definite; "
                                          "use method='cholesky' instead")
         eig = np.maximum(eig, 0.0)
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         n = int(n_samples)
         samples = np.empty((n,) + shape)
         for s in range(n):
@@ -136,7 +137,7 @@ class GaussianRandomField:
         class _Conditional:
             def sample(inner_self, coords2, n_samples=1, random_state=None):
                 X2 = _as_coords(coords2)
-                rng = np.random.default_rng(random_state)
+                rng = _rng(random_state)
                 unc = base.sample(np.vstack([X, X2]), n_samples=n_samples, random_state=rng)
                 unc = np.atleast_2d(unc)
                 unc_data, unc_new = unc[:, :len(X)], unc[:, len(X):]
@@ -201,7 +202,7 @@ class OrnsteinUhlenbeckField:
         else:
             C = self._cov_fn(_pairwise(X))
         L, _ = cholesky_with_jitter(C)
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         Z = rng.standard_normal((len(X), int(n_samples)))
         out = (L @ Z).T
         return out[0] if n_samples == 1 else out
@@ -214,7 +215,7 @@ class OrnsteinUhlenbeckField:
             flat = self.sample(pts, n_samples=n_samples, random_state=random_state)
             return flat.reshape((int(n_samples),) + shape) if n_samples > 1 else flat.reshape(shape)
 
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         n = int(n_samples)
         out = np.empty((n,) + shape)
         var_axis = self.variance ** (1.0 / len(shape))
@@ -247,7 +248,7 @@ class BrownianSheet:
         shape = tuple(int(s) for s in shape)
         if len(shape) != len(self.extent):
             raise ValueError("shape must have one entry per extent dimension")
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         field = rng.standard_normal(shape)
         # scale by sqrt(cell) and zero each axis's origin slice *before* cumulative-summing
         # any axis -- W must vanish whenever any coordinate is 0, and zeroing only after
@@ -293,7 +294,7 @@ class FractionalBrownianSheet:
         shape = tuple(int(s) for s in shape)
         if len(shape) != len(self.extent):
             raise ValueError("shape must have one entry per extent dimension")
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         Ls = [self._axis_cholesky(s, e, h) for s, e, h in zip(shape, self.extent, self.hurst)]
         field = rng.standard_normal(shape)
         # apply each axis's Cholesky factor via tensordot, moving the transformed axis back

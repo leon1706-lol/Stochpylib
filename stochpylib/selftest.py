@@ -351,6 +351,8 @@ def run(verbose=False):
                                     "MaternField", "RipleyK", "MoransI"]),
         "viz": (35, ["plot_pdf", "plot_qqplot", "plot_acf", "trace_plot", "plot_heatmap",
                     "plot_survival_km"]),
+        "utils": (38, ["set_seed", "SeedSequence", "Benchmark", "ParallelSimulation",
+                      "to_json", "DataValidation", "fit", "numpy_interface"]),
     }
     for mod_name, (count, spot) in spec_counts.items():
         mod = getattr(stochpylib, mod_name, None)
@@ -1106,6 +1108,134 @@ def run(verbose=False):
              raised_vz)
     st.check("VIZ: native SVG still renders once matplotlib is 'absent' again",
              bool(fig_vz.to_svg()))
+
+    # utils quick checks
+    import sys as _ut_sys
+
+    from stochpylib.utils import (
+        Configuration as _UtConfig,
+        DataValidation as _UtDV,
+        MemoryPool as _UtPool,
+        ParallelSimulation as _UtPar,
+        fit as _ut_fit,
+        from_json as _ut_from_json,
+        goodness_of_fit as _ut_gof,
+        missing_imputation as _ut_impute,
+        outlier_detection as _ut_outliers,
+        random_state as _ut_random_state,
+        set_seed as _ut_set_seed,
+        spawn_generator as _ut_spawn,
+        to_json as _ut_to_json,
+    )
+    from stochpylib._parallel import pool_mc_results as _ut_pool_mc
+    from stochpylib.distributions import Normal as _UtNormal, Gamma as _UtGamma
+    from stochpylib.montecarlo import MCResult as _UtMCResult
+
+    _gen_ut = _ut_random_state(5)
+    st.check("UTILS: random_state(Generator) preserves identity", _ut_random_state(_gen_ut) is _gen_ut)
+
+    _ut_set_seed(11)
+    _a_ut = _ut_random_state(None).standard_normal(3)
+    _ut_set_seed(11)
+    _b_ut = _ut_random_state(None).standard_normal(3)
+    _ut_set_seed(None)
+    st.check("UTILS: set_seed makes random_state=None reproducible",
+             bool(np.array_equal(_a_ut, _b_ut)))
+
+    _kids_ut = _ut_spawn(random_state=3, n=3)
+    _draws_ut = [g.standard_normal(2) for g in _kids_ut]
+    st.check("UTILS: spawn_generator produces distinct child streams",
+             not np.array_equal(_draws_ut[0], _draws_ut[1]))
+
+    def _ut_sim(n, rng):
+        x = rng.standard_normal(n)
+        se_ut = float(x.std(ddof=1) / np.sqrt(n)) if n > 1 else float("nan")
+        return _UtMCResult(float(x.mean()), se_ut, n, "selftest")
+
+    _r1_ut = _UtPar(n_jobs=1, backend="thread", chunk_size=500).estimate(_ut_sim, 2000,
+                                                                         random_state=42)
+    _r2_ut = _UtPar(n_jobs=2, backend="thread", chunk_size=500).estimate(_ut_sim, 2000,
+                                                                         random_state=42)
+    st.check("UTILS: ParallelSimulation is n_jobs-invariant",
+             _r1_ut.estimate == _r2_ut.estimate and _r1_ut.std_error == _r2_ut.std_error)
+
+    _full_ut = np.random.default_rng(0).standard_normal(1000)
+    _chunks_ut = [_full_ut[:400], _full_ut[400:]]
+
+    def _to_res_ut(x):
+        return _UtMCResult(float(x.mean()), float(x.std(ddof=1) / np.sqrt(len(x))), len(x), "m")
+
+    _pooled_ut = _ut_pool_mc([_to_res_ut(c) for c in _chunks_ut])
+    _whole_ut = _to_res_ut(_full_ut)
+    st.check("UTILS: chunk pooling matches the whole-array estimate exactly",
+             abs(_pooled_ut.estimate - _whole_ut.estimate) < 1e-10)
+
+    _pool_ut = _UtPool()
+    _arr_ut = _pool_ut.get((20, 20))
+    _pool_ut.release(_arr_ut)
+    _arr2_ut = _pool_ut.get((20, 20))
+    st.check("UTILS: MemoryPool reuses a released buffer", bool(np.shares_memory(_arr_ut, _arr2_ut)))
+
+    _gamma_data_ut = _UtGamma(3.0, 2.0).rvs(1500, random_state=1)
+    _fit_ut = _ut_fit(_gamma_data_ut)
+    st.check("UTILS: fit() picks Gamma for Gamma-distributed data", _fit_ut.best_name_ == "Gamma")
+
+    _gof_ut = _ut_gof(np.random.default_rng(2).standard_normal(300), "Normal")
+    st.check("UTILS: goodness_of_fit returns statistics.TestResult objects",
+             all(hasattr(v, "pvalue") for v in _gof_ut.values()))
+
+    _contam_ut = np.concatenate([np.random.default_rng(3).standard_normal(200), [50.0]])
+    _out_ut = _ut_outliers(_contam_ut, method="mad")
+    st.check("UTILS: outlier_detection(mad) flags the injected outlier", bool(_out_ut.mask[-1]))
+
+    _miss_ut = np.random.default_rng(4).standard_normal(50)
+    _miss_ut[::5] = np.nan
+    _imputed_ut = _ut_impute(_miss_ut, method="mean")
+    st.check("UTILS: missing_imputation leaves no NaNs", not bool(np.isnan(_imputed_ut).any()))
+
+    _json_ut = _ut_to_json(_UtNormal(0.0, 1.0))
+    _back_ut = _ut_from_json(_json_ut)
+    st.check("UTILS: to_json/from_json round-trips a Normal", type(_back_ut).__name__ == "Normal")
+
+    _cfg_ut = _UtConfig({"a": {"b": 1}})
+    st.check("UTILS: Configuration dot-path access", _cfg_ut.get("a.b") == 1)
+
+    st.check("UTILS: DataValidation flags an out-of-bounds NaN array",
+             not _UtDV(bounds=(0, 1)).check(np.array([1.0, np.nan, 5.0]))["valid"])
+
+    _saved_pd_ut = {k: v for k, v in _ut_sys.modules.items() if k == "pandas" or
+                   k.startswith("pandas.")}
+    for _k_ut in list(_saved_pd_ut):
+        del _ut_sys.modules[_k_ut]
+    _ut_sys.modules["pandas"] = None
+    try:
+        from stochpylib.utils import pandas_interface as _ut_pdi
+        _ut_pdi(np.array([1.0]))
+        _raised_ut = False
+    except ImportError as _exc_ut:
+        _raised_ut = "stochpylib[pandas]" in str(_exc_ut)
+    finally:
+        del _ut_sys.modules["pandas"]
+        _ut_sys.modules.update(_saved_pd_ut)
+    st.check("UTILS: pandas_interface raises a clear ImportError when pandas is absent",
+             _raised_ut)
+
+    from stochpylib.utils import JIT_compile as _ut_jit
+
+    _saved_nb_ut = {k: v for k, v in _ut_sys.modules.items() if k == "numba" or
+                   k.startswith("numba.")}
+    for _k_ut in list(_saved_nb_ut):
+        del _ut_sys.modules[_k_ut]
+    _ut_sys.modules["numba"] = None
+    try:
+        @_ut_jit
+        def _ut_jit_fn(x):
+            return x * 2
+        _fallback_ok_ut = _ut_jit_fn(3) == 6 and _ut_jit_fn.backend_ == "python"
+    finally:
+        del _ut_sys.modules["numba"]
+        _ut_sys.modules.update(_saved_nb_ut)
+    st.check("UTILS: JIT_compile falls back to Python when numba is absent", _fallback_ok_ut)
 
     # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key

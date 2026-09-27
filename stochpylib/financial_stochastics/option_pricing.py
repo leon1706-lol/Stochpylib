@@ -7,6 +7,7 @@ import math
 import numpy as np
 from scipy import optimize
 
+from stochpylib._parallel import parallelizable
 from stochpylib.financial_stochastics import greeks as _greeks
 from stochpylib.financial_stochastics._common import (
     _bs_d1d2,
@@ -319,7 +320,23 @@ class MonteCarloOptionPricing:
         self.S, self.K, self.T = float(S), float(K), float(T)
         self.r, self.sigma, self.q = float(r), float(sigma), float(q)
 
-    def simulate_paths(self, n_paths, n_steps, random_state=None):
+    def simulate_paths(self, n_paths, n_steps, random_state=None, backend=None):
+        """GBM price paths, shape ``(n_paths, n_steps + 1)``.
+
+        ``backend=None`` (default) runs the plain numpy formula below, unchanged
+        from pre-V0.20.0. ``backend="torch"``/``"cupy"``/``"jax"`` (or a
+        :class:`~stochpylib.utils.GPUBackend` instance) runs the same GBM
+        simulation on that device via ``GPUBackend.simulate_gbm`` -- the random
+        draws still come from numpy's ``Generator`` (so both paths are
+        numerically equal to float tolerance), only the exp/cumsum arithmetic
+        moves to the device.
+        """
+        if backend is not None:
+            from stochpylib.utils.performance import GPUBackend
+
+            gb = backend if isinstance(backend, GPUBackend) else GPUBackend(backend)
+            return gb.simulate_gbm(self.S, self.r - self.q, self.sigma, self.T, n_steps,
+                                   n_paths, random_state=random_state)
         rng = _rng(random_state)
         dt = self.T / n_steps
         drift = (self.r - self.q - 0.5 * self.sigma**2) * dt
@@ -333,26 +350,48 @@ class MonteCarloOptionPricing:
     def _payoff(self, S_T, kind):
         return np.maximum(S_T - self.K, 0.0) if kind == "call" else np.maximum(self.K - S_T, 0.0)
 
+    @parallelizable("n_paths", even=True,
+                    reject_if=lambda a: "qmc=True (scrambling loses its low-discrepancy "
+                    "guarantee if split into independently-seeded chunks)" if a["qmc"] else None)
     def price(self, kind="call", n_paths=100_000, antithetic=True,
-              control_variate=False, qmc=False, random_state=None):
+              control_variate=False, qmc=False, random_state=None, backend=None):
+        """``backend=None`` (default): unchanged numpy formula. ``backend=`` a
+        device name or :class:`~stochpylib.utils.GPUBackend` moves the
+        exp/arithmetic (not the random draw itself) to that device -- see
+        :meth:`simulate_paths`."""
         _check_kind(kind)
         disc = math.exp(-self.r * self.T)
         if qmc:
             return self._price_qmc(kind, n_paths, disc, random_state)
         rng = _rng(random_state)
+        gb = None
+        if backend is not None:
+            from stochpylib.utils.performance import GPUBackend
+            gb = backend if isinstance(backend, GPUBackend) else GPUBackend(backend)
         if antithetic:
             m = n_paths // 2
-            Z = rng.standard_normal(m)
             drift = (self.r - self.q - 0.5 * self.sigma**2) * self.T
             vol = self.sigma * math.sqrt(self.T)
-            up = self.S * np.exp(drift + vol * Z)
-            down = self.S * np.exp(drift - vol * Z)
+            if gb is None:
+                Z = rng.standard_normal(m)
+                up = self.S * np.exp(drift + vol * Z)
+                down = self.S * np.exp(drift - vol * Z)
+            else:
+                Z = gb.standard_normal((m,), random_state=rng)
+                up = gb.to_numpy(self.S * gb.exp(drift + vol * Z))
+                down = gb.to_numpy(self.S * gb.exp(drift - vol * Z))
+                Z = gb.to_numpy(Z)
             payoff = 0.5 * (self._payoff(up, kind) + self._payoff(down, kind))
         else:
-            Z = rng.standard_normal(n_paths)
             drift = (self.r - self.q - 0.5 * self.sigma**2) * self.T
             vol = self.sigma * math.sqrt(self.T)
-            S_T = self.S * np.exp(drift + vol * Z)
+            if gb is None:
+                Z = rng.standard_normal(n_paths)
+                S_T = self.S * np.exp(drift + vol * Z)
+            else:
+                Z = gb.standard_normal((n_paths,), random_state=rng)
+                S_T = gb.to_numpy(self.S * gb.exp(drift + vol * Z))
+                Z = gb.to_numpy(Z)
             payoff = self._payoff(S_T, kind)
 
         if control_variate:
@@ -378,9 +417,10 @@ class MonteCarloOptionPricing:
     def _price_qmc(self, kind, n_paths, disc, random_state, n_scrambles=8):
         from scipy.special import ndtri
 
+        from stochpylib._rng import spawn as _spawn
         from stochpylib.montecarlo._result import MCResult
 
-        seeds = np.random.SeedSequence(random_state).spawn(n_scrambles)
+        seeds = _spawn(random_state, n_scrambles)
         per = max(n_paths // n_scrambles, 1)
         estimates = []
         for s in seeds:
@@ -397,6 +437,7 @@ class MonteCarloOptionPricing:
         se = float(estimates.std(ddof=1) / math.sqrt(n_scrambles))
         return MCResult(mean, se, per * n_scrambles, "mc-qmc-sobol", {"n_scrambles": n_scrambles})
 
+    @parallelizable("n_paths")
     def price_path_dependent(self, payoff, n_paths=50_000, n_steps=252, random_state=None):
         """``payoff(paths)`` maps the ``(n_paths, n_steps+1)`` price grid to payoffs."""
         paths = self.simulate_paths(n_paths, n_steps, random_state)
@@ -404,6 +445,7 @@ class MonteCarloOptionPricing:
         result = np.asarray(payoff(paths), dtype=float)
         return _mc_result(result, "mc-path-dependent", discount=disc)
 
+    @parallelizable("n_paths")
     def asian_price(self, kind="call", average="arithmetic", n_paths=50_000,
                      n_steps=252, random_state=None):
         _check_kind(kind)

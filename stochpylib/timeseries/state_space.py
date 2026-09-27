@@ -17,6 +17,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from stochpylib.timeseries._result import ForecastResult
+from stochpylib._rng import as_generator as _rng
 
 
 def _mat(M, r, c, name):
@@ -394,7 +395,7 @@ class ParticleFilter:
         self.observation_logpdf = observation_logpdf
         self.initial_sampler = initial_sampler
         self.resample_threshold = float(resample_threshold)
-        self.rng = np.random.default_rng(random_state)
+        self.rng = _rng(random_state)
 
     def fit(self, observations):
         obs = np.asarray(observations, dtype=float).ravel()

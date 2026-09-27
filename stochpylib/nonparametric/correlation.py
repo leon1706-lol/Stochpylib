@@ -4,6 +4,7 @@ import math
 
 import numpy as np
 
+from stochpylib._rng import as_generator as _rng
 from stochpylib.copulas._utils import kendall_tau_estimate, spearman_rho_estimate
 from stochpylib.nonparametric._base import DependenceMeasure
 from stochpylib.nonparametric._common import (
@@ -216,7 +217,7 @@ class DistanceCorrelation(DependenceMeasure):
         dvary2 = self._dcov2(y, y)
         denom = math.sqrt(max(dvarx2, 0.0) * max(dvary2, 0.0))
         dcor = math.sqrt(max(dcov2, 0.0) / denom) if denom > 0 else 0.0
-        rng = np.random.default_rng(self.random_state)
+        rng = _rng(self.random_state)
         obs = dcov2
         null = np.empty(self.n_resamples)
         for b in range(self.n_resamples):
@@ -255,7 +256,7 @@ class BrownianCorrelation(DependenceMeasure):
         dvary2 = self._dcov2(y, y)
         denom = math.sqrt(max(dvarx2, 0.0) * max(dvary2, 0.0))
         dcor = math.sqrt(max(dcov2, 0.0) / denom) if denom > 0 else 0.0
-        rng = np.random.default_rng(self.random_state)
+        rng = _rng(self.random_state)
         null = np.empty(self.n_resamples)
         for b in range(self.n_resamples):
             perm = rng.permutation(n)
@@ -305,7 +306,7 @@ class HoeffdingD(DependenceMeasure):
     def _fit(self, x, y):
         n = len(x)
         obs = self._stat(x, y)
-        rng = np.random.default_rng(self.random_state)
+        rng = _rng(self.random_state)
         null = np.empty(self.n_resamples)
         for b in range(self.n_resamples):
             perm = rng.permutation(n)

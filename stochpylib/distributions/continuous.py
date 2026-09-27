@@ -8,6 +8,7 @@ import numpy as np
 from scipy import integrate, optimize, special
 
 from stochpylib.distributions._base import Distribution
+from stochpylib._rng import as_generator as _rng
 
 EULER_GAMMA = 0.5772156649015329
 
@@ -37,7 +38,7 @@ class Normal(Distribution):
         return self.sigma**2
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.normal(self.mu, self.sigma, size=size)
 
     def entropy(self):
@@ -89,7 +90,7 @@ class Exponential(Distribution):
         return 1.0 / self.rate**2
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.exponential(1.0 / self.rate, size=size)
 
     def entropy(self):
@@ -142,7 +143,7 @@ class Uniform(Distribution):
         return (self.b - self.a) ** 2 / 12.0
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.uniform(self.a, self.b, size=size)
 
     def entropy(self):
@@ -187,7 +188,7 @@ class Beta(Distribution):
         return a * b / ((a + b) ** 2 * (a + b + 1))
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.beta(self.a, self.b, size=size)
 
     @classmethod
@@ -234,7 +235,7 @@ class Gamma(Distribution):
         return self.shape * self.scale**2
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.gamma(self.shape, self.scale, size=size)
 
     @classmethod
@@ -277,7 +278,7 @@ class Chi2(Distribution):
         return 2 * self.df
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.chisquare(self.df, size=size)
 
     @classmethod
@@ -312,7 +313,7 @@ class Student_t(Distribution):
         return np.inf
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.standard_t(self.df, size=size)
 
     def skewness(self):
@@ -362,7 +363,7 @@ class F(Distribution):
         return np.inf
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.f(self.d1, self.d2, size=size)
 
     @classmethod
@@ -405,7 +406,7 @@ class Cauchy(Distribution):
         return np.nan
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return self.loc + self.scale * rng.standard_cauchy(size=size)
 
     def entropy(self):
@@ -449,7 +450,7 @@ class Laplace(Distribution):
         return 2 * self.scale**2
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.laplace(self.loc, self.scale, size=size)
 
     def entropy(self):
@@ -507,7 +508,7 @@ class Weibull(Distribution):
         return lam**2 * (special.gamma(1 + 2 / k) - special.gamma(1 + 1 / k) ** 2)
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return self.scale * rng.weibull(self.shape, size=size)
 
     @classmethod
@@ -551,7 +552,7 @@ class Pareto(Distribution):
         return np.inf
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return self.xm * (1 + rng.pareto(self.alpha, size=size))
 
     def entropy(self):
@@ -599,7 +600,7 @@ class LogNormal(Distribution):
         return float((np.exp(self.sigma**2) - 1) * np.exp(2 * self.mu + self.sigma**2))
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.lognormal(self.mu, self.sigma, size=size)
 
     @classmethod
@@ -635,7 +636,7 @@ class Gumbel(Distribution):
         return (np.pi**2 / 6) * self.scale**2
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.gumbel(self.loc, self.scale, size=size)
 
     def entropy(self):
@@ -687,7 +688,7 @@ class Frechet(Distribution):
         return np.inf
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return self.ppf(rng.uniform(size=size))
 
     @classmethod
@@ -748,7 +749,7 @@ class GEV(Distribution):
         return np.inf
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return self.ppf(rng.uniform(size=size))
 
     @classmethod
@@ -805,7 +806,7 @@ class GPareto(Distribution):
         return np.inf
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return self.ppf(rng.uniform(size=size))
 
     @classmethod
@@ -851,7 +852,7 @@ class InvGamma(Distribution):
         return b**2 / ((a - 1) ** 2 * (a - 2)) if a > 2 else np.inf
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return 1.0 / rng.gamma(self.shape, 1.0 / self.scale, size=size)
 
     @classmethod
@@ -899,7 +900,7 @@ class InvGaussian(Distribution):
         return self.mu**3 / self.lam
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.wald(self.mu, self.lam, size=size)
 
     @classmethod
@@ -939,7 +940,7 @@ class Rayleigh(Distribution):
         return (4 - np.pi) / 2 * self.scale**2
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.rayleigh(self.scale, size=size)
 
     def entropy(self):
@@ -983,7 +984,7 @@ class Maxwell(Distribution):
         return self.scale**2 * (3 * np.pi - 8) / np.pi
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         comps = rng.normal(0, self.scale, size=(np.prod(size, dtype=int) if hasattr(size, "__iter__") else size, 3))
         out = np.sqrt(np.sum(comps**2, axis=-1))
         return out.reshape(size) if hasattr(size, "__iter__") else out
@@ -1028,7 +1029,7 @@ class Nakagami(Distribution):
         return w * (1 - (1 / m) * (special.gamma(m + 0.5) / special.gamma(m)) ** 2)
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         m, w = self.shape, self.scale
         return np.sqrt(rng.gamma(m, w / m, size=size))
 
@@ -1081,7 +1082,7 @@ class Rice(Distribution):
         return 2 * self.sigma**2 + self.nu**2 - (np.pi * self.sigma**2 / 2) * (self.mean() / (self.sigma * np.sqrt(np.pi / 2))) ** 2 if self.sigma > 0 else np.nan
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         z1 = rng.normal(self.nu, self.sigma, size=size)
         z2 = rng.normal(0, self.sigma, size=size)
         return np.sqrt(z1**2 + z2**2)
@@ -1132,7 +1133,7 @@ class VonMises(Distribution):
         return np.log(2 * np.pi * special.i0(self.kappa)) - self.kappa * special.i1(self.kappa) / special.i0(self.kappa)
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return rng.vonmises(self.mu, self.kappa, size=size)
 
     @classmethod
@@ -1177,7 +1178,7 @@ class Kumaraswamy(Distribution):
         return m2 - self.mean() ** 2
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return self.ppf(rng.uniform(size=size))
 
     @classmethod

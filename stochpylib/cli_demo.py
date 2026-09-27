@@ -588,6 +588,44 @@ def _demo_viz():
         print("  matplotlib: not installed (SVG only -- Figure.to_svg()/.save('*.svg'))")
 
 
+def _demo_utils():
+    from stochpylib.montecarlo import MCResult
+    from stochpylib.utils import Benchmark, ParallelSimulation, fit, set_seed
+
+    print("Infrastructure & utilities - seeds, parallel/GPU backends, fitting, interop:")
+
+    set_seed(2026)
+    from stochpylib.distributions import Gamma
+    data = Gamma(shape=3.0, scale=2.0).rvs(2000, random_state=None)
+    set_seed(2026)
+    data2 = Gamma(shape=3.0, scale=2.0).rvs(2000, random_state=None)
+    set_seed(None)
+    print(f"  set_seed(2026) reproducibility: {'OK' if (data == data2).all() else 'FAILED'}")
+
+    result = fit(data)
+    row = next(r for r in result.table_ if r["name"] == result.best_name_)
+    print(f"  fit(): best family = {result.best_name_} (AIC={row['aic']:.1f})")
+
+    def _pi_chunk(n, rng):
+        pts = rng.uniform(size=(n, 2))
+        hits = int(np.sum(pts[:, 0] ** 2 + pts[:, 1] ** 2 <= 1.0))
+        p_hat = hits / n
+        se = float(np.sqrt(p_hat * (1 - p_hat) / n))
+        return MCResult(4.0 * p_hat, 4.0 * se, n, "pi")
+
+    pooled = ParallelSimulation(n_jobs=4, chunk_size=50_000).estimate(
+        _pi_chunk, 200_000, random_state=7)
+    print(f"  ParallelSimulation(n_jobs=4): pi ~= {pooled.estimate:.4f} +/- {pooled.std_error:.4f}")
+
+    b = Benchmark(repeat=3, number=200).run(lambda: sum(range(200)))
+    print(f"  Benchmark: {b.mean_ * 1e6:.2f} us/call over {b.repeat} repeats")
+
+    from stochpylib.utils._backends import available_backends as _avail
+    backends = _avail()
+    status = ", ".join(f"{k}={'yes' if v else 'no'}" for k, v in sorted(backends.items()))
+    print(f"  optional backends: {status}")
+
+
 DEMOS = {
     "probability": _demo_probability,
     "distributions": _demo_distributions,
@@ -611,6 +649,7 @@ DEMOS = {
     "experimental_design": _demo_experimental_design,
     "spatial_statistics": _demo_spatial_statistics,
     "viz": _demo_viz,
+    "utils": _demo_utils,
 }
 DEMO_MODULES = tuple(DEMOS)
 

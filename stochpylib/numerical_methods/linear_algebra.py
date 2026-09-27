@@ -12,6 +12,7 @@ import numpy as np
 
 from stochpylib.numerical_methods._common import _hessenberg, _householder_vector
 from stochpylib.numerical_methods.integration import GaussLegendre
+from stochpylib._rng import as_generator as _rng
 
 __all__ = [
     "MatrixExponential", "MatrixLogarithm", "CholeskyDecomp", "EigenDecomp",
@@ -308,7 +309,7 @@ class EigenDecomp:
         return float(np.max(np.abs(self.eigenvalues_)))
 
     def power_iteration(self, n_iter=1000, tol=1e-12, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         n = self.A.shape[0]
         v = rng.standard_normal(n)
         v /= np.linalg.norm(v)
@@ -421,7 +422,7 @@ def _qr_householder(A):
 
 def _eigenvectors_inverse_iteration(A, eigvals, n_iter=3, random_state=0):
     n = A.shape[0]
-    rng = np.random.default_rng(random_state)
+    rng = _rng(random_state)
     V = np.zeros((n, n), dtype=eigvals.dtype)
     Ac = A.astype(eigvals.dtype)
     for j, lam in enumerate(eigvals):

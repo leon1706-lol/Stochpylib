@@ -20,6 +20,7 @@ from stochpylib import (
     statistics,
     survival,
     timeseries,
+    utils,
     viz,
 )
 
@@ -45,7 +46,8 @@ __all__ = [
     "statistics",
     "survival",
     "timeseries",
+    "utils",
     "viz",
 ]
 
-__version__ = "0.19.0"
+__version__ = "0.20.0"

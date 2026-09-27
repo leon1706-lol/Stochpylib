@@ -33,6 +33,7 @@ from stochpylib.distributions.continuous import Normal as _Normal
 from stochpylib.distributions.continuous import Weibull as _Weibull
 
 import warnings
+from stochpylib._rng import as_generator as _rng
 
 # class-level cache of numerical quantile tables for the alpha=1 corner:
 # (alpha, beta, loc, scale) -> (q_grid, x_grid)
@@ -137,7 +138,7 @@ class StableDistribution(Distribution):
             return self._gauss.rvs(size, random_state=random_state)
         if self._cauchy is not None:
             return self._cauchy.rvs(size, random_state=random_state)
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         n = size if isinstance(size, int) else int(np.prod(size))
         a, b = self.alpha, self.beta
         if a != 1.0:
@@ -289,7 +290,7 @@ class LevyDistribution(Distribution):
         return np.inf
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         z = rng.normal(size=size)
         return self.loc + self.scale / z**2
 
@@ -340,7 +341,7 @@ class SubGaussian(Distribution):
         return a**2 * special.gamma(3 / b) / special.gamma(1 / b)
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         g = rng.gamma(1 / self.beta, 1.0, size=size)
         sign = rng.choice([-1.0, 1.0], size=size)
         return self.mu + self.alpha * sign * g ** (1 / self.beta)

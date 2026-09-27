@@ -14,6 +14,7 @@ import numpy as np
 
 from stochpylib.montecarlo._result import MCResult
 from stochpylib.montecarlo.simulation import _eval_integrand
+from stochpylib._rng import as_generator as _rng
 
 __all__ = [
     "AntitheticVariates",
@@ -46,7 +47,7 @@ class AntitheticVariates:
 
     def __init__(self, n_simulations=100_000, random_state=None):
         self.n = int(n_simulations)
-        self.rng = np.random.default_rng(random_state)
+        self.rng = _rng(random_state)
 
     def estimate(self, integrand, dim=1):
         """Estimate ``E[f(U)]`` over uniforms using ``n // 2`` antithetic pairs."""
@@ -91,7 +92,7 @@ class ControlVariates:
 
     def __init__(self, n_simulations=100_000, random_state=None):
         self.n = int(n_simulations)
-        self.rng = np.random.default_rng(random_state)
+        self.rng = _rng(random_state)
 
     def estimate(self, integrand, control_integrand, control_mean, dim=1, sampler=None):
         """Estimate ``E[f(X)]`` using ``E[g(X)] = control_mean`` as the control.
@@ -124,7 +125,7 @@ class LatinHypercubeSampling:
 
     def __init__(self, dim=2, n=1024, random_state=None):
         self.dim, self.n = int(dim), int(n)
-        self.rng = np.random.default_rng(random_state)
+        self.rng = _rng(random_state)
 
     def generate(self):
         strata = (np.arange(self.n)[:, None] + self.rng.uniform(size=(self.n, self.dim))) / self.n
@@ -156,7 +157,7 @@ class StratifiedSampling:
             raise ValueError("StratifiedSampling class supports dim <= 3 (use the 1-D function "
                              "stratified_sampling for other cases)")
         self.K, self.dim, self.m = int(n_strata), int(dim), int(n_per_stratum)
-        self.rng = np.random.default_rng(random_state)
+        self.rng = _rng(random_state)
 
     def estimate(self, integrand, bounds=None):
         if bounds is None:
@@ -186,7 +187,7 @@ class ConditionedMC:
 
     def __init__(self, n_simulations=100_000, random_state=None):
         self.n = int(n_simulations)
-        self.rng = np.random.default_rng(random_state)
+        self.rng = _rng(random_state)
 
     def estimate(self, cond_expectation, y_sampler):
         """``cond_expectation(y) -> float``; ``y_sampler(rng) -> one Y draw``."""
@@ -204,7 +205,7 @@ class RejectionControl:
 
     def __init__(self, n_simulations=100_000, random_state=None):
         self.n = int(n_simulations)
-        self.rng = np.random.default_rng(random_state)
+        self.rng = _rng(random_state)
 
     def estimate(self, integrand, target_pdf, proposal_sampler, proposal_pdf, threshold=None):
         pts = np.atleast_2d(proposal_sampler(self.n, self.rng))

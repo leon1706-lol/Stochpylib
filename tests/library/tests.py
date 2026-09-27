@@ -43,6 +43,7 @@ from stochpylib import (
     statistics,
     survival,
     timeseries,
+    utils,
     viz,
 )
 
@@ -71,6 +72,7 @@ _MODULES = {
     "optimization": optimization,
     "experimental_design": experimental_design,
     "spatial_statistics": spatial_statistics,
+    "utils": utils,
     "viz": viz,
 }
 
@@ -110,6 +112,7 @@ _EXTRAS = {
                      "ConstrainedOptimizer", "OptimizeResult"},
     "experimental_design": {"Design", "DesignGenerator", "OptimalDesign"},
     "spatial_statistics": {"SpatialWeights", "SpatialFunction", "SARModel", "CARModel"},
+    "utils": {"FitResult", "OutlierResult", "from_pickle"},
     "viz": {"Figure", "Axes"},
 }
 
@@ -144,9 +147,9 @@ def test_total_spec_name_count():
                    "financial_stochastics", "statistics", "random_matrix",
                    "advanced_mcmc", "numerical_methods", "bayesian",
                    "robust_statistics", "nonparametric", "optimization",
-                   "experimental_design", "spatial_statistics", "viz")
+                   "experimental_design", "spatial_statistics", "viz", "utils")
     total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 756  # 756/794 across the twenty-two implemented modules
+    assert total == 794  # 794/794 across all twenty-three modules
 
 
 # Multivariate distributions legitimately deviate from the scalar-method
@@ -180,7 +183,7 @@ def test_top_level_package_wiring():
         "financial_stochastics", "gaussian_processes", "information_theory", "levy_processes",
         "montecarlo", "nonparametric", "numerical_methods", "optimization",
         "probability", "queueing", "random_matrix", "robust_statistics", "spatial_statistics",
-        "statistics", "survival", "timeseries", "viz"}
+        "statistics", "survival", "timeseries", "utils", "viz"}
     # version consistency, never a literal: the installed metadata and the
     # in-code __version__ must agree (a hardcoded literal here broke CI on
     # every version bump — development/Probleme.md [39])
@@ -706,3 +709,181 @@ def test_viz_renders_real_models_from_five_modules():
     sampler.sample(np.zeros(2), random_state=1)
     fig = viz.trace_plot(sampler)
     assert np.allclose(fig.data["rhat"], advanced_mcmc.Rhat(sampler.get_chains()))
+
+
+# ------------------------------------------------------------ utils / V0.20.0 retrofit
+
+_OPTIONAL_BACKEND_MODULES = ("pandas", "torch", "jax", "jaxlib", "numba", "cupy")
+
+
+def test_library_code_never_imports_optional_backends_outside_utils_backends():
+    """pandas/torch/jax/jaxlib/numba/cupy are optional, lazily-imported backends
+    confined to stochpylib/utils/_backends.py, and only inside function bodies there
+    -- mirroring viz/_mpl.py's matplotlib discipline (AGENTS.md)."""
+    import ast
+    import pathlib
+
+    pkg_dir = pathlib.Path(stochpylib.__file__).parent
+
+    def _is_backend_import(node):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            return node.module.split(".")[0] in _OPTIONAL_BACKEND_MODULES
+        if isinstance(node, ast.Import):
+            return any(alias.name.split(".")[0] in _OPTIONAL_BACKEND_MODULES
+                      for alias in node.names)
+        return False
+
+    found_any = False
+    for path in pkg_dir.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        parents = {}
+        for parent in ast.walk(tree):
+            for child in ast.iter_child_nodes(parent):
+                parents[child] = parent
+        for node in ast.walk(tree):
+            if not _is_backend_import(node):
+                continue
+            rel = path.relative_to(pkg_dir).as_posix()
+            assert rel == "utils/_backends.py", f"optional backend imported outside utils/_backends.py: {path}"
+            # walk up to the nearest enclosing scope; it must be a function, not
+            # module level or a bare module-level try/if block
+            n = node
+            while n in parents:
+                n = parents[n]
+                if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    break
+            else:
+                raise AssertionError(
+                    "optional backend import must be inside a function body, not at "
+                    f"module level: {path}")
+            found_any = True
+    assert found_any, "expected at least one lazy optional-backend import in utils/_backends.py"
+
+
+def test_importing_stochpylib_never_loads_optional_backends():
+    """`import stochpylib` (any module) must not pull pandas/torch/jax/numba/cupy into
+    sys.modules -- a subprocess check so this test's own imports can't contaminate it."""
+    import subprocess
+    import sys
+
+    code = (
+        "import sys, stochpylib, stochpylib.utils\n"
+        "loaded = [m for m in ('pandas','torch','jax','jaxlib','numba','cupy') "
+        "if m in sys.modules]\n"
+        "print(','.join(loaded))\n"
+    )
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120)
+    assert out.returncode == 0, out.stderr
+    loaded = [m for m in out.stdout.strip().split(",") if m]
+    assert loaded == [], f"optional backends loaded just by importing stochpylib: {loaded}"
+
+
+_RNG_EXEMPT_FILES = {"_rng.py", "selftest.py", "cli_demo.py", "random.py"}
+
+
+def test_rng_goes_through_the_shared_helper():
+    """Every module resolves ``random_state=`` through the shared
+    ``stochpylib._rng.as_generator`` rather than calling
+    ``np.random.default_rng``/``np.random.seed``/``RandomState(`` directly -- the one
+    canonical seed-resolution path (AGENTS.md's seeding convention). A literal-constant
+    seed (a deterministic internal table/multi-start, never a user's ``random_state``)
+    is allowed anywhere; a call with a variable argument or no argument at all is not,
+    outside the exempt files (the helper itself, the CLI demo/self-check suites, and
+    ``utils/random.py``'s own ``numpy_global=`` implementation)."""
+    import ast
+    import pathlib
+
+    pkg_dir = pathlib.Path(stochpylib.__file__).parent
+
+    def _attr_chain_name(node):
+        """'np.random.default_rng' style dotted name for an Attribute/Call func."""
+        parts = []
+        while isinstance(node, ast.Attribute):
+            parts.append(node.attr)
+            node = node.value
+        if isinstance(node, ast.Name):
+            parts.append(node.id)
+        return ".".join(reversed(parts))
+
+    violations = []
+    for path in pkg_dir.rglob("*.py"):
+        if path.name in _RNG_EXEMPT_FILES:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+                continue
+            name = _attr_chain_name(node.func)
+            # only numpy's own RNG is in scope -- e.g. cupy.random.default_rng is a
+            # genuinely different, intentional native-device RNG (GPUBackend's
+            # native_rng=True path), not a missed random_state= retrofit spot.
+            if name not in ("np.random.RandomState", "numpy.random.RandomState",
+                           "np.random.seed", "numpy.random.seed",
+                           "np.random.default_rng", "numpy.random.default_rng"):
+                continue
+            if name.endswith("RandomState"):
+                violations.append(f"{path}: RandomState(...) construction")
+            elif name.endswith("seed"):
+                violations.append(f"{path}: np.random.seed(...) global-state call")
+            else:
+                args = node.args
+                if len(args) == 0:
+                    violations.append(f"{path}: default_rng() with no argument")
+                elif not isinstance(args[0], ast.Constant):
+                    violations.append(f"{path}: default_rng(<non-constant>) -- "
+                                      "route through the shared _rng helper instead")
+    assert not violations, "\n".join(violations)
+
+
+def test_utils_integrates_with_distributions_montecarlo_and_timeseries():
+    """E2E: utils -> distributions/statistics/nonparametric/robust_statistics/
+    montecarlo/timeseries. fit()/goodness_of_fit()/ecdf()/outlier_detection() reuse the
+    owning module's own objects; set_seed() makes an unseeded pipeline reproducible;
+    to_json()/from_json() round-trips a fitted ARIMA; a ParallelSimulation-pooled
+    estimate is a montecarlo.MCResult."""
+    from stochpylib import utils
+
+    rng = np.random.default_rng(500)
+    data = rng.gamma(3.0, 2.0, 2000)
+    fitted = utils.fit(data)
+    assert fitted.best_name_ == "Gamma"
+
+    gof = utils.goodness_of_fit(data, "Gamma")
+    assert all(isinstance(v, statistics.TestResult) for v in gof.values())
+
+    e = utils.ecdf(data)
+    from stochpylib.nonparametric import EmpiricalCDF
+    assert isinstance(e, EmpiricalCDF)
+
+    contaminated = np.concatenate([rng.standard_normal(200), [40.0, -40.0]])
+    out = utils.outlier_detection(contaminated, method="mad")
+    assert out.mask[-1] and out.mask[-2]
+
+    X = rng.multivariate_normal([0, 0], [[1, 0.3], [0.3, 1]], 100)
+    X[0] += 15
+    from stochpylib.robust_statistics import MCD
+    mine = utils.outlier_detection(X, method="mcd", random_state=1)
+    theirs = MCD(random_state=1).fit(X)
+    assert np.array_equal(mine.mask, theirs.outliers())
+
+    utils.set_seed(2026)
+    a = distributions.Normal(0, 1).rvs(5, random_state=None)
+    utils.set_seed(2026)
+    b = distributions.Normal(0, 1).rvs(5, random_state=None)
+    assert np.array_equal(a, b)
+    utils.set_seed(None)
+
+    y = rng.standard_normal(150).cumsum()
+    model = timeseries.ARIMA(1, 0, 0).fit(y)
+    text = utils.to_json(model)
+    restored = utils.from_json(text)
+    fc1 = model.forecast(horizon=10)
+    fc2 = restored.forecast(horizon=10)
+    assert np.allclose(fc1.mean, fc2.mean)
+
+    def sim(n, r):
+        x = r.standard_normal(n)
+        return montecarlo.MCResult(float(x.mean()), float(x.std(ddof=1) / np.sqrt(n)), n, "e2e")
+
+    pooled = utils.ParallelSimulation(n_jobs=2, chunk_size=1000).estimate(sim, 4000, random_state=3)
+    assert isinstance(pooled, montecarlo.MCResult)

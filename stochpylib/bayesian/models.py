@@ -264,11 +264,11 @@ class BayesianLogistic:
         var = np.einsum("ij,jk,ik->i", Xd, self.cov_, Xd)
         return mean, var
 
-    def predict_proba(self, X_new, method="probit"):
+    def predict_proba(self, X_new, method="probit", random_state=0):
         Xd = self._design(X_new)
         if method == "mc" or self.samples_ is not None:
             samples = self.samples_ if self.samples_ is not None else \
-                np.random.default_rng(0).multivariate_normal(self.coef_, self.cov_, size=2000)
+                _rng(random_state).multivariate_normal(self.coef_, self.cov_, size=2000)
             probs = _sigmoid(samples @ Xd.T).mean(axis=0)
             return np.column_stack([1 - probs, probs])
         mean, var = self._linear_predictor_stats(Xd)

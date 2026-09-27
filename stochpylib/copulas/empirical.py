@@ -21,6 +21,7 @@ from scipy import interpolate, special
 
 from stochpylib.copulas._base import BaseCopula
 from stochpylib.copulas._utils import as_u_matrix
+from stochpylib._rng import as_generator as _rng
 
 __all__ = ["EmpiricalCopula", "CheckerboardCopula", "BetaCopula"]
 
@@ -51,7 +52,7 @@ class EmpiricalCopula(BaseCopula):
         """Row bootstrap of the pseudo-observations."""
         self._require_fit()
         n = self._validate_sample_n(n)
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         idx = rng.integers(0, len(self.u_obs_), size=n)
         return self.u_obs_[idx]
 
@@ -138,7 +139,7 @@ class CheckerboardCopula(_GridCopulaBase):
         """Draw a cell by empirical mass, then fill it uniformly."""
         self._require_fit()
         n = self._validate_sample_n(n)
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         m = self.n_bins
         d = self.cell_mass_.ndim
         flat_p = self.cell_mass_.ravel()
@@ -193,7 +194,7 @@ class BetaCopula(_GridCopulaBase):
         (documented approximation of the Bernstein conditional)."""
         self._require_fit()
         n = self._validate_sample_n(n)
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         m = self.n_bins
         d = self.cell_mass_.ndim
         flat_p = self.cell_mass_.ravel()

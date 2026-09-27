@@ -9,6 +9,7 @@ to time-change a Brownian motion. All sampling is native numpy/scipy with
 
 import numpy as np
 from scipy import integrate, special
+from stochpylib._rng import as_generator as _rng
 
 __all__ = [
     "Subordinator", "GammaSubordinator", "InverseGaussianSubordinator",
@@ -37,14 +38,14 @@ class Subordinator:
         times = np.asarray(times, dtype=float)
         if times.size == 0:
             return np.array([])
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         dts = np.diff(np.concatenate(([0.0], times)))
         incs = np.array([self._increment(max(dt, 0.0), rng) for dt in dts])
         return np.cumsum(incs)
 
     def increments(self, dt, n, random_state=None):
         """``n`` i.i.d. increments over time span ``dt`` (as an array)."""
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         return np.array([self._increment(dt, rng) for _ in range(n)]) \
             if n else np.array([])
 
@@ -54,7 +55,7 @@ class Subordinator:
         Returns an array of shape ``(n_paths, n_steps + 1)`` including the
         origin column.
         """
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         dt = float(T) / n_steps
         incs = np.array([[self._increment(dt, rng) for _ in range(n_steps)]
                          for _ in range(n_paths)])

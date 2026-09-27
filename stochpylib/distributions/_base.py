@@ -13,6 +13,7 @@ closed form exists (most well-known distributions have one for at least ``rvs``)
 
 import numpy as np
 from scipy import integrate, optimize, special
+from stochpylib._rng import as_generator as _rng
 
 
 class Distribution:
@@ -104,7 +105,7 @@ class Distribution:
         return optimize.brentq(lambda x: self.cdf(x) - q, a, b, xtol=1e-10)
 
     def rvs(self, size=1, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         u = rng.uniform(0.0, 1.0, size=size)
         return self.ppf(u)
 
@@ -242,7 +243,7 @@ class MultivariateDistribution:
         raise NotImplementedError
 
     def cdf(self, x, n_samples=20000, random_state=None):
-        rng = np.random.default_rng(random_state)
+        rng = _rng(random_state)
         samples = self.rvs(size=n_samples, random_state=rng)
         x = np.asarray(x, dtype=float)
         return float(np.mean(np.all(samples <= x, axis=-1)))

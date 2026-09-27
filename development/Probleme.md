@@ -2612,3 +2612,135 @@ long name can't overflow a small low-probability node).
 **Verification:** Re-rendered the same 3-state chain; all three self-loop probabilities and
 all six directed-edge labels are now visible and non-overlapping (checked visually via a
 saved PNG); `test_plot_markov_chain_self_loops_drawn` asserts the self-loop ring count.
+
+---
+
+### 122. `financial_stochastics.MonteCarloOptionPricing._price_qmc` crashed given a `Generator` `random_state`
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.20.0)
+
+**Problem:** `_price_qmc` built child streams via `np.random.SeedSequence(random_state).spawn(n)`,
+which raises `TypeError` when `random_state` is a `Generator` rather than an int/`SeedSequence` —
+`.price(..., qmc=True)` was the only public entry point in the library that couldn't accept a
+`Generator`, found while wiring up the V0.20.0 shared RNG helper's golden-stream regression
+harness.
+
+**Fix:** Routed the spawn through the new `stochpylib._rng.spawn`, which accepts a `Generator`
+(spawns from its own `SeedSequence`) as well as int/`None`/`SeedSequence`, and is byte-identical
+to the old call for int input.
+
+**Verification:** A golden-stream hash of `_price_qmc(..., random_state=123)` (int) is unchanged
+before/after; `MonteCarloOptionPricing(...).price(qmc=True, random_state=np.random.default_rng(7))`
+now returns a result instead of raising.
+
+---
+
+### 123. `queueing.DiscreteEventSim`/`QueueSimulation` had hidden default seeds and rejected a `Generator`
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.20.0)
+
+**Problem:** `DiscreteEventSim(random_state=None)` silently seeded from a hardcoded `42`
+(`QueueSimulation.simulate()` similarly hardcoded `12345`) rather than drawing fresh entropy like
+every other stochastic method in the library, and both did `int(random_state)`, which raises for a
+`Generator` — the one place in the library that couldn't take one.
+
+**Fix:** Both now resolve `random_state` through the shared `stochpylib._rng` helper (so `None`
+means fresh/library-seeded entropy, matching every other module, and a `Generator` is accepted);
+`QueueSimulation.simulate()`'s dead, never-used local `rng` construction was also removed.
+
+**Verification:** `tests/queueing/tests.py::TestRandomStateRetrofit` covers `Generator` input and
+explicit-seed reproducibility for both classes; every existing call site in `tests/`,
+`selftest.py` and `cli_demo.py` already passed an explicit `random_state=`, so none depended on
+the removed implicit defaults (`pytest tests/queueing/ -v`, 78 passed).
+
+---
+
+### 124. `utils.data.missing_imputation(method="knn")` produced `NaN` for a row missing every column
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.20.0)
+
+**Problem:** The kNN imputer skipped a row entirely when it had no observed columns to compute a
+distance from (`if len(observed_cols) == 0: continue`), leaving its missing cells `NaN` in the
+output instead of falling back to a column mean — found manually testing a 200x3 array with 15%
+independent missingness per column (~0.3% of rows are all-missing at that rate, but reliably hit
+across a few hundred rows).
+
+**Fix:** An all-missing row now fills every column from `np.nanmean` of that column, the same
+fallback already used when no valid donor exists for a specific cell.
+
+**Verification:** `tests/utils/tests.py::TestMissingImputation::test_no_nans_remain[knn]` asserts
+`not np.isnan(out).any()` on data engineered to include an all-missing row.
+
+---
+
+### 125. `utils.data.DataValidation.validate` had an inverted NaN-stripping condition
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.20.0)
+
+**Problem:** `validate()` stripped NaNs from the returned array only `if not self.allow_nan` —
+backwards: when `allow_nan=False`, `check()` already raises on any NaN before that line is ever
+reached (making the strip dead code), and when `allow_nan=True` (NaNs tolerated), the array was
+returned with NaNs still in it instead of the documented "clean array" behavior.
+
+**Fix:** Flipped the condition to `if self.allow_nan`, so a validated array with permitted NaNs
+comes back stripped, exactly as documented.
+
+**Verification:** `tests/utils/tests.py::TestDataValidation::test_validate_strips_nan_when_allowed`
+and `test_validate_raises_on_nan_when_not_allowed` cover both branches explicitly.
+
+---
+
+### 126. `utils.compat.jax_interface`'s distribution `.sample()` drew a PRNG key it never used
+
+**Severity:** 2/10 · **Status:** 🟢 `fixed` (V0.20.0)
+
+**Problem:** `_JaxDistributionShim.sample()` computed `key = _backends.jax_key(random_state)` and
+then ignored it, drawing from the wrapped stochpylib `Distribution.rvs()` directly instead —
+harmless (the draw is still correctly seeded through `random_state`) but dead code that looked
+load-bearing, caught while moving this file's jax imports into `utils/_backends.py` (see #128).
+
+**Fix:** Removed the unused key computation; `.sample()` draws via the wrapped distribution's own
+`.rvs(random_state=random_state)` as it always effectively did.
+
+**Verification:** `tests/utils/backend_optional.py`'s jax tests (run by the `utils-optional` CI
+job) still pass; no behavior change, confirmed by inspection (the key was provably unused).
+
+---
+
+### 127. `utils.performance.ParallelSimulation.map` called `fn(*task)` instead of `fn(task)`
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.20.0)
+
+**Problem:** `.map(fn, tasks)`'s docstring and the stdlib `map()`/`Pool.map()` convention it was
+named after both imply one positional argument per task, but it delegated straight to
+`_parallel.execute`, which unpacks each task with `fn(*task)` — so `.map(lambda x: x*2, [1,2,3])`
+raised `TypeError` on the first plain (non-tuple) item, caught while writing this method's own
+test.
+
+**Fix:** `.map()` now wraps each task in a 1-tuple before delegating, so `fn` still receives a
+single positional argument and stays picklable for `backend="process"` (no wrapping lambda).
+
+**Verification:** `tests/utils/tests.py::TestParallelSimulation::test_map_runs_in_order` asserts
+`ps.map(lambda x: x * 2, [1, 2, 3, 4, 5]) == [2, 4, 6, 8, 10]`.
+
+---
+
+### 128. `utils.compat`/`utils.performance` imported `jax.numpy`/`jax.scipy.stats` directly
+
+**Severity:** 5/10 · **Status:** 🟢 `fixed` (V0.20.0)
+
+**Problem:** AGENTS.md's optional-backend rule (mirroring `viz`'s matplotlib discipline) requires
+every pandas/torch/jax/numba/cupy import to live in exactly one file
+(`utils/_backends.py`); `compat.py`'s `jax_interface`/`_JaxDistributionShim` and
+`performance.py`'s `GPUBackend` each had their own `import jax.numpy as jnp` /
+`import jax.scipy.stats as jsp` inside function bodies — lazy (so import-time behavior was fine)
+but not confined to the one allowed file, caught by the new
+`test_library_code_never_imports_optional_backends_outside_utils_backends` AST guard before any
+release.
+
+**Fix:** Added `_backends.jax_numpy()`/`_backends.jax_scipy_stats()` helpers and pointed both call
+sites at them instead of importing jax directly.
+
+**Verification:** The AST guard (`tests/library/tests.py`) now passes; `jax_interface`'s and
+`GPUBackend("jax")`'s behavior is unchanged (same underlying `jax.numpy`/`jax.scipy.stats`
+objects), confirmed by `tests/utils/backend_optional.py`'s jax tests.

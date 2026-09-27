@@ -37,6 +37,7 @@ or an additive shift mod 1 (Halton/Faure).
 import numpy as np
 
 from stochpylib.montecarlo import _direction_numbers as _dn
+from stochpylib._rng import as_generator as _rng
 
 __all__ = [
     "HaltonSequence",
@@ -204,7 +205,7 @@ class HaltonSequence(_LowDiscrepancyBase):
         self.bases = first_primes(dim)
         # additive shift mod 1 (seeded -> reproducible); unshifted when no seed given
         self._shifts = (
-            np.random.default_rng(random_state).uniform(size=dim) if random_state is not None else None
+            _rng(random_state).uniform(size=dim) if random_state is not None else None
         )
 
     def _raw(self, n):
@@ -223,7 +224,7 @@ class FaureSequence(_LowDiscrepancyBase):
         super().__init__(dim)
         self.base = _smallest_prime_geq(dim)
         self._shifts = (
-            np.random.default_rng(random_state).uniform(size=dim) if random_state is not None else None
+            _rng(random_state).uniform(size=dim) if random_state is not None else None
         )
         b = self.base
         size = max(dim, 16)
@@ -305,7 +306,7 @@ class DigitalNetBase2(_LowDiscrepancyBase):
             self.BITS = 53
             self._V = self._build_direction_numbers()
             self.uses_standard_table = False
-        rng = np.random.default_rng(random_state) if random_state is not None else None
+        rng = _rng(random_state) if random_state is not None else None
         self._shift_mask = (
             rng.integers(0, 1 << self.BITS, size=self.dim, dtype=np.int64)
             if rng is not None

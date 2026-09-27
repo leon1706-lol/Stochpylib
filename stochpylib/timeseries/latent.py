@@ -17,6 +17,7 @@ import numpy as np
 from scipy.special import logsumexp
 
 from stochpylib.timeseries._utils import as_1d, as_2d, lag_matrix
+from stochpylib._rng import as_generator as _rng
 
 _LOG_SQRT_2PI = 0.5 * np.log(2.0 * np.pi)
 
@@ -197,7 +198,7 @@ def _fit_switching_core(design, target, n_regimes, markov=True,
     design = np.asarray(design, dtype=float)
     target = as_1d(target)
     T, d = design.shape
-    rng = np.random.default_rng(random_state)
+    rng = _rng(random_state)
     K = int(n_regimes)
 
     # initialization: OLS on contiguous segments keeps coefficients distinct
