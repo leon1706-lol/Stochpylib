@@ -1,13 +1,16 @@
 # stochpylib.random_matrix
 
-Random matrix theory: the classical Gaussian ensembles (GOE/GUE/GSE), Wigner and
-Wishart/inverse-Wishart matrices, the circular unitary ensemble, a Ginibre-type
-i.i.d. ensemble, the limiting spectral laws (Wigner semicircle, Marchenko-Pastur,
-Tracy-Widom) as full library distributions, tridiagonal beta-Hermite/Laguerre and
-Jacobi ensembles, Haar-distributed orthogonal/unitary/symplectic matrices, and the
-spectral statistics that test them (spacing ratios, level repulsion, empirical
-spectral distributions, Tracy-Widom edge scaling, Edelman's hard-edge law). 23 public
-names across four submodules, natively on numpy/scipy — no wrapper dependencies.
+Random matrix theory, natively on numpy/scipy — no wrapper dependencies. 23 public names
+across four submodules:
+
+- Classical Gaussian ensembles (GOE/GUE/GSE), Wigner and Wishart/inverse-Wishart matrices,
+  the circular unitary ensemble, a Ginibre-type i.i.d. ensemble.
+- Limiting spectral laws (Wigner semicircle, Marchenko-Pastur, Tracy-Widom) as full
+  library distributions.
+- Tridiagonal beta-Hermite/Laguerre and Jacobi ensembles; Haar-distributed
+  orthogonal/unitary/symplectic matrices.
+- Spectral statistics: spacing ratios, level repulsion, empirical spectral
+  distributions, Tracy-Widom edge scaling, Edelman's hard-edge law.
 
 **Status:** implemented & tested (23/23 spec names).
 

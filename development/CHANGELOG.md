@@ -1,1686 +1,201 @@
-# Changelog
+# Changelog — Build Phases & Development Walkthrough
 
-Append-only. One entry per meaningful chunk of work, in chronological order.
+Stochpylib was built incrementally across the following phases. This is the full
+development history; see [`README.md`](../README.md) for current usage docs and
+[`Probleme.md`](Probleme.md) for the audit log of bugs found and fixed.
 
 ## Phase 1 — Vault digitization
-
-Converted the React design-spec component (module tree, ratings, quickstart examples) into the
-Obsidian vault at `Stochpylib-Obsidian-Vault/`: `Module-Map.md`, one `Modules/<name>.md` per
-top-level module (23 modules, ~120 submodules, ~794 public names), `Ratings.md`,
-`Quickstart-Examples.md`, `Dependencies.md`, `ARCHITECTURE.md`, `Essential-Tasks.md`. Replaced
-prior stale vault content that had documented an unrelated project.
+- **Design spec converted to Obsidian vault** at `Stochpylib-Obsidian-Vault/`: module map, one spec file per module (~794 public names), ratings, quickstart examples, dependencies, architecture, and essential-tasks checklist.
 
 ## Phase 2 — Naming and package scaffold
-
-Discovered `stochpy` and several close variants (`pystoch`, `stochpy-toolkit`, ...) were already
-taken on PyPI by unrelated packages. Renamed the project to `stochpylib` (PyPI distribution name
-== Python import name) and propagated the rename through every vault file. Scaffolded the real
-package: `pyproject.toml` (setuptools backend, license left as a placeholder), `.gitignore`,
-package `README.md`, `.github/workflows/ci.yml` (test matrix) and `publish.yml` (tag-triggered
-PyPI Trusted Publisher / OIDC, no stored token).
+- **Renamed to `stochpylib`** after discovering `stochpy` and variants were taken on PyPI; propagated through every vault file.
+- **Scaffolded the package**: `pyproject.toml`, `.gitignore`, README, CI workflow (test matrix), and publish workflow (tag-triggered PyPI Trusted Publisher).
 
 ## Phase 3 — First module: `stochpylib.probability`
-
-Implemented all 21 public names from `Modules/probability.md` across `basics.py`
-(sample spaces, events, Bayes' theorem), `combinatorics.py` (factorial through derangements,
-exact integer arithmetic), and `independence.py` (independence/conditional-independence checks).
-Wrote tests and doctests; see [Probleme.md](Probleme.md) for the math errors found and fixed
-while writing them. Verified the package builds (`python -m build`) and installs/imports
-correctly from a clean venv.
+- **Implemented 21 public names** across sample spaces, combinatorics (exact integer arithmetic), and independence checks.
+- **Two math bugs** caught by doctests before shipping (Probleme #1-2).
 
 ## Phase 4 — Test relocation, progress tracking, dev-folder setup
-
-Moved tests out of the package (`stochpylib/probability/tests.py` →
-`tests/probability/tests.py`) so test files no longer ship inside the built wheel. Added
-`Implementation-Checklist.md` to the vault — a single checkbox list spanning every
-module/submodule/public name, checked off as things actually get implemented (currently 21/794).
-Updated `Essential-Tasks.md` to require keeping that checklist current, running the full test
-suite, regenerating the vault's code-graph notes, and appending a `HANDOFF.MD` entry as part of
-wrapping up any task. Created this `development/` folder (this file, `CHANGELOG.md`,
-`Probleme.md`) to track build history and bugs separately from the design spec.
+- **Tests moved out of the package** to `tests/<module>/tests.py` so they never ship in the wheel.
+- **Implementation-Checklist.md** created as the single source of truth for spec conformance.
+- **`development/` folder** created for changelog, problems, and dev docs.
 
 ## Phase 5 — Second module: `stochpylib.distributions` + `spl` CLI
-
-Finished the distributions module whose class code existed but was undelivered: added
-`distributions/__init__.py` exporting all 47 classes (+ 2 base classes) and wired it into
-`stochpylib/__init__.py`. Audited every method of every class against scipy.stats references,
-fixing four library bugs along the way (see Probleme.md [5]–[8]): GPareto pdf leaked probability
-below its support; Rice pdf overflowed to NaN for large x (now computed in log space); discrete
-`ppf` overshot bounded supports and returned the wrong atom; `MultivariateDistribution.fit` had
-a broken signature. `StableDistribution` gained exact closed-form delegation for alpha=2
-(Gaussian) and alpha=1,beta=0 (Cauchy), plus a Chambers–Mallows–Leckie sampler for all
-alpha != 1 — validated empirically against the closed-form characteristic function (the
-alpha=1, beta!=0 corner keeps a slow-but-correct inverse-CDF fallback; see Probleme [9]).
-Added the full test suite `tests/distributions/tests.py` (interface-contract matrix over all
-13 spec methods × 47 classes, scipy cross-checks, fit round-trips, stable-sampler validation);
-tests folders are now packages so same-named `tests.py` files collect cleanly. New console
-script `spl` (`stochpylib.cli`): `spl --version` prints the installed version;
-`spl --test` runs the embedded self-check suite (`stochpylib.selftest`, 101 checks) that ships
-in the wheel, so any pip install can be verified without pytest or a source checkout.
-Full suite: 143 passed / 2 skipped. Progress: 81/794 public names.
-
-## Phase 8 - Third module: `stochpylib.montecarlo`
-
-Implemented the full simulation & variance-reduction module (25/25 spec names) natively on
-numpy/scipy.special only. `quasi_random`: Halton, Faure (per-coordinate Pascal^j powers),
-Sobol and Niederreiter base-2 digital nets driven by programmatically-verified primitive /
-irreducible GF(2) generator polynomials with canonical odd initial values, plus the general
-`DigitalNetBase2` engine (spec alias `DigitalNet`) and a `LowDiscrepancy` facade; seeded
-digital-shift scrambling. Two construction bugs were caught by exactness checks before
-shipping: dimension 1 must be plain van der Corput (the x+1 polynomial's generic recurrence
-corrupts it), and a Gray-code single-flip walk enumerates points in gray order - replaced
-with direct bit decomposition in natural order (see Probleme.md [10]). Known limitation:
-exact (t,m,s)-net balance in dimensions >= 2 is within +-1 rather than certified; upgrading
-to published Joe-Kuo direction-number tables is an open item ([11]). Statistical quality:
-KS p ~ 1 per dimension at n=4096 and discrepancy ~50x better than pseudo-random.
-`simulation`: crude/QMC/stratified/importance (self-normalized with ESS)/rejection estimators
-returning a shared `MCResult`; `variance_reduction`: antithetic (incl. European call/put),
-control variates (optional non-uniform sampler hook), LHS, orthogonal sampling, stratified
-grid, conditioned MC, Hesterberg rejection control; `applications`: integration class,
-pi estimation, GBM option pricing (validated against an internal Black-Scholes oracle),
-historical VaR/ES (`RiskResult`), reliability via library distributions, correlation-based
-sensitivity. Manual debug session priced a European call three ways (SE reduction 1.15x
-antithetic, 1.84x control-variate vs crude; all within 3 SE of closed form) and ran VaR99/ES
-on a simulated book. Tests: tests/montecarlo/tests.py (57 cases); embedded selftest extended
-to 106 checks. Full suite: 182 passed / 2 skipped. Progress: 106/794 public names.
-
-## Phase 6 - Open-source hygiene
-
-Added the community/policy layer: CONTRIBUTING.md (dev setup, ground rules, semver +
-deprecation policy: deprecations warn via DeprecationWarning, documented in the changelog,
-kept >= 2 minor releases or 6 months, removed only in major releases post-1.0),
-CODE_OF_CONDUCT.md (Contributor Covenant 2.1), SECURITY.md (private reporting channels,
-72h acknowledgment, scope notes for a local numerical library), GitHub issue templates
-(bug report + feature request YAML forms with spl --version pre-flight) and a PR template
-checklist mirroring the wrap-up rules. New .github/workflows/release.yml creates a GitHub
-Release with auto-generated per-tag changelog notes on every vX.Y.Z tag. Fixed a latent bug
-found during this pass: publish.yml still ran pytest against the old in-package test location
-(pytest stochpylib/) instead of tests/ - tag builds would have failed CI; it now runs the real
-suite and additionally smoke-verifies the built wheel via spl --version / spl --test before
-publishing.
-
-## Phase 7 - spl --help library overview
-
-spl --help (and bare spl) now prints a full inventory of the installed library instead of
-bare flag help: implemented modules with their public functions, all 47 distribution classes
-(dynamic from the package's __all__, so it never goes stale), the common distribution
-interface, a quick-start snippet for both modules, and pointers to the roadmap/docs. Covered
-by test_cli_help_shows_library_overview; output kept ASCII-safe for legacy Windows consoles.
-
-## Phase 9 - Resolving the two documented open items ([9]/[12], [11])
-
-Closed both known limitations. (1) Joe-Kuo direction numbers: embedded the standard 64-dim x
-30-col Sobol table (_direction_numbers.py), extracted from the scipy.stats.qmc oracle via the
-x_{2^b} = v_b identity and verified dyadic + bitwise round-trip before embedding; SobolSequence
-uses it by default, new generate_block(m) API returns the aligned first-2^m block including the
-origin point - exactly balanced in every dimension and set-identical to scipy's block (scipy
-enumerates along the Gray walk; we output natural order). GF(2) machinery stays as fallback
-beyond dim 64 and for custom/Niederreiter nets. Root cause of the old +-1 imbalance identified:
-it belongs to the origin-skipped streaming window, not to the net itself. (2) alpha=1 skewed
-stable sampling: a twelve-variant empirical hunt for a matching closed-form CML formula failed
-(best residual 0.077 vs noise 0.003; shift-fitting proved structural mismatch), so implemented
-a cached numerical quantile table instead - exact Gil-Pelaez CDF inside the reliable window
-(|x-loc| <= 25 sigma) refined by monotone PCHIP, with exact power-law tail asymptotics
-(1-F ~ c(1+beta)/(pi x)) grafted beyond down to q=1e-9; draws are O(1) lookups after a ~5 s
-per-parameter-set warmup (class-level cache). Empirical cf matches at MC-noise level; central
-quantile error <= ~1e-3 scale. New regression tests in both suites; full suite: 185 passed /
-2 skipped. Probleme [11] -> Fixed, [12] added -> Fixed.
-
-## Phase 10 - Fourth module: `stochpylib.timeseries`
-
-Implemented the complete time-series toolkit (61/61 spec names across nine submodules),
-natively on numpy/scipy with statsmodels as a dev-only test oracle - formally resolving
-the wrap-vs-reimplement question recorded in the vault's Dependencies.md. Highlights:
-Hannan-Rissanen + CSS estimation for the ARMA family; SARIMA seasonal lag structures;
-ARFIMA fractional filtering (fixed-width binomial window); VAR OLS / VARMA CSS / VECM
-reduced-rank regression; the GARCH family via Gaussian QMLE (ARCH/GARCH/IGARCH/TGARCH/
-GJRGARCH/EGARCH/APARCH/FIGARCH plus CCC-MGARCH and scalar two-step DCC); Kalman filter +
-RTS smoother, EKF, UKF, bootstrap particle filter and a GPB(1) Rao-Blackwell mixture
-filter; Gaussian HMM (Baum-Welch + Viterbi), Markov-switching regression/AR and mixture
-AR; PELT/binseg/bottom-up changepoint detection plus Adams-MacKay BOCPD; periodogram,
-Welch PSD, Morlet CWT, DWT/IDWT (haar/db2, perfect reconstruction), STFT, Hilbert
-transform; ADF/KPSS/PP/Ljung-Box/DW/ARCH-LM/Granger/Johansen diagnostics; forecasting
-dispatchers, confidence bands, walk-forward backtesting and rolling-origin CV.
-Conventions introduced: fluent .fit() returning self and ForecastResult result objects.
-Eleven construction/logic bugs were caught by smoke tests before shipping and are logged
-in Probleme.md [13]-[19] (integrated-model forecast seeding, FIGARCH filter sign, KPSS
-interpolation direction, ADF explicit-lag semantics, particle-filter shape defense, BOCPD
-reset-hypothesis predictive, DWT normalization/synthesis pair). Oracle checks: AR/VAR
-coefficients match statsmodels exactly (shared OLS), ADF/Ljung-Box statistics to 1e-8;
-GARCH recovery on known DGPs within tolerance. Manual session exercised the full
-diagnose-fit-forecast flow on simulated ARMA+GARCH data. Suite: 236 passed / 2 skipped;
-selftest extended to 111 checks. Progress: 167/794 public names. Version bumped to 0.2.0.
-
-## Phase 11 - Fifth module: `stochpylib.gaussian_processes`
-
-Implemented the full GP module (36/36 spec names across five submodules), natively on
-numpy/scipy with no new runtime dependencies. Kernel zoo: 10 covariance functions (RBF,
-Matérn closed forms, Periodic per-dim, Linear, Polynomial, RationalQuadratic, WhiteNoise,
-SpectralMixture, NeuralNetwork, ArcCosine) all callable and composable via operator
-overloading (+/*/×²) — the load-bearing ARCHITECTURE convention now fully realized.
-kernel_ops: KernelSum/Product/Power/Composition with flattened parameter trees for
-optimization; kernel_matrix and finite-difference kernel_grad. Models: ExactInference
-(Cholesky solve + LML), GPRegression, GaussianProcess base, GPTimeSeriesModel.
-Classification: LaplacePropagation (RW Alg 3.1, logit/probit links, predictive probit
-correction), ExpectationPropagation (experimental — documented convergence issues,
-Probleme [20]), VariationalInference (Jaakkola-Jordan bound, logit only). Sparse:
-FITC/VFE/SparseVFE with Titsias closed-form posterior over inducing variables; verified
-against exact GP predictions. DeepGP: documented two-layer composition (sparse latent →
-observed). Hyperparams: MarginalLikelihood, optimize_hyperparams (L-BFGS on log-ML),
-ARD initializer, cross_validate_gp. Seven construction bugs caught by smoke tests
-(Probleme [13]-[19] from timeseries plus [21] DWT normalization, [22] NN kernel formula).
-Manual session: composed kernels, optimized hyperparameters, compared sparse vs exact.
-Tests: tests/gaussian_processes/tests.py (28 cases); selftest extended to 117 checks.
-Full suite: 264 passed / 2 skipped. Progress: 203/794 public names.
-
-## Phase 12 - Library audit: completing gaussian_processes delivery + stability fixes
-
-Went through the whole library auditing implemented-vs-spec per
-Implementation-Checklist.md. Found that the Phase 11 wrap-up had been committed with the
-documentation steps unfinished and three spec names silently missing, plus two real
-defects the existing tests could not see:
-
-- **Delivery gaps closed:** `GPClassification` (spec-facing binary classifier facade over
-  Laplace/EP/VI engines), `SparseGaussianProcess` (alias of VFE/Titsias SGPR) and
-  `InducingPointGP` (alias of FITC) added - GP module now truly 36/36 spec names; module
-  wired into `stochpylib/__init__.py` (was invisible from the package root);
-  selftest extended with a GP section to the documented 117 checks; spl --help inventory
-  extended to montecarlo/timeseries/gaussian_processes and its roadmap line no longer
-  lists implemented modules as planned.
-- **Probleme [21]:** removed a broken duplicate FITC/VFE copy inside inference.py whose
-  predict path raised AttributeError (`_predict_core` never existed); sparse.py is now
-  the single source.
-- **Probleme [23]:** rewrote the sparse engines in the whitened parameterization after
-  finding the old raw-inverse-of-unjittered-Kuu posterior exploded for larger inducing
-  counts (deviation up to ~157) and logged invalid values in the LML. Verified against a
-  brute-force Titsias reference, the M=T identity (equals exact GP to ~1e-12) and monotone
-  M-convergence; replaced the weak corr>0.30 test assertion that had encoded the defect.
-- **Probleme [24]:** fixed `BaseKernel.diag` calling `_matrix(X)` without Y (crashed for
-  Matern/Periodic/RQ/NN/ArcCosine/SpectralMixture on any exact-GP predict) and gave
-  KernelProduct/KernelPower exact diag overrides (composed-kernel predictions used to
-  crash). Found by the manual debug session on the first composed-kernel prediction.
-- Backfilled Probleme entries [20] (EP convergence caveat) and [22] (NN kernel formula)
-  that CHANGELOG Phase 11 referenced but never wrote.
-- Manual session (13 checks, all pass): composed RBF*Periodic regression with CI coverage,
-  hyperparameter optimization improving LML, CV, sparse-vs-exact for both aliases,
-  GPClassification accuracy + calibration, GPTimeSeriesModel forecast calibration +
-  honest std growth, DeepGP smoke, SpectralMixture PSD.
-- Tests: tests/gaussian_processes/tests.py grown from 28 to 42 cases; CLI overview test
-  extended. Full suite: **278 passed / 2 skipped**; spl --test 117 checks OK.
-- Docs: checklist updated to 203/794 with GP fully checked off; new
-  stochpylib/gaussian_processes/README.md; root/package/tests/dev readmes refreshed;
-  vault Modules/gaussian_processes.md deviations corrected; code graph regenerated;
-  HANDOFF backfilled for Phase 11 and appended for this phase.
-
-## Phase 13 - Sixth module: `stochpylib.copulas`
-Implemented dependence modeling end to end (26/26 spec names across five submodules),
-natively on numpy/scipy.special/optimize/integrate with scipy.stats as test oracle only.
-Elliptical: exact recursive-integration CDF for any dimension (validated vs a bivariate
-normal quadrature oracle to ~1e-16), tau-based correlation + profile-MLE degrees of
-freedom. Archimedean: generator framework (CDF = psi(sum phi)), exact bivariate
-densities via psi'', Genest-MacKay tau, tau-inversion fits (closed forms + cached
-numeric curves; Frank via Debye D1), Marshall-Olkin/Kanter fast samplers plus generator-
-derivative conditional inversion; BB1/BB7 two-parameter tails; Plackett odds-ratio family.
-Empirical: e.c.d.f., checkerboard with multilinear CDF, Bernstein/Beta smoothing.
-Vines: one recursive edge machinery behind C/D/R structures, AIC pair-family selection
-with rotations, Disshmann-style MST R-vine selection, peel-order sequential Rosenblatt
-sampler. Methods: CopulaFit dispatcher, CopulaSample, tail_dependence, copula_density,
-conditional_copula, kendall_tau, spearman_rho.
-Six construction defects were caught and fixed during validation (Probleme [25]-[30]):
-wrong elliptical chain-rule CDF, wrong conditional transform family in samplers,
-archimedean generator algebra errors, O(n^2) Kendall-tau memory blowup, Frank/Joe tau-
-inversion hangs, vine rotation-h/away-head/mirror-side/stale-cache cluster.
-Manual session (10 checks ALL PASS): t-copula df recovery + analytic-vs-empirical tail
-dependence, CopulaFit ranking on clayton data, 5-d RVine fit/sample/refit with pairwise
-tau recovery corr=1.00, Gumbel upper-tail estimation.
-Tests: tests/copulas/tests.py (51 cases); selftest extended to 122 checks; spl --help
-gained the copulas block. Full suite: 329 passed / 2 skipped. Version bumped to 0.3.0.
-Progress: 229/794 public names.
-
-## Phase 14 - V0.3.1 audit: spec conformance suite + cross-module tests + doc sync
-
-Library-wide audit requested for V0.3.1: verify every implemented module is
-complete per spec, documentation reflects reality, and end-to-end coverage
-exists. Outcome:
-- Implementation state confirmed complete (229/794 names across six modules);
-  the only contract deviations are the documented multivariate ones (7 classes
-  expose pdf instead of pmf and omit scalar-argument mgf/cf).
-- New cross-module suite tests/library/tests.py (20 cases): spec-name
-  conformance generated from development/Implementation-Checklist.md via
-  tests/library/_extract_spec_names.py (lists cached in _spec_names.json),
-  pinned documented extras (MCResult, DigitalNetBase2, timeseries result
-  objects, GP kernel base/ops, BaseCopula), and end-to-end workflows spanning
-  modules: reliability_mc on library Weibull vs closed form, t-copula margins
-  through library Student_t (KS), ARIMA vs GPTimeSeriesModel short-horizon
-  agreement, CopulaFit->sample->refit round trip, Sobol-QMC vs crude estimator
-  consistency.
-- spl --test extended from 122 to 130 checks: per-module export conformance,
-  distributions contract spot check, reliability closed-form and t-copula df
-  recovery - all runnable from any pip install without pytest.
-- Documentation sync: CONTRIBUTING.md selftest count (101 -> 130), root README
-  spl --version example and Quickstart gained GP/copulas snippets, README
-  selftest description now mentions conformance/cross-module checks,
-  tests/README documents tests/library/, vault ARCHITECTURE.md status updated
-  to 229/794 across six modules.
-Suite: 349 passed / 2 skipped. Version 0.3.1 (tests + docs only; no API
-changes).
-
-## Phase 15 - Seventh module: `stochpylib.survival`
-Implemented survival and reliability analysis end to end (28/28 spec names across
-six submodules), natively on numpy/scipy.special/optimize/integrate. Nonparametric:
-Kaplan-Meier (Greenwood CI loglog/linear), Nelson-Aalen, actuarial life tables,
-EmpiricalSurvival, BreslowEstimator. Parametric: Weibull/Exponential (closed-form
-rate MLE)/LogNormal/LogLogistic/Gompertz censored likelihood with AIC. Regression:
-Cox PH with vectorised suffix-sum risk sums (Breslow/Efron tie handling),
-concordance index, Breslow baseline; StratifiedCox with per-stratum baselines;
-Weibull AcceleratedFailureTime; AalenAdditiveModel with dN_i(u)-response LS and
-stabilisation guards; FineGrayModel weighted-Cox scoring. Log-rank family:
-LogRankTest, WilcoxonSurvival(Gehan-Breslow), TaroneWareTest, PetoTest,
-FlemingHarrington(rho,gamma). Competing risks: CauseSpecificHazard,
-Aalen-Johansen CIF with exact sum+KM=1 identity, CompetingRisksModel facade.
-Functions wrappers bridge data fits and distribution objects via uniform
-predict() surface. lifelines added as dev-only test oracle extra (importorskip
-cross-checks for KM/NA/Cox). CI: windows-latest added to matrix.
-Tests: tests/survival/tests.py (37 cases incl 3 lifelines oracles); selftest
-extended to 136 checks; spl --help gained the survival block.
-Suite: 387 passed / 2 skipped. Version bumped to 0.4.0.
-Progress: 257/794 public names.
-
-## Phase 16 - Eighth module: `stochpylib.queueing`
-Implemented queueing theory and networks end to end (29/29 spec names across
-five submodules), natively on numpy/scipy. Single queues: M/M/1 closed-form,
-M/M/c with Erlang-C via birth-death module, M/M/inf (no-wait limit), M/D/1
-Pollaczek-Khinchine, M/G/1 P-K formula with second-moment input, GI/G/1
-Kingman heavy-traffic approximation, MG1PriorityQueue non-preemptive two-class.
-Birth-death: general steady-state solver, Erlang B/C formulas, Engset formula.
-Networks: JacksonNetwork (open, traffic equations via linear solve),
-OpenNetwork alias, ClosedNetwork/GordonNewell mean-value analysis,
-BCMP theorem types 1 and 3, ProductFormNetwork base class.
-Simulation: DiscreteEventSim event-calendar engine with warmup filtering,
-SimStats collecting wait/sojourn/service times and time-averaged populations;
-QueueSimulation facade comparing analytical vs simulated results.
-Analysis: LittleLaw solver, traffic_intensity, mean_waiting_time,
-mean_queue_length, server_utilization, WaitingTimeDistribution (exact CDF).
-Tests: tests/queueing/tests.py (43 cases); selftest extended to 136 checks;
-spl --help gained the queueing block.
-Suite: 447 passed / 2 skipped. Version bumped to 0.5.0.
-Progress: 287/794 public names.
-
-## Phase 17 - V0.5.1 audit: bug fixes, edge-case tests, doc sync
-
-Library-wide V0.5.1 audit covering all eight modules. Outcome:
-- Implementation confirmed complete (257/794 spec names across 8 modules).
-- Four bugs found and fixed in the survival module:
-  (a) SurvivalFitter._step_evaluate defaulted to 1.0 for all callers,
-      returning H=1.0 instead of H=0.0 before the first event for cumulative
-      hazard step functions; added default parameter.
-  (b) CumulativeHazard integration grid started at times.min()*0.5 instead
-      of near zero, missing accumulated hazard below query range.
-  (c) HazardFunction rejected library distribution objects lacking a .hazard()
-      method; added generic pdf/(1-cdf) fallback.
-  (d) Gompertz exp(b*t) overflowed for large b*t products; clipped exponent.
-- One test bug fixed: ARIMA(1,1,0) trend-continuation test checked for the
-  slope (~0.05) instead of the forecast level (~9.0).
-- Added 20 new edge-case and cross-module tests across survival, queueing,
-  copulas, GP, and library suites.
-- Documentation synced: CONTRIBUTING selftest count, ARCHITECTURE status line,
-  root README version example and quickstart snippets.
-Suite: 406 passed / 2 skipped. Version 0.5.1 (bug fixes + tests only; no new
-features or API changes).
-
-## Phase 18 - Ninth module: `stochpylib.information_theory`
-Implemented information-theoretic measures end to end (31/31 spec names across
-five submodules), natively on numpy/scipy. Entropy: Shannon (discrete),
-JointEntropy, ConditionalEntropy, CrossEntropy, TsallisEntropy (q-generalised),
-RenyiEntropy (alpha-generalised, converges to Shannon at alpha=1),
-DifferentialEntropy (histogram-based continuous), MaxEntropy (bounded
-optimisation). Divergences: KLDivergence/RelativeEntropy, JensenShannonDivergence
-(symmetric/bounded), WassersteinDistance (scipy 1-D), HellingerDistance,
-TotalVariation, ChiSquaredDivergence, AlphaDivergence. Mutual info:
-MutualInformation (contingency table), NormalizedMutualInformation,
-VariationOfInformation, ConditionalMutualInfo, InteractionInformation,
-MultiInformation (total correlation). Channels: ChannelCapacity (BSC/BEC/Z),
-InformationGain, TransferEntropy (lagged conditional MI with discretisation),
-DirectedInformation, SymbolicTransferEntropy (ordinal-pattern encoding).
-Coding: ShannonLimit (BSC capacity), HuffmanCode (optimal prefix-free tree),
-TypicalSet (AEP membership test), AEP bounds.
-Also backfilled Probleme.md entries [31]-[34] for V0.5.1 survival bug fixes.
-Tests: tests/information_theory/tests.py (45 cases); selftest extended to
-136 checks; spl --help gained the information_theory block.
-Suite: 496 passed / 2 skipped. Version bumped to 0.6.0.
-Progress: 288/794 public names.
-
-## Phase 19 - V0.6.1 audit: InformationGain bug fix, Renyi bits fix, edge-case tests
-
-V0.6.1 library-wide audit of information_theory module. Found and fixed:
-(a) InformationGain computed H(Y) from raw categorical labels instead of
-    frequency counts, producing wildly inflated IG values (6.3 instead of 0.01);
-(b) RenyiEntropy(alpha=0) used natural log instead of log2, returning Hartley
-    entropy in nats (1.3863) instead of bits (2.0).
-Added 12 new edge-case tests: Renyi alpha=0 in bits, CMI compute returns float,
-TE bias floor for independent data, MaxEntropy with mean constraint,
-AlphaDivergence near alpha=1 approximates KL, InformationGain equals MI,
-TypicalSet biased source detection, MultiInfo independent ~ 0, VI(X;X)=0,
-InteractionInfo XOR negative, AEP bounds consistency.
-Suite: tests/information_theory 55 cases; full suite 498 passed / 2 skipped.
-Version 0.5.1 -> 0.6.1 (bug fixes + tests only).
-
-## Phase 20 - V0.6.2 documentation overhaul: AQ-style restructure, corrected progress accounting, doc-consistency suite
-
-Library-wide documentation cleanup phase (no API changes; the only library-code
-change is the spl --help inventory fix, Probleme [38]). Outcome:
-
-- **Progress accounting corrected:** the queueing section of
-  Implementation-Checklist.md had shipped complete but was never checked off,
-  and the headline figure had drifted to a mathematically impossible 288/794
-  (Probleme [37]). True implemented total: **317/794 across nine modules**
-  (21+60+25+61+36+26+28+29+31). Checklist queueing section checked off,
-  progress line corrected, tests/library conformance test restored to the
-  strict == 317 invariant.
-- **Documentation restructured in the Aether-Quant house style** (dense
-  ownership-first prose, index tables, honest known-limitations sections):
-  all nine module READMEs rewritten to a common template (status line, Files,
-  Conventions, Known limitations, spec/tests pointers) including a NEW
-  stochpylib/information_theory/README.md (the only implemented module without
-  one); stochpylib/README.md now carries the full nine-subpackage table with
-  per-module guide links; tests/README.md documents the docs-consistency suite
-  and defers the live pass count to the README badge; development/README.md
-  converted to an index table.
-- **New development docs:** development/architecture.md (objective, system-flow
-  and tech-stack mermaid diagrams, module map, the common distribution
-  contract, cross-cutting conventions, package layout rules, known design
-  gaps), development/infrastructure.md (local setup, spl CLI, GitHub Actions
-  workflows, PyPI Trusted-Publisher release pipeline, wheel hygiene),
-  development/project_structure.md (annotated directory tree). Development.md
-  reworked into the folder index; the repo banner now uses the new project
-  logo (development/logo.png).
-- **Main README rebuilt:** AQ-style banner (logo, tagline, identity + tech
-  badge rows), Known Limitations section (PyPI lag: latest published release
-  0.1.1 vs repo 0.6.1; 14 of 23 modules remaining; the sanctioned multivariate
-  deviation; experimental EP; heavy suite), Current Status table extended with
-  information_theory, every stale figure replaced (tests 522 passed / 2
-  skipped, selftest 136 checks, version example 0.6.1, 317/794, roadmap lists
-  exactly the 14 remaining modules), footer in the house style.
-- **Doc-consistency suite added:** tests/docs/tests.py (14 cases) - the README
-  test badge and pass/skip statement must match live pytest collection; spl
-  --test check count must match every doc that quotes it; version strings must
-  agree across pyproject/__init__/README; the Current Status table must cover
-  every subpackage with spec-accurate name counts (from
-  tests/library/_spec_names.json); all relative links and TOC anchors must
-  resolve; stale claims ("288", "496", "133 checks", "0.1.0", ...) fail the
-  suite; checklist progress line is recomputed from its own sections;
-  Probleme numbering must stay continuous; the logo must exist and be
-  referenced. Runs in CI unchanged (ci.yml executes the full pytest tree).
-- **Bugs found by the new suite and fixed:** spl --help was missing the
-  queueing and information_theory inventory blocks despite the Phase 16/18
-  changelog claims (Probleme [38]); tmp_fix_checklist.py leftover scaffolding
-  removed from the repo root.
-- **Probleme backfill:** entries [35] (V0.6.1 InformationGain counts) and [36]
-  (V0.6.1 Renyi alpha=0 bits) were referenced by Phase 19 but never written;
-  now recorded. New entries [37]/[38] for this phase's finds.
-- **Manual session (all pass):** every README quickstart snippet run verbatim
-  (Bayes 0.1667; Weibull fit recovery 2.0/10.0 -> 2.065/10.314 with KS p=0.92;
-  Sobol block + antithetic call 10.488 +- 0.033; GP predict shapes; CopulaFit
-  -> GaussianCopula on t margins), BSC capacity exact against the closed form,
-  Huffman optimality within the [H, H+1] bound, M/M/1 closed form exact
-  (L=4, Wq=4, rho=0.8), spl CLI surface end to end.
-
-Suite: 524 collected - 522 passed / 2 skipped (the 2 permanent skips are the
-VonMises/Kumaraswamy scipy cross-checks with no direct oracle mapping). Docs
-only; no API changes; version stays 0.6.1.
-
-## Phase 21 - V0.6.3 CI fix: version-literal test made bump-proof, README CLI TOC sub-links
-
-Hotfix follow-up to the V0.6.2 documentation overhaul:
-
-- **CI failure fixed (Probleme [39]):** test_top_level_package_wiring asserted
-  the version as the literal "0.6.1"; the V0.6.2 bump broke it on CI's fresh
-  install (metadata 0.6.2 != literal), failing one matrix job ~80 s in and
-  fail-fast-cancelling the other seven. The test now asserts pip-metadata ==
-  __version__ consistency instead of any literal. Lesson recorded: run the
-  library suite AFTER refreshing the editable install when the version changed,
-  not before.
-- **README:** CLI Reference gained Aether-Quant-style Table-of-Contents
-  sub-links to the individual command sections (spl --help, spl --version,
-  spl --test), anchor-checked by the docs suite.
-- Version bumped to 0.6.3 (test-infra fix + docs only; no API changes).
-
-## Phase 22 - V0.6.4 CLI expansion: PyPI-aware versioning, spl update, info/show/demo/cite
-
-The spl CLI grew from three flags to a full command surface (no library-API
-changes; new package modules cli_pypi.py and cli_demo.py):
-
-- **PyPI awareness (spl --version):** prints the installed version plus the
-  latest version published on PyPI with the relationship stated (update
-  available / up to date / installed newer-unreleased). Non-blocking and
-  offline-safe by construction: 4 s timeout, 24 h on-disk cache, clear
-  "PyPI check unavailable" degradation, STOCHPYLIB_SKIP_UPDATE_CHECK=1 kills
-  all PyPI traffic. New cli_pypi.py keeps the logic pure and injectable
-  (fetch/cache/parse/install-mode detection via direct_url.json).
-- **spl --version --list:** lists every version ever published on PyPI in
-  release order, marking the installed one (* installed) and the newest
-  (latest); always fetches fresh.
-- **spl update [--vers X] [--yes] [--dry-run] [--force]:** switches the pip
-  package to any published version (upgrade, downgrade, pin). Validates the
-  target against PyPI's real release list, refuses unknown versions, refuses
-  editable/source installs without --force, prints the exact pip command, and
-  asks for confirmation unless --yes; --dry-run executes nothing.
-- **spl info:** environment report (install mode, python/platform, numpy/scipy
-  versions, module inventory with per-module public-name counts).
-- **spl show <Name>:** qualified path + signature + docstring of any public
-  name across all modules, with difflib suggestions and non-zero exit on a
-  miss (case-insensitive fallback first).
-- **spl demo [module]:** nine fast deterministic mini-examples, one per
-  implemented module, run live against the installation (Bayes screening,
-  Weibull fit + KS, Sobol + antithetic call vs Black-Scholes, AR(1) fit +
-  forecast, GP regression with uncertainty, copula AIC selection,
-  Kaplan-Meier, M/M/1 closed form, entropy + Huffman); bare spl demo lists
-  them. New cli_demo.py.
-- **spl cite:** plain-text + BibTeX citation, versioned with the installed
-  release.
-- **spl --help:** module inventory now generated from each module's __all__
-  (per-module public-name counts, total, 9-of-23 header) so it cannot go
-  stale; the distributions block keeps the full dynamic class-name listing;
-  subcommand epilog added.
-- **selftest extended 136 -> 139 checks:** version_key numeric ordering,
-  update_available status matrix, install_mode classification (all offline).
-- **Tests: new tests/cli/tests.py (50 cases)** - PyPI parsing/cache-TTL/
-  offline/skip-env paths with urlopen mocked to raise on any call; --list
-  rendering; update validation/dry-run/prompt/editable/pip-failure paths with
-  subprocess and input mocked; info/show/demo/cite output contracts; a
-  sweep asserting every public name of every module resolves through
-  spl show; --help regression. No test touches the network or pip.
-  Probleme [40] records the sentinel-injection flaw caught during
-  development (_meta=None briefly allowed a real pip call in a test).
-- **Docs synced:** README CLI Reference rewritten (all seven sections + TOC
-  sub-links), badge/test counts (572 passed / 2 skipped of 574), infrastructure.md
-  CLI table, tests/README.md suite layout, CONTRIBUTING/selftest counts,
-  stochpylib/README. Version bumped to 0.6.4.
-- **Manual session (all pass, live):** spl --version --list against real PyPI
-  (latest published 0.1.1; 2 releases), update dry-run/unknown-version/
-  editable-refusal paths, info, show (hit, case-fallback, suggestions), demo
-  runs (M/M/1 exact, MC call 10.41+-0.05 vs BS 10.45, Huffman optimal), cite,
-  help inventory.
-
-Suite: 574 collected - 572 passed / 2 skipped. Version 0.6.4.
-
-## Phase 23 - V0.7.0 levy_processes: Lévy-Khintchine core, jump-diffusion pricing, subordinators, advanced point processes, SDE solvers (33 names)
-
-The tenth module: `stochpylib.levy_processes`, five submodules, 33 public
-names, no new runtime dependencies.
-
-- **`levy.py`:** `LevyProcess` (Brownian + compound-Poisson base with a
-  Lévy-Khintchine characteristic function), `StableProcess` (alpha-stable
-  Lévy motion via the library's validated Chambers-Mallows-Stuck sampler),
-  `AlphaStableDistribution` (adapter over `distributions.AlphaStable`),
-  `SpectrallyPositive` (nondecreasing alpha-stable), `SubordinatedProcess`
-  (`X_t = B_{T_t}` for any base process + subordinator), `LevyKhintchine`
-  (the `(b, sigma^2, nu)` triplet, both compound-Poisson and pure-subordinator
-  jump forms).
-- **`subordinators.py`:** `Subordinator` base (path simulation machinery),
-  `GammaSubordinator` (Variance-Gamma time change), `InverseGaussianSubordinator`
-  (NIG time change, `E[T_t]=t`), `StableSubordinator` (positive
-  1/alpha-stable, `E[exp(-lam T_t)] = exp(-t lam**alpha)`), `TemperingSubordinator`
-  (CGMY/tempered-stable time change via truncated compound-Poisson with
-  analytic mean compensation).
-- **`jump_diffusion.py`:** `JumpDiffusion` base, `MertonJumpDiffusion`
-  (lognormal jumps, closed-form call series), `KouJumpDiffusion`
-  (double-exponential jumps, Carr-Madan Fourier call price), `BatesModel`
-  (Heston stochastic volatility + lognormal jumps, MC pricing),
-  `VarianceGammaProcess`, `CGMYProcess`, `NormalInverseGaussianProcess`.
-- **`advanced.py`:** `HawkesProcess` (exponential-kernel self-exciting
-  process: Ogata thinning, exact recursive MLE, `branching_ratio()`,
-  time-rescaling `ks_residuals()`), `MultivariateHawkes`, `CoxProcess`,
-  `RenewalProcess`, `BranchingProcess` (Galton-Watson), `SemiMarkovProcess`,
-  `GaussianRandomField` (FFT spectral synthesis), `RandomMeasure` (gamma or
-  spectrally-positive stable mass on intervals).
-- **`sde.py`:** `SDE` definition (finite-difference derivatives for the
-  higher-order schemes), `Euler_Maruyama` (strong order 0.5), `Milstein`
-  (strong order 1.0), `Runge_Kutta_SDE` (derivative-free Milstein/Platen,
-  strong order 1.0), `StochasticTaylor` (Kloeden-Platen strong order 1.5),
-  `WeakApproximation` (Talay-Tubaro weak order 2), `StrongApproximation`
-  (strong-error convergence studies across step sizes).
-- **Eleven bugs found and fixed while writing `tests/levy_processes/tests.py`**
-  (Probleme.md #41-51), on top of the ten already fixed during initial
-  implementation: the Carr-Madan pricer's log-strike convention (`log(K/S0)`
-  vs the required absolute `log(K)`, which had made every `KouJumpDiffusion.call_price`
-  wrong by an order of magnitude); the truncated-jump quantile sampler's
-  linear grid (biased `TemperingSubordinator`/`CGMYProcess` simulated means
-  by up to ~50% — replaced with a log-spaced grid + cumulative-trapezoid
-  quadrature); `CoxProcess.simulate` crashing on numpy >= 2.x (`np.trapz`
-  removed); `StableSubordinator`/`RandomMeasure(kind="stable")` not matching
-  their documented Laplace transform (an uncancelled S1-parameterization
-  constant); `Runge_Kutta_SDE` actually being a weak-order stochastic-Heun
-  scheme (empirical strong order ~0.5, not the documented 1.0) — replaced
-  with the derivative-free Milstein/Platen scheme; `StochasticTaylor`'s
-  multiple stochastic integrals not matching Kloeden-Platen (empirical order
-  ~1.0, not 1.5); `StrongApproximation` sharing one already-advanced RNG
-  between the "exact" and "approximate" solvers, so the two paths were never
-  driven by the same Brownian path and the measured "error" never shrank
-  with step size; `WeakApproximation`'s three-point increment distribution
-  using uniform 1/3 weights instead of the required 1/6-2/3-1/6, doubling
-  `E[dW**2]` and biasing `E[X_T]` by an amount that did not shrink with
-  refinement; and `HawkesProcess.ks_residuals()` always raising when called
-  with no arguments right after `.fit()` (the fitted events were never
-  stored). All ten are independently reproduced and regression-tested.
-- **`tests/levy_processes/tests.py` (40 new tests):** subordinator
-  monotonicity/mean/Laplace-transform checks, Lévy-Khintchine
-  characteristic-function consistency (manual-formula and empirical-CF
-  cross-checks), jump-diffusion pricing vs Black-Scholes in the no-jump
-  limit plus Monte Carlo cross-checks at matched risk-neutral drift, Hawkes
-  simulate/fit/branching-ratio/KS-residuals, Cox/renewal/branching/
-  semi-Markov moment checks, Gaussian random fields and random measures, and
-  SDE strong/weak convergence-order studies (EM=0.5, Milstein=1.0, RK=1.0,
-  Taylor=1.5, weak-2 vs the exact GBM mean).
-- **`selftest.py` extended 139 -> 145 checks:** `levy_processes` CONFORM spot
-  check plus `TemperingSubordinator` mean, `GammaSubordinator` mean, Kou
-  zero-jump vs Black-Scholes, Hawkes `branching_ratio`, and an
-  Euler-Maruyama GBM terminal-mean check.
-- **`spl demo levy_processes`** added to `cli_demo.py` (Kou call price via
-  Carr-Madan vs Monte Carlo, plus a `TemperingSubordinator` sample path); also
-  fixed `cli_demo.DEMO_MODULES` being declared in `__all__` without ever
-  being defined (Probleme.md #49).
-- **Docs synced:** README badges/status table/architecture diagrams/roadmap,
-  `stochpylib/README.md` module table, `development/architecture.md` module
-  map + diagrams, `development/infrastructure.md` and `tests/README.md`
-  selftest-count mentions, `stochpylib/levy_processes/README.md` (new),
-  `development/Implementation-Checklist.md` (33/33, progress line to
-  350/794), `development/Probleme.md` (#41-51). Version bumped to 0.7.0 in
-  both `pyproject.toml` and `stochpylib/__init__.py`.
-
-Suite: 614 collected - 612 passed / 2 skipped. Version 0.7.0.
-
-## Phase 24 — CI hotfix: statsmodels 0.15.0 dropped `AutoReg`'s `old_names`
-
-- **Fixed `test_ar_recovery_and_statsmodels_exact`:** dropped the
-  `old_names=False` kwarg from the `statsmodels.tsa.ar_model.AutoReg` oracle
-  call — statsmodels 0.15.0 removed the long-deprecated parameter, breaking
-  all 8 CI matrix jobs on push (1 real failure, 7 cancelled by fail-fast).
-  The default was already `False` on the `statsmodels>=0.14` floor, so
-  dropping it is a no-op there and fixes 0.15.0. Verified against both
-  versions (Probleme.md #52).
-
-Suite: 614 collected - 612 passed / 2 skipped. Version 0.7.0.
-
-## Phase 25 — V0.8.0 financial_stochastics: option pricing, Greeks, stochastic/local vol, rate models, risk, credit, portfolio (50 names)
-
-The eleventh module: `stochpylib.financial_stochastics`, seven submodules,
-50 public names, no new runtime dependencies.
-
-- **`option_pricing.py`:** `BlackScholes` (closed form + Greeks properties
-  matching the vault quickstart), `BlackScholes_American` (Barone-Adesi-
-  Whaley quadratic approximation, falling back to a 1000-step `BinomialTree`
-  on request), `BinomialTree`/`TrinomialTree` (CRR / Kamrad-Ritchken
-  lattices, European or American), `MonteCarloOptionPricing` (plain,
-  antithetic, control-variate, and Sobol-QMC estimators; path-dependent and
-  arithmetic/geometric Asian payoffs), `LongstaffSchwartz` (American
-  least-squares Monte Carlo, Laguerre or monomial basis, ITM-only
-  regression), `FourierOptionPricing` (Carr-Madan or Fang-Oosterlee COS
-  inversion of any characteristic function, reusing `levy_processes`'s
-  `carr_madan_call`).
-- **`greeks.py`:** closed-form `Delta`/`Gamma`/`Vega`/`Theta`/`Rho`/`Vanna`/
-  `Volga`; `Greeks_FD` (central finite differences around any pricer, not
-  just closed-form ones — works on `BinomialTree`, MC point estimates, etc.);
-  `Greeks_MC` (pathwise, likelihood-ratio/score-function, and common-random-
-  number bump estimators, each returning `MCResult`s).
-- **`stochastic_vol.py`:** `HestonModel` (Albrecher "little trap"
-  characteristic function with an analytic `xi->0` fallback, QE or
-  full-truncation-Euler simulation, Carr-Madan pricing, bounded
-  least-squares calibration), `SABRModel` (Hagan 2002 implied vol),
-  `RoughHeston` (El Euch-Rosenbaum fractional Riccati equation via a
-  fractional Adams predictor-corrector scheme), `RoughBergomi` (exact joint-
-  Gaussian Cholesky simulation of the Riemann-Liouville fBM), `LocalVol`
-  (Crank-Nicolson PDE or Monte Carlo), `Dupire` (Gatheral's total-implied-
-  variance local-vol formula), `LVSV` (local-stochastic vol with a
-  histogram-binned leverage-function particle calibration), `VarianceSwap`
-  (Heston closed form, static-replication from a vol surface, or realized
-  Monte Carlo).
-- **`rate_models.py`:** `VasicekModel`, `CIRProcess` (exact noncentral-
-  chi-square transition simulation, Feller-condition check), `HullWhiteModel`
-  and `HoLeeModel` (constant-theta mode delegating to closed forms, or a
-  curve-fitted mode reproducing an arbitrary input discount curve exactly),
-  `G2ppModel` (Brigo-Mercurio two-factor Gaussian, exact bivariate-OU
-  simulation), `BlackKarasinski` (log-OU short rate, Monte Carlo-only
-  pricing — no closed form), `LMM` (spot-measure log-Euler LIBOR Market
-  Model with a proper reset-timing convention: forward `F_j` stays
-  stochastic until its own fixing, then freezes), `HJM` (Gaussian one-factor
-  Musiela-parametrization simulation, exactly reproducing the input forward
-  curve by no-arbitrage construction).
-- **`risk.py`:** `HistoricalVaR` (optional age-weighting, overlapping-sum
-  multi-period horizons, KDE-based standard error), `ParametricVaR`
-  (normal/Student-t/Cornish-Fisher/EWMA/GARCH — the GARCH path reuses
-  `timeseries.GARCH`), `ValueAtRisk` (facade + Kupiec POF backtest),
-  `ExpectedShortfall`, `ConditionalVaR` (+ Rockafellar-Uryasev CVaR
-  portfolio optimization via `scipy.optimize.linprog`), `StressTest`,
-  `ScenarioAnalysis` (historical, multivariate-normal Monte Carlo, or a
-  custom sampler).
-- **`credit.py`:** `DefaultIntensity` (piecewise-constant hazard curve),
-  `CDSPricing` (premium/protection legs with accrual, par-spread solving,
-  sequential bootstrapping), `MertonCreditModel` (structural PD,
-  distance-to-default, equity-implied calibration via `scipy.optimize.fsolve`),
-  `CreditMigration` (cohort-MLE transition-matrix fit, generator via a
-  numpy-only eigendecomposition matrix logarithm with IRW regularization),
-  `CreditRiskModel` (independent-default portfolio loss, Vasicek
-  single-factor quantile), `CopulaCreditModel` (Gaussian/Student-t
-  copula-dependent defaults, reusing `copulas.elliptical` by setting
-  `correlation_`/`df_` directly — those classes have no constructor path for
-  a fixed correlation matrix).
-- **`portfolio.py`:** `CovarianceEstimation` (sample/EWMA/Ledoit-Wolf 2004
-  shrinkage), `MeanVariance` (closed-form unconstrained, SLSQP long-only),
-  `PortfolioOptimization` (fluent `.fit()`/`.optimize()` over
-  max-Sharpe/min-variance/target-return/max-utility objectives),
-  `BlackLitterman` (He-Litterman posterior), `RiskParity` (Spinu 2013 convex
-  cyclical coordinate descent).
-- **Ten bugs found and fixed while writing `tests/financial_stochastics/tests.py`
-  (Probleme.md #53-#62 — nine library bugs plus the pre-existing `ci.yml`
-  `runs-on` hardcoding that silently skipped real Windows coverage):** the
-  COS Fourier method's truncation range used the raw second moment instead
-  of the variance, pricing a K=100 call at `2.7e19` instead of `10.45`;
-  `RoughHeston`'s characteristic function integrated the Riccati equation's
-  *derivative* instead of its solution, so `H=0.5` never converged to exact
-  Heston; `SABRModel`'s `z/x(z)` skew factor was inverted, flipping the
-  smile's skew direction for any nonzero `rho`; `HullWhiteModel`'s
-  constant-theta zero-coupon-bond price fed the raw Hull-White drift
-  constant into the Vasicek delegation instead of dividing by `kappa`;
-  `CreditMigration.generator()`'s regularization clipped the diagonal along
-  with the negative off-diagonals it was meant to fix, corrupting every
-  generator; `RiskParity.optimize()` renormalized weights every
-  coordinate-descent sweep, preventing convergence to equal risk
-  contributions; the Ledoit-Wolf shrinkage estimator was missing a factor of
-  `n` (verified against `sklearn.covariance.ledoit_wolf`), saturating
-  shrinkage at 1.0 almost regardless of sample size; Cornish-Fisher expected
-  shortfall integrated the wrong tail, returning a negative ES;
-  `ScenarioAnalysis` crashed on any pricer taking a non-stochastic parameter
-  alongside a stochastic one. All ten are independently reproduced and
-  regression-tested.
-- **`tests/financial_stochastics/tests.py` (110 tests, collected via
-  parametrization):** closed-form cross-checks (Black-Scholes, put-call
-  parity, Cornish-Fisher, Merton PD) against hand-derived formulas and
-  `scipy.stats`/`scipy.linalg`; lattice-to-closed-form convergence; Monte
-  Carlo within a stated number of standard errors of its closed-form or
-  semi-analytic counterpart throughout (antithetic/control-variate/QMC
-  variance-reduction ordering checked directly); limiting-case reductions
-  (Heston `xi->0` to Black-Scholes, rough Heston `H=0.5` to classical
-  Heston, G2++ `eta->0` to Hull-White, Hull-White constant-theta to
-  Vasicek, LVSV `xi=0` to LocalVol); an exact CDS bootstrap round-trip; a
-  full wiring/quickstart/reproducibility section. Manual debug session
-  (AGENTS.md 5.2) priced a call three ways, compared Heston semi-analytic
-  vs QE Monte Carlo, printed a SABR smile, compared three rate-curve
-  parametrizations, computed VaR/ES on synthetic Student-t returns,
-  bootstrapped a CDS curve, and compared Longstaff-Schwartz against a
-  binomial American put — all before the automated suite was finalized.
-- **`selftest.py` extended 145 -> 152 checks:** `financial_stochastics`
-  CONFORM spot check plus six `FIN:` checks (Black-Scholes reference value
-  and put-call parity, binomial-to-Black-Scholes convergence, Heston
-  `xi->0` vs Black-Scholes, Hull-White-vs-Vasicek ZCB agreement, RiskParity
-  equal risk contributions).
-- **`spl demo financial_stochastics`** added to `cli_demo.py`; `cli.py`
-  gained module-overview blurbs for both `financial_stochastics` and the
-  previously-undocumented `levy_processes`, and its stale roadmap epilog
-  (still listing both as "planned") was corrected.
-- **CI (`ci.yml`):** fixed the `runs-on: ubuntu-latest` hardcoding that made
-  the `windows-latest` matrix cell run on Ubuntu the whole time
-  (Probleme.md #62); added `finance-smoke` (fast-feedback subset run) and
-  `install-smoke` (wheel-build verification that the new subpackage actually
-  ships) jobs. `publish.yml`'s wheel smoke step now also runs
-  `spl demo financial_stochastics`.
-- **Docs synced:** README badges/status table/architecture diagrams/roadmap,
-  `stochpylib/README.md` module table, `development/architecture.md` module
-  map + diagrams, `development/infrastructure.md`, `development/
-  project_structure.md`, `development/Development.md`, `CONTRIBUTING.md`,
-  `AGENTS.md`, `tests/README.md`, `stochpylib/financial_stochastics/README.md`
-  (new), `development/Implementation-Checklist.md` (50/50, progress line to
-  400/794), `development/Probleme.md` (#53-#62). Version bumped to 0.8.0 in
-  both `pyproject.toml` and `stochpylib/__init__.py`.
-
-Suite: 729 collected - 727 passed / 2 skipped. Version 0.8.0.
-
-## Phase 26 — V0.9.0 statistics: descriptive, estimation, hypothesis tests, regression, multivariate (48 names)
-
-The twelfth module: `stochpylib.statistics`, five submodules, 48 public
-names, no new runtime dependencies.
-
-- **`descriptive.py`:** `mean`/`median`/`mode`/`variance`/`std` (weighted and
-  trimmed variants), `quantile` (all nine Hyndman-Fan interpolation types),
-  `iqr`, `skewness`/`kurtosis` (biased and bias-adjusted), `covariance`,
-  `correlation` (Pearson/Spearman/Kendall tau-b, tie-corrected, with a
-  significance test), `describe`.
-- **`estimation.py`:** `MLE` (any `Distribution` subclass or a
-  `loglik(params, data)` callable, Hessian-based standard errors), `MOM`
-  (closed forms for 8 named distributions plus a least-squares fallback),
-  `bayesian_estimator` (normal-normal/beta-binomial/gamma-Poisson/
-  gamma-exponential conjugate families, or a generic grid posterior),
-  `confidence_interval` (mean/proportion — wald/wilson/agresti-coull/
-  clopper-pearson/variance/median/mean-difference/correlation),
-  `bootstrap_ci` (percentile/basic/normal/BCa with jackknife acceleration),
-  `jackknife`, `delta_method`, `profile_likelihood` (Wilks' theorem).
-- **`hypothesis.py`:** `z_test`/`t_test`/`chi2_test`/`f_test` (variance-ratio
-  or nested-model), `ANOVA` (one-way, Welch, or two-way Type-II sums of
-  squares via nested-model comparison — coding-independent), `MANOVA`
-  (Wilks/Pillai/Hotelling-Lawley/Roy with their SAS-style F-approximations),
-  `mann_whitney`/`wilcoxon` (exact null distributions via dynamic
-  programming over Python big integers, or tie-corrected asymptotic
-  normal), `ks_test`, `shapiro_wilk` (a from-scratch reimplementation of
-  Royston 1992's Algorithm AS R94), `levene`/`bartlett`, `tukey_hsd` (a
-  from-scratch studentized-range CDF/quantile via log-space Gauss-Legendre
-  double quadrature), `bonferroni` (bonferroni/holm/sidak/holm-sidak/
-  fdr_bh).
-- **`regression.py`:** `linear_regression` (OLS/WLS, nonrobust or HC0-HC3
-  sandwich standard errors), `glm` (IRLS; gaussian/binomial/poisson/gamma/
-  inverse_gaussian/negative_binomial families x 8 links), `logistic_regression`/
-  `poisson_regression` (GLM facades), `ridge` (closed-form SVD, optional
-  GCV grid search), `lasso`/`elastic_net` (cyclic coordinate descent,
-  warm-started regularization paths), `quantile_regression` (exact linear
-  program + Koenker-Bassett kernel-sandwich standard errors).
-- **`multivariate.py`:** `PCA`, `factor_analysis` (maximum likelihood via
-  profiled Jöreskog concentration, or iterated principal axis; varimax/
-  quartimax rotation), `canonical_correlation` (with Wilks
-  sequential-dimensionality tests), `discriminant_analysis` (LDA/QDA by
-  direct Gaussian Bayes classification), `cluster_analysis` (k-means++ +
-  Lloyd, or agglomerative Lance-Williams linkage), `MDS` (classical
-  Torgerson eigendecomposition, or SMACOF stress majorization — metric or
-  non-metric via isotonic regression).
-- **Seven bugs found and fixed while writing `tests/statistics/tests.py`
-  and the manual debug session (Probleme.md #64-#69, plus infrastructure
-  bug #63):** `tests/` lacked an `__init__.py`, so pytest named
-  `tests/statistics/tests.py`'s package after its bare directory name,
-  clobbering the stdlib `statistics` module for the whole session; `glm`'s
-  IRLS took the reciprocal of an already-correct link derivative, silently
-  converging to the wrong coefficients past one iteration; `_mu_bounds`
-  clipped the Gaussian family's fitted mean to be positive, breaking
-  identity-link IRLS; family bounds and link-domain bounds were conflated,
-  breaking Gaussian-with-log-link; OLS/GLM AIC/BIC over-counted parameters
-  by one relative to `statsmodels`' convention; the Gaussian+identity GLM
-  log-likelihood used the SE-purpose Pearson dispersion instead of
-  `statsmodels`' concentrated (n-denominator) variance; the ML
-  factor-analysis discrepancy function included a spurious term for the
-  already-exactly-absorbed top eigenvalues. All seven are independently
-  reproduced and regression-tested.
-- **`tests/statistics/tests.py` (118 tests, 15s):** closed-form and
-  independent-oracle cross-checks against `scipy.stats` (descriptive
-  stats, all rank tests, Shapiro-Wilk, Levene/Bartlett, Tukey HSD,
-  KS) and `statsmodels` (z/proportion tests, Welch ANOVA, two-way
-  Type-II ANOVA, MANOVA, OLS/WLS/robust-SE/logistic/Poisson/GLM
-  family-link grid/quantile regression, factor analysis, canonical
-  correlation) and `scipy.cluster` (hierarchical linkage, k-means); a
-  from-scratch studentized-range CDF verified against
-  `scipy.stats.studentized_range` to ~1e-11; bootstrap/median confidence
-  interval coverage checked over 150-200 seeded replicates against the
-  binomial standard error; a full wiring/quickstart/reproducibility/
-  stdlib-non-shadowing section. Manual debug session (AGENTS.md §5.2) ran
-  a realistic treatment/control analysis end to end — normality check to
-  pick a test, ANOVA + Tukey + Holm, HC3-robust OLS, logistic regression,
-  a lasso path, PCA + k-means, a BCa bootstrap ratio CI, Gamma MLE, and
-  Bayesian conjugate updating — before the automated suite was finalized.
-- **`selftest.py` extended 152 -> 160 checks:** `statistics` CONFORM spot
-  check plus seven `STAT:` checks (t-test type-I control, OLS slope
-  recovery, ANOVA power, PCA variance ordering, bootstrap CI coverage,
-  Holm monotonicity, studentized-range boundary value).
-- **`spl demo statistics`** added to `cli_demo.py`; `cli.py` gained a
-  module-overview blurb and its roadmap epilog dropped `statistics` from
-  the planned list.
-- **CI (`ci.yml`):** added `stats-smoke` (fast-feedback subset run,
-  mirroring `finance-smoke`) and extended `install-smoke`'s wheel
-  assertion to cover `statistics.__all__` and the stdlib-non-shadowing
-  guarantee. `publish.yml`'s wheel smoke step now also runs
-  `spl demo statistics`.
-- **Docs synced:** README badges/status table/architecture diagrams/
-  roadmap, `stochpylib/README.md` module table, `development/
-  architecture.md` module map + diagrams, `development/infrastructure.md`,
-  `development/project_structure.md`, `development/Development.md`,
-  `development/README.md` (also corrected a pre-existing stale 350/794
-  count), `CONTRIBUTING.md`, `AGENTS.md`, `tests/README.md`,
-  `stochpylib/statistics/README.md` (new), `development/
-  Implementation-Checklist.md` (48/48, progress line to 448/794),
-  `development/Probleme.md` (#63-#69). Version bumped to 0.9.0 in both
-  `pyproject.toml` and `stochpylib/__init__.py`.
-
-Suite: 850 collected - 848 passed / 2 skipped. Version 0.9.0.
-
-## Phase 27 — V0.10.0 random_matrix (23 names), per-module CI smoke jobs, end-to-end API sweeps for every module
-
-The thirteenth module plus the testing infrastructure the V0.10.0 brief asked for.
-
-- **`stochpylib.random_matrix` (23/23 spec names, four submodules):** `ensembles.py`
-  (GOE/GUE/GSE with a quaternion self-dual GSE, `WignerMatrix` over any library
-  distribution, `WishartMatrix`/`InverseWishart` sampled through
-  `distributions.Wishart`/`InverseWishart`, `CUE`, and `MuresanMatrix` — a name the spec
-  lists without defining, implemented as the missing Ginibre-type i.i.d. ensemble with the
-  circular law); `empirical_spectra.py` (`WignerSemicircle`, `MarchenkoPastur` with the
-  `gamma > 1` atom, and `TracyWidomDistribution` for beta = 1, 2, 4 from the Hastings-McLeod
-  Painleve II solution, all three full `Distribution` subclasses; Dumitriu-Edelman
-  `BetaEnsemble` for any beta and the MANOVA `JacobiEnsemble` with the Wachter law);
-  `random_rotations.py` (`HaarMeasure` on O(n)/U(n)/Sp(n) via Mezzadri's QR and a
-  quaternionic Gram-Schmidt); `statistics.py` (`EigenvalueSpacing` with the unfolding-free
-  mean gap ratio, `LevelRepulsion` by maximum likelihood in the generalized-surmise family,
-  `EigenvalueDistribution`, `LargestEigenvalue` with Tracy-Widom scaling — Ramirez-Rider-Virag
-  for the Hermitian ensembles, Johnstone-Ma for Wishart — `BulkSpectrum` with the Dyson-Mehta
-  number variance, `SpectralEdge` with Edelman's hard-edge law).
-- **Tracy-Widom conventions pinned numerically:** beta = 4 tables use the classical
-  `F4(s / sqrt 2)` convention (mean -2.3069), and the beta-ensemble edge variable needs the
-  factor `2^(1/6)` to reach it — verified to KS p = 0.37 on 1500 tridiagonal draws before
-  being written into `LargestEigenvalue`.
-- **`tests/random_matrix/tests.py` (71 tests):** closed-form moments (Catalan/Narayana
-  numbers), published Tracy-Widom moments and cdf values, `scipy.stats.ortho_group` /
-  `unitary_group` Haar oracles, semicircle universality across three entry laws, `<r>` for
-  GOE/GUE/GSE/Poisson, Tracy-Widom edge KS tests, Edelman hard edge, the full distribution
-  contract on the three limit laws.
-- **End-to-end API sweeps (`tests/<module>/e2e.py`, all 13 modules, 486 exercises):** one
-  realistic exercise per public name, run as its own pytest case, with a guard that fails the
-  moment a name ships without one (`pyproject.toml` now collects `e2e.py`). Writing them
-  surfaced **ten shipped bugs** (Probleme #71-#80): `VonMises.fit` never returning, six
-  survival fitters without `predict`, a vine `NameError`, `KernelComposition` rejecting
-  weights, `SpectralMixtureKernel(dimension=)`, stable increments crashing on NumPy >= 2.5,
-  Hull-White/Ho-Lee unreachable `fit`, `VECM.forecast`, a duplicated intercept in the
-  switching-AR models, and the unimplemented EKF/UKF smoothers — all fixed with regression
-  tests in the modules' own suites. The new wheel check then caught an eleventh (#81): three
-  `queueing` spec names (`ErlangBFormula`/`ErlangCFormula`/`EngsetFormula`) had never been
-  exported and the conformance test had skipped `queueing` and `information_theory`; and
-  running the sweeps ahead of the oracle suites exposed a twelfth (#82): the BB1/BB7
-  Kendall-tau curve cache ignored `delta`, so their fits inverted tau on the wrong curve and
-  `kendall_tau()` went stale process-wide after any fit.
-- **CI restructured (`ci.yml`):** `finance-smoke`/`stats-smoke` replaced by a
-  `smoke (<module>)` matrix job for every module (oracle suite + e2e sweep + `spl demo`),
-  `fail-fast: false` on both matrices so one red cell no longer cancels the rest, a
-  `cross-suite` job for library/docs/cli, and an `install-smoke` that verifies every spec
-  name of every module against the built wheel. `tests/docs` now asserts the matrix equals
-  `stochpylib.__all__` and that every module has both `tests.py` and `e2e.py`;
-  `publish.yml` runs every module demo against the wheel.
-- **CLI/selftest:** `spl demo random_matrix`, `--help` blurb, roadmap epilog; `spl --test`
-  160 -> 168 checks (conformance + seven `RMT:` checks).
-- **Docs synced:** README (badges, status table, diagrams, roadmap, test counts), package/
-  tests/development docs, `stochpylib/random_matrix/README.md` (new), checklist 471/794,
-  vault status. Version 0.10.0.
-
-Suite: 1449 collected - 1447 passed / 2 skipped. Version 0.10.0.
-
-## Phase 28 — V0.11.0 advanced_mcmc: samplers from Metropolis to NUTS/RMHMC, slice/tempering/SMC/particle/transdimensional methods, diagnostics, variational inference (35 names)
-
-The fourteenth module: state-of-the-art MCMC and variational inference, natively on
-numpy/scipy.special only, across six submodules plus a shared `LogDensity`/`MCMCSampler`
-base (`_base.py`).
-
-- **`standard.py`:** `MetropolisHastings` (random-walk or fully general/asymmetric
-  proposal with `proposal_log_density` correction), `IndependenceSampler`, `GibbsSampler`
-  (exact conditionals or Metropolis-within-Gibbs, systematic/random scan), `AdaptiveMetropolis`
-  (Haario, Saksman & Tamminen 2001), `RobustAdaptiveMetropolis` (Vihola 2012 Cholesky-factor
-  adaptation).
-- **`gradient_based.py`:** `HamiltonianMonteCarlo` (leapfrog, dual-averaging step size,
-  Stan-style windowed diagonal mass adaptation), `NoUTurnSampler` (multinomial trajectory
-  sampling with biased progressive sampling, the classic position-momentum stopping
-  criterion), `MALA`, `MMALA` (simplified manifold MALA, SoftAbs-regularised metric
-  default), `RiemannianHMC` (generalized leapfrog via fixed-point iteration), `NeutraHMC`
-  (fits a `NormalizingFlows` approximation and runs NUTS/HMC in its base space — proven
-  exact regardless of flow fit quality, since the flow is only a reparameterization).
-- **`slice_sampling.py`:** `Stepping`/`Doubling` (Neal 2003 interval strategies),
-  `SliceSampling` (coordinate-wise with shrinkage), `EllipticalSliceSampling` (Murray,
-  Adams & MacKay 2010, exact for a Gaussian prior), `Polar_Slice` (Gibbsian polar slice
-  sampler, Schar-Habeck-Rudolf 2023).
-- **`advanced.py`:** `ReplicaExchange` (general population-MCMC engine) and
-  `ParallelTempering` (tempered-ladder specialization with a pilot-phase ladder
-  adaptation toward equal swap rates); `SequentialMonteCarlo` (adaptive-tempering SMC
-  with bisection-chosen annealing schedule, systematic resampling, RW-MH rejuvenation,
-  and marginal-likelihood estimation); `ParticleMCMC` (particle marginal MH via
-  `timeseries.ParticleFilter`); `ReversibleJumpMCMC` (Green 1995, default
-  Gaussian-auxiliary dimension-matching move) and `TransdimensionalMCMC` (Carlin & Chib
-  1995 product-space sampler with fitted Gaussian pseudo-priors).
-- **`diagnostics.py`:** `Rhat` (split/rank/classic), `ESS` (bulk/tail/mean/sd, Stan-style
-  Geyer-paired estimator), `GelmanRubin`, `PSRF` (Brooks & Gelman multivariate),
-  `geweke_test`, `raftery_lewis` (+ `RafteryLewisResult`), `autocorr_time`
-  (Sokal/Geyer), `TraceAnalysis` (bundles all diagnostics per parameter).
-- **`variational.py`:** `MeanFieldVI`, `ADVI` (mean-field or full-rank, with
-  unconstraining bound transforms), `BlackBoxVI` (score-function gradients, no target
-  gradient needed), `NormalizingFlows` (planar flows, Rezende & Mohamed 2015, with
-  hand-derived reverse-mode gradients — no autodiff anywhere in the stack), `SteinVI`
-  (Stein variational gradient descent).
-- **Numerical decisions worth recording:** NUTS uses the classic Hoffman-Gelman position-
-  momentum stopping criterion (an earlier attempt at a `rho`-accumulated "generalized"
-  criterion terminated trees almost immediately — the classic criterion is simpler and
-  provably correct here); momentum must be sampled as `p ~ N(0, mass)` where `mass =
-  1/inv_mass` (the adapted quantity), not `inv_mass` directly — this bug caused a runaway
-  mass-adaptation collapse across warmup windows before being caught; `NormalizingFlows`
-  needed weight decay, per-sample and per-step gradient clipping, a hard cap on `||u||`,
-  and an invertibility safety margin (`denom >= margin`, not just `>= 0`) to train
-  stably — even plain small-step gradient ascent on the raw ELBO diverges to NaN without
-  them, a genuine (documented) planar-flow pathology, not an optimizer artifact; its
-  forward/backward pass is vectorized over the whole Monte Carlo batch for a ~10-50x
-  speedup, verified to match the original per-sample loop to floating-point precision.
-- **Trans-dimensional correctness note:** `ReversibleJumpMCMC`/`TransdimensionalMCMC`
-  compare densities across models of different dimension, so (unlike single-model MCMC)
-  every `log_posteriors[k]` must include *all* normalizing constants — an early manual
-  test with unnormalized densities gave a wildly wrong Bayes factor (P(M2) off by an
-  order of magnitude) purely from this omission, not a sampler bug; fixed in the test
-  and called out prominently in the module README.
-- **`tests/advanced_mcmc/tests.py` (48 tests):** closed-form posteriors (conjugate
-  Gaussian models, a hand-written Kalman-filter oracle for `ParticleMCMC`, conjugate
-  linear-regression Bayes factors for the two trans-dimensional samplers), `scipy.stats`
-  KS tests, and independent hand-derived diagnostic formulas, plus exact finite-difference
-  gradient checks for the planar flow (both the per-sample and batched code paths).
-- **Every Essential-Tasks.md wrap-up item completed:** `tests/advanced_mcmc/e2e.py` (39
-  exercises, one per public name); `selftest.py` extended 168 -> 177 checks (`MCMC:`
-  block); `stochpylib/advanced_mcmc/README.md` written; `development/CHANGELOG.md`,
-  `Probleme.md`, `Implementation-Checklist.md` (35/35, progress line 506/794),
-  `architecture.md`, `infrastructure.md` updated; root `README.md` (badges, status
-  table, Known Limitations, architecture diagrams, roadmap, CLI reference counts,
-  demo prose), `stochpylib/README.md`, `tests/README.md`, `CONTRIBUTING.md`,
-  `AGENTS.md`, `development/{Development,README,project_structure}.md` all synced;
-  `tests/docs/tests.py` and `tests/library/tests.py` updated (spec-name conformance,
-  wiring, a cross-module integration test sampling a library `Gamma` distribution
-  through `SliceSampling`); `spl demo advanced_mcmc` added to `cli_demo.py`; `ci.yml`
-  `module-smoke` matrix extended.
-- **Two bugs found and fixed while testing (see `Probleme.md` #83-84):**
-  `NoUTurnSampler._step` incremented the old single-chain divergence counter but never
-  the newer per-chain list used to compute the public `divergences_` attribute, so NUTS
-  always reported zero divergences regardless of how unstable the trajectory actually
-  was; and the rank-normalization transform (`Rhat`/`ESS` "rank"/"bulk" variants) used
-  `N - 3/4` instead of Blom's `N + 1/4` in its denominator, producing values fractionally
-  above 1 for the extreme ranks and `NaN` from `ndtri` — surfaced as `Rhat(method="rank")
-  == inf` on perfectly good iid chains.
-
-Suite: 1540 collected - 1538 passed / 2 skipped. Version 0.11.0.
-
-## Phase 29 — V0.12.0 numerical_methods: quadrature, ODE/SDE solvers, linear algebra, root finding, interpolation, PDE tools (38 names)
-
-The fifteenth module: the numerical analysis backbone the rest of the library has been
-building on top of implicitly (finite differences, quadrature, matrix decompositions),
-now a first-class module with native implementations across six submodules.
-
-- **`integration.py`:** `GaussLegendre`/`GaussHermite`/`GaussChebyshev` (all via the
-  Golub-Welsch symmetric-tridiagonal-eigenvalue construction, not looked up from
-  `numpy.polynomial`); `AdaptiveQuadrature` (QUADPACK-style adaptive Gauss-Kronrod 7-15
-  with a heap of worst-error intervals, or adaptive Simpson; infinite/half-infinite
-  limits via a change of variables); `NumericalIntegration` (dispatcher over
-  adaptive/trapezoid/simpson/romberg/gauss_legendre/gauss_kronrod/monte_carlo);
-  `MonteCarloIntegration` (a `numerical_methods`-native facade delegating sampling to
-  `stochpylib.montecarlo.crude_mc`/`quasi_montecarlo` — a deliberate same-name-different-
-  module pairing, precedented by `random_matrix.InverseWishart` vs
-  `distributions.InverseWishart`); `CubatureRule` (tensor-product or Smolyak sparse
-  grids over Gauss-Legendre/Gauss-Hermite/Clenshaw-Curtis 1-D rules).
-- **`ode_sde.py`:** `EulerMethod`, `RungeKutta4` (classic or a custom explicit Butcher
-  tableau), `DormandPrince` (embedded RK5(4)7FM with FSAL, Hairer-Norsett-Wanner initial
-  step heuristic, classic PI-free step control, cubic-Hermite dense output — not DP's
-  own 5th-order interpolant), `Adams_Bashforth` (explicit orders 1-5, RK4-started,
-  optional PECE Adams-Moulton corrector), `BDF` (implicit orders 1-5, Newton-corrected,
-  order ramp on startup — order 1 is backward Euler); `Euler_Maruyama_SDE` (diagonal or
-  general/correlated noise) and `Milstein_SDE` (diagonal noise, numeric or analytic
-  diffusion derivative) SDE path solvers, both taking a shared `brownian=` array so
-  strong-convergence studies compare schemes on the identical driving path.
-- **`linear_algebra.py`:** `MatrixExponential` (Higham 2005 degree-13 Pade with scaling-
-  and-squaring, plus eigendecomposition/Taylor fallbacks), `MatrixLogarithm` (inverse
-  scaling-and-squaring via Denman-Beavers matrix square roots and a Gauss-Legendre
-  partial-fraction Pade evaluation of `log(I+X)`), `CholeskyDecomp` (native
-  Cholesky-Banachiewicz with optional escalating jitter), `EigenDecomp` (cyclic Jacobi
-  for symmetric matrices, Hessenberg reduction + shifted QR with inverse-iteration
-  eigenvectors for general matrices), `SVD` (one-sided Hestenes Jacobi), `QRDecomp`
-  (Householder, modified Gram-Schmidt, or Givens), `Schur` (Francis implicit
-  double-shift QR for the real form, single complex-Wilkinson-shift QR for the complex
-  form).
-- **`root_solve.py`:** `Bisection`, `Brent` (Brent-Dekker: inverse quadratic
-  interpolation / secant with a bisection safety net), `Secant`, `NewtonRaphson`
-  (scalar or vector, analytic or finite-difference derivative/Jacobian, backtracking
-  damped), `FixedPoint` (plain, Aitken delta-squared, or Steffensen acceleration),
-  `RootFinding` (dispatcher + `find_bracket` expanding-interval search + `all_roots`
-  grid-scan-and-refine).
-- **`interpolation.py`:** `SplineInterpolation` (natural/clamped/not-a-knot cubic
-  spline, second-derivative formulation), `CubicHermite` (Fritsch-Carlson PCHIP slopes
-  by default, or given slopes), `BarycentricLagrange` (+ Chebyshev-point construction
-  for Runge-phenomenon-free interpolation), `Chebyshev` (series via the Clenshaw
-  recurrence; derivative/integral by the standard coefficient recurrences; roots via the
-  colleague matrix), `NURBS` (Cox-de Boor basis recursion; `circle()`/`interpolate()`
-  constructors), `Interpolation` (facade: linear/nearest/polynomial/cubic/pchip/
-  spline_natural).
-- **`pde.py`:** `Mesh` (1-D interval / 2-D triangulated rectangle), `FiniteDifference`
-  (Fornberg arbitrary-stencil weights, 1-D/2-D Poisson via Thomas/conjugate-gradient
-  solves, 1-D heat with explicit/implicit/Crank-Nicolson theta-schemes, a Black-Scholes
-  PDE pricer with an American early-exercise projection, 1-D advection with
-  upwind/Lax-Wendroff), `FiniteElement` (1-D P1/P2 Galerkin, 2-D P1 on triangles),
-  `FEniCS_Interface` (solves natively via `FiniteElement` by default; `.export_mesh()`
-  writes DOLFIN-XML or XDMF; `.to_fenics()` lazily hands the mesh to a real
-  dolfinx/dolfin install when present, else a clear `ImportError` — FEniCS is never a
-  runtime dependency), `BoundaryElement` (2-D interior Laplace, constant elements, the
-  `-(1/2*pi)*ln(r)` fundamental solution), `SpectralMethod` (Fourier
-  derivative/Poisson/heat on periodic domains via FFT, Chebyshev-collocation BVP solver
-  via Trefethen's differentiation matrix).
-- **Every algorithm is native**; `numpy.linalg` (eigh/eig/qr/svd/solve) is used as an
-  explicit `method="numpy"` fast path in the linear-algebra classes, and
-  `scipy.integrate/optimize/interpolate/linalg` remain test oracles only, never
-  imported inside `stochpylib/`.
-- **Five bugs found and fixed while testing (see `Probleme.md` #85-89):**
-  `FiniteElement.evaluate()` silently discarded the P2 midpoint DOFs (linear-only
-  lookup), erasing all of P2's extra accuracy until a P1-vs-P2 convergence-rate
-  comparison caught two identical error curves; the complex-Schur QR step never
-  updated the coupling block above a deflated trailing part, so reconstruction broke
-  as soon as any eigenvalue had deflated; `Chebyshev.integral()`'s `T_1` coefficient
-  used the general recurrence instead of its required special case, giving a definite
-  integral off by exactly half the constant term; the DOLFIN-XML mesh exporter wrote
-  NumPy 2.x's `repr()` (`"np.float64(0.0)"`) instead of a plain float string, breaking
-  the reader round-trip — the same class of NumPy-2.x formatting break this project
-  has hit before (Probleme #41-51); and `spl --help`'s column-padding logic used `>`
-  instead of `>=`, so a module name of exactly 17 characters (`numerical_methods`
-  itself, the first module name to ever hit that exact length) got zero separator
-  characters before its summary.
-- **`tests/numerical_methods/tests.py` (85 tests):** `scipy.integrate`/`optimize`/
-  `interpolate`/`linalg` and `numpy.polynomial` as independent oracles, closed forms,
-  step-halving order verification for every ODE/SDE scheme, an SDE strong-convergence
-  study (Euler-Maruyama order ~0.5, Milstein order ~1.0, log-log slope fit), the
-  Robertson stiff-system benchmark against `scipy.integrate.solve_ivp(method="Radau")`,
-  P1/P2 finite-element convergence rates, a Black-Scholes PDE price against the
-  library's own closed form and against `BinomialTree`'s American exercise, a
-  FEniCS-stub-module injection test for `.to_fenics()`, and cross-module checks against
-  `financial_stochastics.BlackScholes` and `levy_processes.Euler_Maruyama`.
-- **Every Essential-Tasks.md wrap-up item completed:** `tests/numerical_methods/e2e.py`
-  (43 exercises, one per public name); `selftest.py` extended 177 -> 187 checks
-  (`NUM:` block); `stochpylib/numerical_methods/README.md` written;
-  `development/CHANGELOG.md`, `Probleme.md`, `Implementation-Checklist.md` (38/38,
-  progress line 544/794), `architecture.md`, `infrastructure.md` updated; root
-  `README.md` (badges, status table, Known Limitations, architecture diagrams,
-  roadmap, CLI reference counts, demo prose), `stochpylib/README.md`, `tests/README.md`,
-  `CONTRIBUTING.md`, `AGENTS.md`, `development/{Development,README,project_structure}.md`
-  all synced; `tests/docs/tests.py` and `tests/library/tests.py` updated (spec-name
-  conformance, wiring, a cross-module integration test pricing Black-Scholes through
-  both a finite-difference PDE and a Gauss-Hermite risk-neutral expectation); `spl demo
-  numerical_methods` added to `cli_demo.py`; `ci.yml` `module-smoke` matrix extended.
-
-Suite: 1673 collected - 1671 passed / 2 skipped. Version 0.12.0.
-
-## Phase 30 — V0.13.0 bayesian: priors/posteriors, conjugate engine, Bayesian models, model selection, posterior approximations (25 names)
-
-- **`bayesian.core`**: `Prior`/`prior()` (a library distribution, a product-prior list,
-  `"flat"` improper, or custom logpdf/sampler) and `Likelihood`/`likelihood()` (ten
-  built-in exponential families — bernoulli/binomial/poisson/exponential/gamma/normal/
-  normal_variance/normal_unknown_var/categorical/mvnormal — or a custom `loglik`).
-  `ConjugateFamily`/`conjugate_prior()` implement closed-form update/predictive/evidence
-  for all ten families, each cross-checked against `scipy.stats` or a fine numerical
-  grid. `posterior()`/`evidence()` default to `method="auto"` (conjugate when the pair
-  matches, else a numerical grid for dim <= 2, else Laplace/MCMC), with `"laplace"`,
-  `"vi"`, `"importance"`, `"smc"`, and `"mcmc"` (slice/NUTS/adaptive-Metropolis, via
-  `advanced_mcmc`) as explicit alternatives. `bayes_update()` is sequential-equals-batch
-  conjugate updating; `posterior_predictive()` is closed form when conjugate, else a
-  Monte Carlo `EmpiricalPredictive` (a posterior-predictive distribution satisfying the
-  full 13-method distribution contract via a Gaussian KDE).
-- **`bayesian.computation`**: `LaplacePosterior` (MAP + inverse-negative-Hessian
-  covariance), `EP_Posterior` (Gaussian expectation propagation with Gauss-Hermite
-  moment matching per site — works for *any* analytically evaluable site, not only
-  Gaussian-conjugate ones, verified exact on a linear-Gaussian model and matching a long
-  NUTS run on a probit/logistic model), `ImportanceSamplingPosterior` (self-normalized
-  IS with Pareto-smoothed weights, a default Laplace-centred multivariate-t proposal).
-  `MFVariational` **delegates to `advanced_mcmc.MeanFieldVI`/`ADVI`** instead of
-  reimplementing VI, resolving the design-scorecard note that `bayesian.computation`'s
-  variational inference was thin relative to `advanced_mcmc.variational` (Ratings.md).
-- **`bayesian.selection`**: `AIC`/`BIC` (+ AICc, matched to `statsmodels.OLS` exactly),
-  `DIC`, `WAIC`, `LOO_CV` (Pareto-smoothed importance sampling by default — a native
-  Zhang-Stephens 2009 generalized-Pareto fit plus the Vehtari/Simpson/Gelman/Yao/Gabry
-  smoothing recipe — cross-checked against exact leave-one-out refits of a conjugate
-  model), `TICfit` (the sandwich-covariance generalization of AIC), and `bayes_factor`
-  (from log-evidences, `(prior, likelihood)` tuples, or `method="bic"` on two fitted
-  models, statsmodels results included) — all return the shared `ICResult`.
-- **`bayesian.models`**: `BayesianLinear` (conjugate Normal-Inverse-Gamma regression,
-  matching OLS exactly under a near-flat prior, its log-evidence formula verified
-  against a fine-grid numerical integral), `BayesianLogistic` (`method=`
-  laplace/ep/mcmc/vi, MAP matching `statsmodels.Logit` to 1e-4), `NaiveBayes`
-  (gaussian/bernoulli/multinomial posterior-mean parameters), `HierarchicalModel`
-  (normal-normal Gibbs, known-per-group or shared-unknown-sigma modes, half-Cauchy/
-  inverse-gamma/fixed tau priors), `MixtureModel` (collapsed-Gibbs Bayesian mixtures,
-  gaussian NIG/NIW or 1-D poisson-gamma), `BayesianNetwork` (discrete, exact variable
-  elimination, ancestral sampling, Dirichlet-smoothed MLE fit, BDeu structure score),
-  `DirichletProcess` (stick-breaking, CRP, and a Neal-2000-Algorithm-3 collapsed-Gibbs
-  DP mixture).
-- **Two real numerical bugs surfaced and fixed in existing distributions** while testing
-  conjugate posteriors with realistic sample sizes (Probleme.md #90-92): `NegBinomial.pmf`,
-  `Gamma.pdf`, and `BetaBinomial.pmf` all overflowed to `NaN` for the large shape/rate
-  parameters a conjugate posterior naturally produces after a few hundred observations —
-  fixed by moving each to log-space (`gammaln`/`betaln`/`xlog1py`) before exponentiating.
-- **`tests/bayesian/tests.py` (~55 test functions, several parametrized):** `scipy.stats`
-  (beta/gamma/nbinom/betabinom/t/invgamma/lomax/multivariate_normal), `statsmodels`
-  (OLS/Logit), brute-force enumeration (the sprinkler `BayesianNetwork` example), fine
-  numerical grids/1-D quadrature, and long `advanced_mcmc` runs as independent oracles.
-- **Every Essential-Tasks.md wrap-up item completed:** `tests/bayesian/e2e.py` (32
-  exercises, one per public name); `selftest.py` extended 187 -> 199 checks (`BAYES:`
-  block); `stochpylib/bayesian/README.md` written; `development/{CHANGELOG,Probleme,
-  Implementation-Checklist,architecture}.md` updated (progress line 569/794); root
-  `README.md` (badges, status table, Known Limitations, architecture diagrams, roadmap,
-  CLI reference counts, demo prose), `stochpylib/README.md`, `tests/README.md`,
-  `CONTRIBUTING.md`, `AGENTS.md`, `development/{Development,README,project_structure}.md`
-  all synced; `tests/docs/tests.py` and `tests/library/tests.py` updated (spec-name
-  conformance, wiring, a cross-module integration test agreeing with
-  `statistics.bayesian_estimator` and an `advanced_mcmc` sampler); `spl demo bayesian`
-  added to `cli_demo.py`; `ci.yml` `module-smoke` matrix extended.
-
-Suite: 1758 collected - 1756 passed / 2 skipped. Version 0.13.0.
-
-- **Post-push CI fix (same phase, unreleased):** `test (3.10, ubuntu-latest)` came back
-  red on GitHub Actions with `numpy.linalg.LinAlgError: SVD did not converge` in
-  `test_glm_family_link_vs_statsmodels[inverse_gaussian-inverse_squared]` — traced to two
-  compounding bugs unrelated to `bayesian` (Probleme.md #93): `glm()`'s IRLS could step
-  its linear predictor out of a link's valid domain (`inverse`/`inverse_squared` need
-  `eta > 0`), and the test's `hash((fam, link))`-based seed was never actually fixed
-  across processes (`PYTHONHASHSEED` salting), so it occasionally landed on data
-  `statsmodels.GLM` itself also fails to fit. Fixed both: `glm()` now clips `eta` into
-  each link's domain before every `inv_link` call (a no-op for well-behaved data — 5
-  representative seeds still match `statsmodels` to ~1e-16, and a 500-seed sweep with the
-  original pathological generator now returns finite coefficients throughout), and the
-  test seeds via `zlib.crc32` instead. `pytest tests/statistics/` (177 tests) green.
-
-## Phase 31 — V0.14.0 robust_statistics: robust location/scale, high-breakdown regression, robust covariance, resampling (28 names)
-
-- **`robust_statistics.location`**: `TrimmedMean`/`WinsorizedMean` (Tukey-McLaughlin SE,
-  matching `scipy.stats.trim_mean`/`mstats.winsorize` exactly), `Median` (Maritz-Jarrett
-  SE, a distribution-free order-statistic confidence interval), `HodgesLehmann`
-  (one/two-sample, Hollander-Wolfe signed-rank/rank-sum interval, exact via an
-  explicit-below/bisection-above-1000 k-th-order-statistic helper on the Walsh averages),
-  `L_Estimator` (trimean/Gastwirth/midhinge/trimmed/winsorized/callable/explicit-weight
-  forms), `M_Estimator` (Huber-family IRLS matching `statsmodels.RLM` exactly for both MAD
-  and Huber-proposal-2 scale), `R_Estimator` (Wilcoxon score exactly equals
-  `HodgesLehmann`, sign score exactly equals the median, normal/van-der-Waerden scores via
-  root-finding).
-- **`robust_statistics.scale`**: `MedianAbsoluteDeviation`/`IQR_Scale` (match
-  `scipy.stats` exactly), `Qn_Estimator` (matches `statsmodels.robust.scale.qn_scale`
-  exactly), `Sn_Estimator` (Rousseeuw & Croux 1993, cross-checked against a brute-force
-  double loop), `RobustStd` (dispatcher over mad/qn/sn/iqr/huber/biweight/tau).
-- **`robust_statistics.regression`**: `TheilSenRegression` (simple regression matches
-  `scipy.stats.theilslopes` exactly including its Sen 1968 confidence interval; multiple
-  predictors via the spatial median of random subset fits), `SiegalRegression` (+
-  `SiegelRegression` alias, matches `scipy.stats.siegelslopes` exactly), `RANSACRegression`
-  (adaptive trial-count stopping, a Theil-Sen-pilot-fit residual threshold by default),
-  `LTS_Regression` (FAST-LTS, exact h-subset enumeration below 5000 subsets),
-  `MMRegression` (FAST-S start + one M-step, demonstrably higher-breakdown than
-  `HuberRegression`/OLS under bad-leverage contamination), `HuberRegression` (matches
-  `statsmodels.RLM` with `M=HuberT()` exactly, H1/H2/H3 covariance).
-- **`robust_statistics.covariance`**: `MCD`/`MVE` (exact h-subset enumeration below 5000
-  subsets, else FAST resampling with concentration/volume-shrinking steps, chi-square
-  consistency-corrected and reweighted by default), `OGK` (Maronna & Zamar 2002 pairwise
-  orthogonalization composed over `n_iter` passes), `RobustCovariance`/`RobustCorrelation`
-  (dispatchers reusing `copulas._utils`'s Kendall/Spearman estimators rather than
-  reimplementing them), `CovShrinkage` (Ledoit-Wolf toward identity/diagonal/
-  constant-correlation targets, OAS, or a fixed intensity -- the identity-target
-  Ledoit-Wolf path matches `financial_stochastics.CovarianceEstimation` exactly, to
-  ~1e-16).
-- **`robust_statistics.bootstrap`**: `RobustBootstrap` (any callable, `RobustEstimator`
-  instance, or named statistic; percentile/basic/normal/BCa intervals), `WildBootstrap`
-  (Rademacher/Mammen/normal/Webb multipliers on regression residuals, matches
-  heteroskedasticity-consistent `statistics.linear_regression(..., cov_type="HC0")` SEs to
-  ~15%), `BlockBootstrap` (moving/circular/nonoverlapping blocks), `StationaryBootstrap`
-  (Politis-Romano geometric block lengths) -- both correctly give a materially larger AR(1)
-  mean-SE than an i.i.d. bootstrap on the same series.
-- **Four real bugs surfaced and fixed while testing against oracles and breakdown
-  scenarios** (Probleme.md #94-97): `HodgesLehmann`'s even/odd branch keyed off the wrong
-  parity for ~half of even `n`; the wild bootstrap's Mammen weights had mean 1 instead of
-  0; `OGK`'s reweighted covariance was missing the same truncation-bias correction
-  `MCD`/`MVE` apply (~25% underestimate); `RANSACRegression`'s default threshold used the
-  raw response's MAD, which reflects the fitted trend's spread rather than residual noise.
-- **Every Essential-Tasks.md wrap-up item completed:** `tests/robust_statistics/tests.py`
-  (116 test functions, several parametrized, against `scipy.stats`/`statsmodels`/
-  brute-force/`scipy.integrate` oracles) and `tests/robust_statistics/e2e.py` (33
-  exercises, one per public name) both green; `selftest.py` extended 199 -> 212 checks
-  (`ROBUST:` block); `stochpylib/robust_statistics/README.md` written;
-  `development/{CHANGELOG,Probleme,Implementation-Checklist,architecture}.md` updated
-  (progress line 597/794); root `README.md` (badges, status table, Known Limitations,
-  architecture diagrams, roadmap, CLI reference counts, demo prose), `stochpylib/README.md`,
-  `tests/README.md`, `CONTRIBUTING.md`, `AGENTS.md`,
-  `development/{Development,README,project_structure,infrastructure}.md` all synced;
-  `tests/docs/tests.py` and `tests/library/tests.py` updated (spec-name conformance,
-  wiring, a cross-module integration test agreeing with `statistics.linear_regression`,
-  `copulas.kendall_tau`, and a library `MultivariateNormal`); `spl demo robust_statistics`
-  added to `cli_demo.py`; `ci.yml` `module-smoke` matrix extended.
-
-Suite: 1913 collected - 1911 passed / 2 skipped. Version 0.14.0.
-
-## Phase 32 — V0.15.0 nonparametric: density estimation, empirical/likelihood, resampling & rank tests, dependence measures, local regression (31 names)
-
-- **`nonparametric.density`**: `KernelDensityEstimate` (1-D exact cdf via integrated
-  kernels, closed-form mean/var/mgf/cf, proper rejection-sampled `rvs`; d>1 diagonal
-  product-kernel `pdf`/`rvs`; `scott`/`silverman` bandwidths match
-  `scipy.stats.gaussian_kde`'s own factors exactly), `AdaptiveKDE` (Abramson two-stage
-  local bandwidths, `alpha=0` exactly equals `KernelDensityEstimate`),
-  `NearestNeighborDensity` (k-NN density, truncated-and-renormalized for the distribution
-  contract), `OrthogonalSeriesDensity` (cosine-basis series, Kronmal-Tarter term
-  selection), `LogsplineEstimator` (Kooperberg-Stone log-spline MLE, Newton + Gauss-grid
-  quadrature for the normalizing constant). Every class subclasses the new
-  `NonparametricDensity(distributions.Distribution)` base, so density estimators satisfy
-  the library's full 13-method distribution contract (`fit` is a fluent instance method,
-  the one documented deviation from `Distribution.fit`'s classmethod contract).
-- **`nonparametric.empirical`**: `EmpiricalDistribution` (full distribution contract over
-  sample atoms), `EmpiricalCDF` (fluent step function + DKW band), `EmpiricalCharFn`
-  (empirical characteristic function + distance to a reference cf), `GlivenkoCantelli`
-  (sup-norm distance = the KS statistic, DKW bound, convergence-rate helper),
-  `EmpiricalLikelihood` (Owen's EL for a vector mean via Newton on the dual, matching
-  `statsmodels.emplike.DescStat` exactly on both the LLR statistic and the 1-D confidence
-  interval).
-- **`nonparametric.tests`**: `PermutationTest` (independent/pairings/samples types, exact
-  enumeration below 20000 permutations else Monte Carlo, `2 * min(p_greater, p_less)`
-  two-sided p-value matching `scipy.stats.permutation_test` exactly), `BootstrapTest`
-  (Efron-Tibshirani recentered bootstrap), `MoodTest` (scale/median, match
-  `scipy.stats.mood`/`median_test` exactly), `KruskalWallis` (+ `posthoc_dunn`, matches
-  `scipy.stats.kruskal` exactly), `FriedmanTest` (matches `scipy.stats.friedmanchisquare`
-  exactly, tie-corrected), `SignTest`, `RunsTest`/`WaldWolfowitz` (match
-  `statsmodels.sandbox.stats.runs` exactly), `AndersenDarling` (`dist="norm"`/`"expon"`
-  match `scipy.stats.anderson` exactly; a fully-specified reference distribution uses an
-  approximate case-0 critical-value table; `k_sample=True` matches
-  `scipy.stats.anderson_ksamp(variant="midrank")` exactly, the full Scholz-Stephens 1987
-  sigma^2/critical-value machinery reimplemented natively), `CramerVonMises` (one-sample
-  statistic matches `scipy.stats.cramervonmises` exactly with an asymptotic p-value via a
-  native Bessel-function series; two-sample matches
-  `scipy.stats.cramervonmises_2samp(method="asymptotic")` exactly). `AndersonDarling` is
-  the correctly-spelled alias of the spec's own `AndersenDarling` spelling.
-- **`nonparametric.correlation`**: `SpearmanCorrelation`/`KendallTau` (reuse
-  `copulas._utils`'s rank estimators; match `scipy.stats` exactly including the exact
-  small-sample Kendall test), `RankCorrelation` (dispatcher + Goodman-Kruskal gamma +
-  Somers' D matching `scipy.stats.somersd` exactly), `DistanceCorrelation` (Szekely-Rizzo,
-  biased or U-centered unbiased estimator, permutation p-value), `BrownianCorrelation`
-  (fractional-BM generalization, `hurst=0.5` exactly equals `DistanceCorrelation`),
-  `HoeffdingD` (Hollander-Wolfe/Hmisc formula, 1 for a perfectly monotone relation).
-- **`nonparametric.regression`**: `LocalPolynomialReg` (degree 0/1 = Nadaraya-Watson/
-  local-linear, matches `statsmodels.nonparametric.kernel_regression.KernelReg` exactly at
-  a fixed bandwidth; GCV bandwidth selection), `IsotonicRegression` (weighted PAVA,
-  matches `scipy.optimize.isotonic_regression` exactly), `SplineRegression`
-  (`"pspline"`: B-spline + 2nd-difference penalty with GCV `lam`; `"smoothing"`: matches
-  `scipy.interpolate.make_smoothing_spline` exactly), `GPR_Nonparametric` (facade over
-  `gaussian_processes.GPRegression`), `QuantileRegression` (`"local"`: kernel-weighted
-  check-loss LP with relative-weight truncation for tractable per-query cost; `"linear"`
-  delegates to `statistics.quantile_regression`, exact at a huge bandwidth).
-- **Four bugs caught during the manual debug session and testing, fixed before shipping**
-  (Probleme.md #98-101): the two-sample Cramer-von Mises statistic ranked the *unsorted*
-  pooled sample instead of ranking each side's own sorted order statistics against their
-  expected pooled rank (off by orders of magnitude — 27.9 instead of 0.067 on a matched
-  scipy comparison); `RankCorrelation(method="somers_d")` excluded ties in the wrong
-  variable (denominator should exclude ties in the independent/row variable `x`, not
-  `y`); `PermutationTest`'s two-sided p-value used a symmetric `|null| >= |obs|` count
-  instead of `scipy.stats.permutation_test`'s own `2 * min(p_greater, p_less)` convention
-  (these differ whenever the null distribution is itself asymmetric, e.g. unequal group
-  sizes); `KendallTau`'s tau-a/tau-c/exact-test machinery originally re-derived the
-  concordant-minus-discordant count via a naive Fenwick-tree walk that mishandled tied-x
-  groups — replaced by recovering the exact count algebraically from the already
-  tie-corrected `kendall_tau_estimate` output instead of re-deriving it.
-- **Manual debug session (all checks against live scipy.stats/statsmodels/scipy.optimize
-  oracles, side by side):** KDE pdf/cdf/full contract vs `gaussian_kde`, all five density
-  estimators' pdf-integrates-to-1 and shape checks, `EmpiricalLikelihood` vs
-  `statsmodels.emplike`, every resampling/rank test vs its scipy/statsmodels oracle,
-  Anderson-Darling norm/expon/k-sample vs `scipy.stats.anderson`/`anderson_ksamp`,
-  Cramer-von Mises one/two-sample vs `scipy.stats.cramervonmises`/`cramervonmises_2samp`,
-  every correlation/dependence measure vs its oracle (Somers' D caught here),
-  `LocalPolynomialReg`/`IsotonicRegression`/`SplineRegression` vs
-  `statsmodels.KernelReg`/`scipy.optimize.isotonic_regression`/
-  `scipy.interpolate.make_smoothing_spline`, `GPR_Nonparametric` vs a direct
-  `GPRegression` call, `QuantileRegression` local-vs-linear exactness at a huge bandwidth
-  plus empirical coverage at q=0.9.
-- **Every Essential-Tasks.md wrap-up item completed:** `tests/nonparametric/tests.py` (64
-  test functions against scipy.stats/statsmodels/scipy.optimize/scipy.interpolate oracles
-  and brute-force checks) and `tests/nonparametric/e2e.py` (36 exercises, one per public
-  name) both green; `selftest.py` extended 212 -> 222 checks (`NONPAR:` block);
-  `stochpylib/nonparametric/README.md` written; `development/{CHANGELOG,Probleme,
-  Implementation-Checklist,architecture}.md` updated (progress line 628/794); root
-  `README.md` (badges, status table, Known Limitations, architecture diagrams, roadmap,
-  CLI reference counts, demo prose), `stochpylib/README.md`, `tests/README.md`,
-  `CONTRIBUTING.md`, `AGENTS.md`, `development/{Development,README,project_structure,
-  infrastructure}.md` all synced; `tests/docs/tests.py` and `tests/library/tests.py`
-  updated (spec-name conformance, wiring, a cross-module integration test agreeing with
-  `copulas.kendall_tau`, `statistics.TestResult`, and `gaussian_processes.GPRegression`);
-  `spl demo nonparametric` added to `cli_demo.py`; `ci.yml` `module-smoke` matrix
-  extended; vault `Modules/nonparametric.md`, `Quickstart-Examples.md`, `Module-Map.md`,
-  `README.md`, `ARCHITECTURE.md` updated.
-
-Suite: 2018 collected - 2016 passed / 2 skipped. Version 0.15.0.
-
-## Phase 33 — V0.16.0 optimization: gradient & second-order methods, metaheuristics, stochastic approximation, constrained solvers (32 names)
-
-- **CI green-up before the new module.** The V0.15.0 push left `test (3.10, ubuntu-latest)`
-  and `test (3.10, windows-latest)` red: `tests/nonparametric` oracled Anderson-Darling
-  critical values against `scipy.stats.anderson`, whose finite-sample correction changed
-  mid-scipy-1.x and which drops `critical_values` entirely in 1.19. The statistic (which is
-  version-stable) is still compared against scipy; the critical values are now pinned to the
-  published D'Agostino & Stephens table the implementation documents (Probleme.md #102).
-- **`optimization.gradient`**: `GradientDescent` (Armijo backtracking; the only
-  deterministic member), `StochasticGD` (mini-batch via a `grad_sample(x, idx)` hook, with
-  momentum/Nesterov and a decaying step), and the adaptive family matching its published
-  update rule term for term — `AdaGrad`, `RMSProp`, `Adadelta`, `AdamOptimizer` (with bias
-  correction), `NADAM` and `AMSGrad`. All eight share one descent loop and differ only in an
-  `_update` hook, so the family is eight small subclasses rather than eight algorithms.
-- **`optimization.second_order`**: `NewtonMethod` (damped, with a modified-Cholesky
-  safeguard so a saddle or negative-curvature region does not send the step uphill), `BFGS`
-  (inverse-Hessian form — `result_.hess_inv` reproduces `statistics.logistic_regression`'s
-  standard errors to 5%), `LBFGS` (two-loop recursion), `ConjugateGradient`
-  (Fletcher-Reeves / PR+ with restarts), `TrustRegion` (dogleg and Steihaug-CG
-  subproblems), and `LevenbergMarquardt` on a residual function. Each matches the converged
-  solution of the corresponding `scipy.optimize` method.
-- **`optimization.metaheuristic`**: `SimulatedAnnealing`, `GeneticAlgorithm`,
-  `ParticleSwarmOptimization`, `DifferentialEvolution` (three strategies), `CMA_ES` (rank-one
-  + rank-mu covariance adaptation with cumulative step-size control), `BayesianOptimization`
-  (EI/UCB/PI over a `gaussian_processes.GPRegression` Matern surrogate seeded by
-  `montecarlo.LatinHypercubeSampling`), and `AntColony` — the one combinatorial method, which
-  keeps its own `minimize(distance_matrix)` signature rather than being bent into the
-  continuous one, and reproduces brute-force-optimal tours on 8-city instances.
-- **`optimization.stochastic_optim`**: `StochasticApprox` (the `a/(n+A)^alpha` engine with
-  Polyak-Ruppert averaging), `RobbinsMonro` (root-finding form, error shrinking at the
-  `n^-1/2` rate), `KieferWolfowitz` and `SPSA` (two objective evaluations per iteration at
-  any dimension, against Kiefer-Wolfowitz's `2*dim` — asserted directly), `CEM`, and `SAA`,
-  whose optimality gap is reported as a `montecarlo.MCResult` so the estimate arrives with
-  its standard error and interval.
-- **`optimization.constrained`**: `PenaltyMethod`, `AugmentedLagrangian` (recovers the
-  analytic multiplier and reaches feasibility at a far smaller penalty than the pure penalty
-  method), `LagrangianRelaxation` (reports a valid dual lower bound), `ActiveSet` (matches
-  the Nocedal & Wright textbook QP optimum exactly), and `InteriorPoint` (relaxed log
-  barrier). Every solver reports `extras["violation"]`/`["feasible"]`, because silently
-  returning an infeasible point would be the worst failure mode here.
-- **One result type, one contract.** Everything returns `OptimizeResult` (point, value,
-  `nit`/`nfev`/`njev`, `converged` plus a message, `jac`, `hess_inv`, `history`, opt-in
-  `trajectory`, `extras`); `minimize()` returns `self` like `fit()` elsewhere; every
-  stochastic optimizer takes `random_state=` and reproduces a run exactly from a seed; a
-  failed run returns with `converged=False` and an explanation rather than raising. Nothing
-  wraps `scipy.optimize` — a test walks the module's sources to enforce that.
-- **6 bugs caught by the manual debug session, all fixed (Probleme.md #103-#108)**:
-  Lagrangian dual ascent climbing the wrong way and its primal recovery returning a
-  feasible-but-unoptimized `x0`; the log barrier's `+inf` producing NaN gradients inside the
-  inner optimizer; optimizer loops not stopping on non-finite gradients or a diverged
-  objective; simulated annealing's fixed initial temperature ignoring the objective's energy
-  scale; and the Bayesian-optimization surrogate being fitted on unscaled inputs.
-- **Manual debug session** against the real implementation before any test was written:
-  every method on Rosenbrock from a hostile start, all seven metaheuristics on Rastrigin-10
-  and Ackley-5, same-seed reproducibility for every stochastic optimizer, all five
-  constrained solvers on a problem with a closed-form solution, logistic and Gamma MLE
-  cross-checked against `statistics`/`distributions`, ant colony against brute force, and an
-  SAA newsvendor against its closed-form critical fractile.
-- **Every Essential-Tasks.md wrap-up item completed:** `tests/optimization/{tests,e2e}.py`
-  added (181 cases: scipy.optimize, closed-form optima, published global minima, brute-force
-  TSP and the library's own MLE fits as oracles); `README.md`, `stochpylib/README.md`,
-  `tests/README.md`, `AGENTS.md`, `CONTRIBUTING.md` and
-  `development/{README,Development,project_structure,architecture,infrastructure,
-  Implementation-Checklist}.md` all synced; `tests/docs/tests.py` and
-  `tests/library/tests.py` updated (spec-name conformance, wiring, stale-claim blacklist, a
-  cross-module integration test agreeing with `statistics.logistic_regression`,
-  `distributions.Gamma.fit`, `gaussian_processes.GPRegression` and `montecarlo.MCResult`);
-  `selftest.py` extended 222 -> 235 checks (`OPTIM:` block); `spl demo optimization` added to
-  `cli_demo.py`; `ci.yml` `module-smoke` matrix extended; vault
-  `Modules/optimization.md` flipped to implemented.
-
-Suite: 2203 collected - 2201 passed / 2 skipped. Version 0.16.0.
-
-## Phase 34 — V0.17.0 experimental_design: classical, optimal and space-filling designs, response surfaces & surrogates, effect & sensitivity analysis (29 names)
-
-- **One design contract.** Every design class subclasses `DesignGenerator`, and
-  `generate()` returns a `Design`: the run matrix in coded `[-1, 1]` or unit-cube units,
-  plus factor names (skipping `I`), natural-unit bounds, `to_natural()`/`randomized()`, and
-  quality metrics (D-efficiency, minimum/fill distance, discrepancy). It is the only new
-  result type; analyses reuse `statistics.TestResult`/`RegressionResult` and
-  `montecarlo.MCResult`.
-- **`experimental_design.classical`**: `FullFactorial` (Yates order, mixed or explicit
-  levels), `FractionalFactorial` (explicit generators, or a maximum-resolution /
-  minimum-aberration search that reproduces the textbook maximum resolutions up to
-  2^(8-4); defining relation, alias structure, fold-over) and `Plackett_Burman` (Sylvester
-  and Paley Hadamard matrices over GF(q), reproducing the published N = 12/20/24 generator
-  rows). Also `CCD` (rotatable/orthogonal/face/inscribed alpha), `BoxBehnken` (3–7
-  factors), and `LatinSquare`/`GraecoLatin` (MOLS for every order not congruent to 2 mod 4)
-  with ANOVA matching statsmodels.
-- **`experimental_design.optimal`**: D/A/G/I/T-optimal and Bayesian designs share one
-  multi-start point-exchange engine, batched over candidates. They reproduce the
-  brute-force exact optima for quadratic regression (D/G 1/3 each, A/I 1/4-1/2-1/4),
-  Atkinson-Fedorov's T-optimal design, and Box-Lucas' nonlinear design for exponential
-  decay.
-- **`experimental_design.space_filling`**: `LatinHypercubeDesign` delegates to
-  `montecarlo.LatinHypercubeSampling`. Alongside it are Morris-Mitchell `MaximinLHD`,
-  fill-distance `MinimaxDesign`, good-lattice-point `UniformDesign` with CD/WD/MD/L2-star
-  discrepancies equal to `scipy.stats.qmc.discrepancy` to 1e-12, and Bush
-  `OrthogonalArrayDesign` with Tang's OA-based Latin hypercube.
-- **`experimental_design.response_surface`**: `ResponseSurface` fits through
-  `statistics.linear_regression` and adds a stationary point, canonical analysis, steepest
-  ascent and `optimization.DifferentialEvolution` box optimization. `RSM_ANOVA` splits
-  sums of squares sequentially, with lack of fit vs pure error and PRESS. `PolynomialChaos`
-  (Legendre/Hermite, `numerical_methods` Gauss rules) recovers Ishigami's analytic Sobol
-  indices. `KrigingSurrogate` is universal kriging on `gaussian_processes` kernels with EI
-  sequential design, and a `MetaModel` base picks among surrogates by CV.
-- **`experimental_design.analysis`**: `ANOVA_DOE` (contrast SS for orthogonal two-level
-  designs, Type II otherwise, both equal to statsmodels), `MainEffects`, and data-only
-  `InteractionPlot`/`NormalPlot` with Lenth's PSE/ME/SME, all reproducing Montgomery's
-  filtration-rate example. `SensitivityIndex` covers Morris, SRC, PRCC and correlation;
-  `SobolIndex` gives Saltelli/Jansen first-, total- and second-order indices with bootstrap
-  standard errors as `MCResult`s, agreeing with the Ishigami/g-function analytic values and
-  `scipy.stats.sobol_indices`.
-- **Two existing library bugs fixed on the way (Probleme.md #109, #110).**
-  `gaussian_processes.optimize_hyperparams` never moved a Matern kernel yet reported
-  success. `montecarlo.MCResult.confidence_interval` returned near-zero-width intervals for
-  every level other than 0.95. Two construction bugs in the new module were caught before
-  shipping (#111, #112).
-- **Manual debug session** against the real package before tests were written: every
-  classical design's properties; Montgomery's 2^4 through main effects, Lenth, ANOVA and
-  the AC interaction; the optimal designs against brute force; the space-filling metrics
-  against random LHS; CCD → response surface → lack-of-fit ANOVA → optimum; kriging
-  sequential design on Branin; PCE and Sobol indices on Ishigami; same-seed
-  reproducibility of every stochastic class.
-- **Every Essential-Tasks.md wrap-up item completed:**
-  - `tests/experimental_design/{tests,e2e}.py` added (157 cases);
-  - regression tests added to the gaussian_processes and montecarlo suites;
-  - the library suite gained spec conformance, extras, wiring, and a cross-module test
-    against `statistics`, `gaussian_processes`, `montecarlo` and `optimization`;
-  - `tests/docs` counts and stale-claim blacklist updated;
-  - `selftest.py` 235 → 250 checks (`DOE:` block);
-  - `spl demo experimental_design` added, `ci.yml` `module-smoke` matrix extended;
-  - all READMEs and `development/` docs synced, and the vault spec flipped to implemented.
-
-Suite: 2373 collected - 2371 passed / 2 skipped. Version 0.17.0.
-
-- **Post-push CI fix (same phase, unreleased):** `test (3.10, windows-latest)` and
-  `test (3.11, ubuntu-latest)` came back red on GitHub Actions with
-  `AssertionError: assert 'ResponseSurface_0' == 'ResponseSurface_1'` in
-  `test_metamodel_selects_by_cross_validation` (Probleme.md #113) — the test's custom-
-  candidates assertion ran `MetaModel(..., cv=3)` with no `random_state`, and roughly 1 in
-  40 random 3-fold splits of the 13-point CCD strips every factorial run from a training
-  fold, making the quadratic candidate's `A*B` term inestimable so the linear candidate
-  wins by chance. Not a library bug (`MetaModel`'s own `random_state=None` default is the
-  documented convention); switched the test to `cv=13` (leave-one-out, structurally immune
-  to the confound) plus a fixed seed. 500 reruns across seeds all pick the quadratic
-  candidate; `pytest tests/experimental_design/` (157 tests) green, both CI cells rerun
-  green.
-
-## Phase 35 — V0.18.0 spatial_statistics: variograms, kriging, random fields, point processes & spatial autocorrelation tests (32 names)
-
-- **One reused-result contract.** Kriging predictions reuse `timeseries.ForecastResult`
-  (`predict_result(X)`); the autocorrelation and nearest-neighbour tests reuse
-  `statistics.TestResult`. `SpatialFunction` is the only new result type, for
-  `RipleyK`/`PairCorrelation`'s summary functions (with an optional Monte Carlo CSR
-  envelope and `L()` transform).
-- **`spatial_statistics.variogram`**: `Variogram` (abstract; `+` nests structures) and
-  `Semivariogram` (spherical/exponential/gaussian/cubic/linear/power/nugget, plus a
-  general-nu Matern via `scipy.special.kv` that matches `gaussian_processes.MaternKernel`
-  exactly at its three closed-form nu values); `SpatialCovariance` bridges to/from a
-  `gaussian_processes` kernel; `ExperimentalVariogram` (Matheron/Cressie-Hawkins/Dowd
-  estimators, optional directional binning); `VariogramFitting` (weighted least squares,
-  or the best of several models by AIC); `Nugget`/`Sill`/`Range` curve estimators.
-- **`spatial_statistics.kriging`**: `Kriging`/`OrdinaryKriging`/`UniversalKriging` share one
-  gamma-Lagrange linear system (so unbounded power/linear variograms work);
-  `SimpleKriging` uses the covariance form directly and matches `GPRegression`'s posterior
-  mean/std to 1e-8; `CoKriging` uses the Markov Model 1 simplification (cross-covariance
-  proportional to the primary's own correlation), guaranteeing validity with no separate
-  cross-variogram fit; `IndicatorKriging` (Deutsch & Journel order-relation-corrected
-  ccdf); `DisjunctiveKriging` (Gaussian anamorphosis, Hermite expansion via
-  `numerical_methods.GaussHermite`, its `He_1` term reused directly for `predict_proba`).
-- **`spatial_statistics.random_fields`**: `GaussianRandomField` (covariance-driven;
-  Cholesky on scattered points, exact circulant embedding on grids, or
-  `method="spectral"` delegating to `levy_processes.GaussianRandomField`'s FFT synthesis —
-  a *separate* class from that one, only meeting at that one entry point);
-  general-nu `MaternField`; `OrnsteinUhlenbeckField` (exact per-axis AR(1) on separable
-  grids); `BrownianSheet`; `FractionalBrownianSheet` (exact via the separable Kronecker
-  Cholesky structure).
-- **`spatial_statistics.point_processes`**: `SpatialPointProcess` base with a shared
-  Diggle `K**(1/4)` minimum-contrast fitter; `PoissonPointProcess`,
-  `InhomogeneousPoisson` (Lewis-Shedler thinning, log-linear MLE), `ThomasProcess`,
-  `MaternCluster`, `LogGaussianCox`; `RipleyK`/`PairCorrelation` are plain functions (per
-  the spec's `()` convention) with translation, quadrature-evaluated isotropic, and border
-  edge corrections.
-- **`spatial_statistics.tests`**: `MoransI`, `GearyC` (Cliff & Ord normality/randomization
-  variances, optional permutation p-value), `SpatialAutocorrelation` (global or local
-  Moran/Geary/Getis-Ord), `NNDistanceTest` (Clark-Evans R with Donnelly's edge correction,
-  or the G-function CSR envelope test) — all four plain functions.
-- **CAR/SAR extras close the vault's long-standing "no CAR/SAR" gap** (`ARCHITECTURE.md`
-  Known Gaps, `Ratings.md`): `SARModel`/`CARModel` (`spatial_statistics.lattice`) maximize a
-  concentrated Gaussian log-likelihood over the spatial-autoregressive parameter, with
-  standard errors from the numerical Hessian (`statistics._common._numeric_hessian`).
-- **`spl show` disambiguates ambiguous public names.** Four names (`Gamma`,
-  `InverseWishart`, `MonteCarloIntegration`, and now `GaussianRandomField`, exported by
-  both `levy_processes` and the new `spatial_statistics`) are exported by more than one
-  module; `spl show <Name>` now lists every owner (`also exported by: ...`), and
-  `spl show <module>.<Name>` / `spl show stochpylib.<module>.<Name>` picks one directly.
-- **scipy.stats hygiene: removed from all 9 remaining library files**
-  (`gaussian_processes/inference.py`, `information_theory/divergences.py`,
-  `levy_processes/advanced.py`, `montecarlo/applications.py`, `survival/regression.py`,
-  `survival/tests.py`, `timeseries/changepoint.py`, `timeseries/latent.py`,
-  `timeseries/tests.py`) — `todo.md` had flagged only 4 of them. A new AST-based guard
-  test (`tests/library/tests.py`) walks every `stochpylib/**/*.py` file so the violation
-  cannot return silently (Probleme.md #114).
-- **Six real bugs fixed on the way** (Probleme.md #115-#119 plus the hygiene entry
-  #114): a `VariogramFitting` nugget-exceeds-sill fit; cluster-process minimum-contrast
-  fitting trying to estimate the (unidentifiable-from-K) offspring count `mu`;
-  `BrownianSheet`'s boundary zeroed after, not before, its cumulative sum (a silently
-  wrong variance); the Donnelly nearest-neighbour edge correction's variance-exponent
-  slip plus its missing mean-bias term; and (caught by running the real `spl demo`, not a
-  unit test) `VariogramFitting` reporting an arbitrarily large, physically meaningless
-  `range` on weakly-structured data, fixed by bounding the search to sane multiples of the
-  observed lags/gamma.
-- **Manual debug session** against the real package before tests were written: a
-  Walker-Lake-style variogram-fit-to-kriging-to-cross-validation workflow; simple kriging
-  vs `GPRegression` and ordinary kriging vs `KrigingSurrogate` identities; exact
-  interpolation and weight-sum-to-one properties; CoKriging vs OK with a correlated and an
-  uncorrelated secondary; disjunctive kriging's convergence to simple kriging under weak
-  spatial correlation; cluster-process and Ripley-K CSR sanity; a hexagonal-lattice
-  Clark-Evans check; circulant-vs-Cholesky and Brownian/fractional-Brownian-sheet variance
-  checks; SAR/CAR parameter recovery; same-seed reproducibility of every stochastic class;
-  and running the real `spl demo spatial_statistics`, which is what surfaced #119.
-- **Every Essential-Tasks.md wrap-up item completed:**
-  - `tests/spatial_statistics/{tests,e2e}.py` added (141 cases);
-  - the library suite gained the scipy.stats AST guard, spec conformance, extras, wiring,
-    and a cross-module test against `gaussian_processes`, `experimental_design` and
-    `levy_processes`;
-  - `tests/docs` counts and stale-claim blacklist updated;
-  - `selftest.py` 250 -> 264 checks (`SPATIAL:` block + 1 `CONFORM` entry);
-  - `spl demo spatial_statistics` added, `ci.yml` `module-smoke` matrix extended;
-  - all READMEs and `development/` docs synced, and the vault spec flipped to implemented.
-
-Suite: 2522 collected - 2520 passed / 2 skipped. Version 0.18.0.
-
-## Phase 36 — V0.19.0 viz: SVG-native statistical plots with an optional matplotlib backend (35 names)
-
-- **`viz` shipped end to end** across five submodules on top of a from-scratch scene-graph
-  renderer: `_figure.py`'s `Figure`/`Axes` and artist dataclasses, `_svg.py`'s zero-
-  dependency SVG output (nice-number ticks, per-axes clipping, deterministic rendering),
-  and `_mpl.py`'s optional matplotlib backend (`Figure.to_matplotlib()`/`.save('*.png'/
-  '*.pdf')`) — lazily imported, confined to one file, never a runtime dependency.
-- **`viz.distributions`** — `plot_pdf`/`plot_pmf`/`plot_cdf`/`plot_survival`/`plot_hazard`,
-  `plot_qqplot`/`plot_ppplot` (Filliben plotting positions, exact-matching
-  `scipy.stats.probplot`), `plot_histogram`, `plot_kde` — all computed via the
-  distribution/nonparametric contract already in the library, never re-derived.
-- **`viz.processes`** — `plot_process`, `plot_acf`/`plot_pacf` (a new Durbin-Levinson
-  helper reused nowhere else, matching `statsmodels` to float precision), `plot_periodogram`/
-  `plot_spectrogram` (delegating to `timeseries.spectral`), `plot_wavelet` (Morlet CWT or
-  DWT detail levels), `plot_trajectory`.
-- **`viz.diagnostics`** — `trace_plot`/`posterior_plot`/`pair_plot` for MCMC (reusing
-  `advanced_mcmc.Rhat`/`ESS` and `bayesian.Posterior`'s HPD helper), `residual_plot`/
-  `leverage_plot`/`influence_plot` for regression (hat values, studentized residuals,
-  Cook's distance matching `statsmodels.OLSInfluence` to float precision), `funnel_plot`
-  for meta-analysis (inverse-variance pooling, Egger's regression test).
-- **`viz.multivariate`** — `plot_heatmap`, `plot_correlation`, `plot_copula` (scatter or
-  density), `plot_scatter_matrix`, `plot_biplot` (PCA, SVD-exact), `plot_dendrogram`
-  (agglomerative linkage, leaf order matching `scipy.cluster.hierarchy.dendrogram` exactly).
-- **`viz.special`** — `plot_markov_chain`, `plot_brownian`/GBM, `plot_gp` (posterior band +
-  optional Cholesky-sampled draws), `plot_survival_km` (matching `lifelines` to float
-  precision, real censoring ticks, per-group log-rank test), `plot_variogram` (experimental
-  points, a fitted-model curve, or a `SpatialFunction` envelope), `plot_eigenvalues`
-  (semicircle/Marchenko-Pastur overlay, complex-spectrum scatter, spacing vs. Wigner surmise).
-- **Cross-module hooks**: `experimental_design.InteractionPlot`/`NormalPlot` gained a
-  `to_figure()` method (a lazy `stochpylib.viz` import, so the owning module stays
-  dependency-free); `viz.plot_variogram` renders `spatial_statistics`' variogram/covariance/
-  summary-function objects directly.
-- **A `viz-matplotlib` CI job** (ubuntu + windows) is the only place `tests/viz/backend_mpl.py`
-  runs — it installs matplotlib and checks the real backend (PNG/PDF bytes, mpl artist
-  mapping, categorical/log axes); every other viz test, and the module's own import, needs
-  no matplotlib installed at all (two AST guards enforce this: no `scipy.stats` anywhere,
-  and `matplotlib` only inside `_mpl.py` function bodies).
-- **One real pre-existing bug found and fixed**: `timeseries.CWTTransform`'s default scale
-  range always crashed (Probleme.md #120) — no prior test exercised the default scales,
-  only small explicit ones. Also fixed a rendering-completeness gap in `plot_markov_chain`
-  (silently dropped self-loops, overlapping edge labels — #121), caught by manually
-  rendering a real chain rather than by any numeric assertion.
-- **Every Essential-Tasks.md wrap-up item completed**: `tests/viz/{tests,e2e}.py` added
-  (182 cases) plus `tests/viz/backend_mpl.py` for the optional backend; the library suite
-  gained a matplotlib-import-location guard and a five-module cross-suite integration test;
-  `tests/docs` counts and stale-claim blacklist updated; `selftest.py` 264 -> 275 checks
-  (`VIZ:` block + 1 `CONFORM` entry); `spl demo viz` added, `ci.yml` gained the
-  `viz-matplotlib` job and the `module-smoke` matrix entry; all READMEs and `development/`
-  docs synced, and the vault spec flipped to implemented.
-
-Suite: 2709 collected - 2707 passed / 2 skipped. Version 0.19.0.
-
-## Phase 37 — V0.20.0 utils: seeds & streams, parallel/GPU/JIT backends, reproducibility, data utilities, serialization, interop (38 names) + library-wide RNG/parallel retrofit
-
-- **`utils` shipped end to end** across six submodules, the last module on the design spec
-  (794/794 public names, twenty-three modules): `random.py` (`set_seed`/`random_state`/
-  `spawn_generator`, the public face of the new shared `stochpylib._rng`),
-  `performance.py` (`Benchmark`/`Profiler`, `ParallelSimulation`/`GPUBackend`/`JIT_compile`
-  over the new shared `stochpylib._parallel`, `VectorizedOps`, `MemoryPool`),
-  `reproducibility.py` (`Reproducibility`/`RandomStream`/`VersionLock`/`EnvironmentCapture`/
-  `ExperimentLogger`), `data.py` (`fit`/`goodness_of_fit`/`moment_matching`/`ecdf`/
-  `DataValidation`/`outlier_detection`/`missing_imputation`, all delegating to
-  `distributions`/`statistics`/`nonparametric`/`robust_statistics` rather than
-  re-deriving anything), `io.py` (`to_dict`/`from_dict`/`to_json`/`from_json`/`to_pickle`/
-  `Serialization`/`Configuration`/`Logging`/`summary`), and `compat.py` (`numpy_interface`/
-  `scipy_interface`/`pandas_interface`/`torch_interface`/`jax_interface`).
-- **A new `stochpylib._rng`** (`as_generator`/`spawn`/`legacy_spawn`/`set_root`) is the one
-  canonical place every module resolves `random_state=` — the ten copy-pasted `_rng()`
-  helpers and ~130 inline `np.random.default_rng(random_state)` calls across
-  `distributions`/`copulas`/`levy_processes`/`timeseries`/`nonparametric`/`montecarlo`/
-  `spatial_statistics`/`gaussian_processes`/`numerical_methods`/`bayesian`/`viz`/
-  `financial_stochastics`/`experimental_design`/`statistics`/`random_matrix`/
-  `advanced_mcmc`/`queueing` now delegate to it, so `utils.set_seed()` makes
-  `random_state=None` reproducible library-wide. A new AST guard
-  (`test_rng_goes_through_the_shared_helper`) pins this: a bare or non-constant
-  `np.random.default_rng`/`.seed`/`RandomState(` call may only exist in the helper itself,
-  the CLI demo/self-check suites, or `utils.random`'s own `numpy_global=` path.
-- **`n_jobs=`/`parallel_backend=`** (via a new `stochpylib._parallel`) were retrofitted onto
-  every Monte Carlo function/method that returns one `MCResult` from a chunkable `n`:
-  `montecarlo.{crude_mc,simulate,pi_estimation,option_pricing_mc,reliability_mc}` and, in
-  `financial_stochastics`, `MonteCarloOptionPricing.{price,price_path_dependent,
-  asian_price}` and the Heston/rough-Heston/rough-Bergomi/local-vol/LVSV/Black-Karasinski/
-  LMM/HJM Monte Carlo pricers. Each chunk draws an independently spawned child RNG, so a
-  parallel run is reproducible and worker-count-invariant but **not** bit-identical to the
-  legacy single-stream serial run at the same seed; `n_jobs=None` (the default everywhere)
-  is byte-identical to the pre-V0.20.0 code path, verified with a golden-stream hash
-  harness run before and after every retrofit edit. `price(qmc=True)` rejects `n_jobs`
-  (scrambling loses its low-discrepancy guarantee once split into independent chunks).
-  `advanced_mcmc.MCMCSampler.sample` gained the same `n_jobs=`/`backend=` (each chain on
-  its own deep-copied sampler, so adaptation state never leaks across chains) for the
-  eleven samplers that use the base implementation directly; `HamiltonianMonteCarlo`/
-  `NoUTurnSampler`/`NeutraHMC` override `sample()` for divergence tracking and don't yet
-  forward it. `MonteCarloOptionPricing.simulate_paths`/`.price` and
-  `montecarlo.option_pricing_mc` additionally accept `backend=` (`utils.GPUBackend`) to
-  move the GBM arithmetic, never the random draw, onto numpy/torch/jax/cupy.
-- **Optional backends** (pandas/torch/jax/numba/cupy) are lazily imported and confined to
-  `utils/_backends.py`, mirroring `viz`'s matplotlib discipline exactly, including a new
-  AST guard; `import_backend()` turns a missing *or* installed-but-broken package (e.g.
-  numba against a newer numpy than it supports — the actual state of this dev box) into
-  one clear `ImportError` naming the pip extra. `GPUBackend`/`torch_interface`/
-  `jax_interface` were validated against the real torch (CPU) and pandas installs in this
-  environment; jax/numba are covered only by a new `utils-optional` CI job (ubuntu +
-  windows) that installs the real backends and runs `tests/utils/backend_optional.py`
-  (excluded from the main pytest collection, the same mechanism as `viz/backend_mpl.py`);
-  cupy is exercised only through an injected fake module (no CI GPU).
-- **Seven real bugs found and fixed** while building and wiring this up (Probleme.md
-  #122-128): a Generator crashed `MonteCarloOptionPricing.price(qmc=True)`; `queueing`'s
-  `DiscreteEventSim`/`QueueSimulation` had hidden implicit seeds (42/12345) and rejected a
-  Generator; `missing_imputation(method="knn")` produced NaN for an all-missing row;
-  `DataValidation.validate`'s NaN-stripping condition was inverted; `jax_interface`'s
-  distribution `.sample()` computed an unused PRNG key; `ParallelSimulation.map` called
-  `fn(*task)` instead of `fn(task)`; and `compat.py`/`performance.py` each had their own
-  direct `jax.numpy`/`jax.scipy.stats` import instead of routing through
-  `utils/_backends.py`.
-- **`spl info`** now builds its environment report from `utils.EnvironmentCapture`
-  instead of ad hoc `platform`/`numpy`/`scipy` calls, and prints an `optional backends:`
-  line; `spl demo utils` and `spl show <utils name>` (e.g. `Generator`, `fit`) added.
-- **Every Essential-Tasks.md wrap-up item completed**: `tests/utils/{tests,e2e}.py` added
-  (188 cases) plus `tests/utils/backend_optional.py`/`_workers.py` for the optional
-  backends and process-pool tests; retrofit tests added to
-  `montecarlo`/`financial_stochastics`/`advanced_mcmc`/`queueing`/`distributions`'s own
-  suites; the library suite gained an optional-backend-import-location guard, an
-  RNG-shared-helper guard, a subprocess sys.modules check and a cross-module utils e2e
-  test; `tests/docs` counts and stale-claim blacklist updated; `selftest.py` 275 -> 291
-  checks (`UTILS:` block + 1 `CONFORM` entry); `ci.yml` gained the `utils-optional` job
-  and the `module-smoke` matrix entry; all READMEs and `development/` docs synced, and
-  the vault spec flipped to implemented.
-
-Suite: 2938 collected - 2936 passed / 2 skipped. Version 0.20.0.
+- **47 distribution classes** implemented with the full 13-method contract (pdf/cdf/ppf/rvs/moments/entropy/mgf/cf/fit/ks_test).
+- **Four library bugs** found during scipy cross-check audit and fixed (Probleme #5-8).
+- **`spl` CLI** created with `--version` and `--test` (embedded self-check suite).
+- **81/794 public names.**
+
+## Phase 8 — Third module: `stochpylib.montecarlo`
+- **25 spec names**: Halton/Faure/Sobol/Niederreiter QMC with programmatically-verified GF(2) generator polynomials, crude/QMC/stratified/importance/rejection estimators, variance-reduction toolkit, and applications (integration, option pricing, VaR/ES, reliability).
+- **Two construction bugs** caught by exactness checks (Probleme #10); known limitation on (t,m,s)-net certification logged (#11).
+- **106/794 public names.**
+
+## Phase 6 — Open-source hygiene
+- **Community layer**: CONTRIBUTING, Code of Conduct, SECURITY, issue/PR templates.
+- **Release workflow** creating GitHub Releases on every tag.
+- **Latent bug fixed**: publish.yml ran pytest against the old in-package test location.
+
+## Phase 7 — `spl --help` library overview
+- **CLI help** now prints a full inventory of implemented modules, distribution classes, common interface, and quickstart — dynamically from `__all__` so it never goes stale.
+
+## Phase 9 — Resolving documented open items
+- **Joe-Kuo direction numbers** embedded (64 dims x 30 cols) for exact Sobol nets (Probleme #11).
+- **Alpha=1 skewed stable sampling** replaced with a cached numerical quantile table after a failed closed-form hunt (Probleme #12).
+
+## Phase 10 — Fourth module: `stochpylib.timeseries`
+- **61 spec names across nine submodules**: ARMA/SARIMA/ARFIMA, VAR/VARMA/VECM, GARCH family, Kalman/RTS/EKF/UKF/particle filters, HMM, changepoint detection, spectral methods, forecasting diagnostics.
+- **Eleven construction bugs** caught by smoke tests (Probleme #13-19).
+- **Fluent `.fit()` and `ForecastResult`** conventions introduced.
+- **167/794 public names. Version 0.2.0.**
+
+## Phase 11 — Fifth module: `stochpylib.gaussian_processes`
+- **36 spec names**: 10-kernel zoo with operator overloading, kernel ops, exact/sparse/deep GP models, Laplace/EP/VI classification, hyperparameter optimization.
+- **Two construction bugs** caught during implementation (Probleme #21-22).
+- **203/794 public names.**
+
+## Phase 12 — Library audit: completing GP delivery + stability fixes
+- **GPClassification/SparseGaussianProcess/InducingPointGP** added (36/36 spec names complete); module wired into package root.
+- **Three real defects** fixed: broken duplicate FITC/VFE copy, sparse posterior exploding for large inducing counts (rewritten in whitened parameterization), and `BaseKernel.diag` crashing for most kernels (Probleme #23-24).
+- **203/794 public names.**
+
+## Phase 13 — Sixth module: `stochpylib.copulas`
+- **26 spec names**: elliptical (recursive-integration CDF), Archimedean (generator framework, exact bivariate densities), empirical, vines (C/D/R with AIC selection), and methods (fit, sample, tail dependence).
+- **Six construction defects** caught and fixed (Probleme #25-30).
+- **229/794 public names. Version 0.3.0.**
+
+## Phase 14 — V0.3.1 audit: spec conformance + cross-module tests + doc sync
+- **Cross-module test suite** created (20 cases) verifying spec-name conformance and end-to-end workflows.
+- **Selftest extended** to 130 checks.
+- **Documentation synced** across all READMEs and development docs.
+
+## Phase 15 — Seventh module: `stochpylib.survival`
+- **28 spec names**: Kaplan-Meier, Nelson-Aalen, parametric fits with censored likelihood, Cox PH, AFT, Fine-Gray, log-rank family, competing risks.
+- **257/794 public names. Version 0.4.0.**
+
+## Phase 16 — Eighth module: `stochpylib.queueing`
+- **29 spec names**: M/M/1, M/M/c, M/D/1, M/G/1, GI/G/1, priority queues, birth-death, Jackson/closed/BCMP networks, discrete-event simulation, Little's law.
+- **287/794 public names. Version 0.5.0.**
+
+## Phase 17 — V0.5.1 audit: bug fixes + edge-case tests + doc sync
+- **Four survival bugs** fixed (step-evaluator default, integration grid, hazard wrapper, Gompertz overflow — Probleme #31-34).
+- **20 new edge-case and cross-module tests** added.
+- **406 passed / 2 skipped.**
+
+## Phase 18 — Ninth module: `stochpylib.information_theory`
+- **31 spec names**: entropy family, divergences, mutual information, channel capacity, Huffman coding, typical sets.
+- **317/794 public names (progress accounting corrected). Version 0.6.0.**
+
+## Phase 19 — V0.6.1 audit: bug fixes + edge-case tests
+- **Two information-theory bugs** fixed: InformationGain using raw labels instead of counts, and Renyi alpha=0 in nats instead of bits (Probleme #35-36).
+- **12 new edge-case tests** added.
+
+## Phase 20 — V0.6.2 documentation overhaul
+- **All nine module READMEs** rewritten to a common template; main README rebuilt with status table, known limitations, and quickstart snippets.
+- **Doc-consistency suite** created (14 cases) enforcing that badges, counts, versions, and links never drift.
+- **Progress accounting error** found and corrected (288/794 was arithmetically wrong; true total 317/794 — Probleme #37).
+- **spl --help gap** fixed (missing queueing/information_theory blocks — Probleme #38).
+
+## Phase 21 — V0.6.3 CI fix
+- **Version-literal test** made bump-proof after it broke CI on every version bump (Probleme #39).
+- **README CLI reference** gained TOC sub-links.
+
+## Phase 22 — V0.6.4 CLI expansion: `spl update`, `info`, `show`, `demo`, `cite`
+- **spl --version** gained PyPI awareness with offline-safe update checking.
+- **spl update** added for switching pip versions.
+- **spl info** added for environment report.
+- **spl show** added for looking up any public name.
+- **spl demo** added with nine deterministic mini-examples.
+- **spl cite** added for plain-text + BibTeX citation.
+- **New CLI test suite** (50 cases) with zero network access.
+- **Version 0.6.4.**
+
+## Phase 23 — V0.7.0 `levy_processes`
+- **33 spec names**: Levy-Khintchine core, subordinators (gamma, inverse-Gaussian, stable, tempered), jump-diffusion pricing (Merton, Kou, Bates), advanced point processes (Hawkes, Cox, branching), SDE solvers (EM through strong-order 1.5).
+- **Eleven bugs** found and fixed while writing tests (Probleme #41-51), including a Carr-Madan log-strike convention error and a biased truncated-jump quantile grid.
+- **Version 0.7.0.**
+
+## Phase 24 — CI hotfix: statsmodels 0.15.0 compatibility
+- **Dropped `old_names` kwarg** from AutoReg oracle call (Probleme #52).
+
+## Phase 25 — V0.8.0 `financial_stochastics`
+- **50 spec names**: Black-Scholes, American (BAW + binomial), lattices, MC pricing (incl. Asian), Longstaff-Schwartz, Fourier methods, Greeks (closed-form/MC/FD), stochastic vol (Heston, SABR, rough Heston/Bergomi, local vol), rate models (Vasicek, CIR, Hull-White, HJM, LMM), risk (VaR, ES, stress testing), credit (CDS, Merton, migration, copula), portfolio optimization.
+- **Ten bugs** found and fixed (Probleme #53-62), including a COS truncation-range error pricing a call at 2.7e19 and an inverted SABR skew factor.
+- **Version 0.8.0.**
+
+## Phase 26 — V0.9.0 `statistics`
+- **48 spec names**: descriptive stats (weighted/trimmed, all nine Hyndman-Fan quantile types), estimation (MLE, MOM, Bayesian, bootstrap, jackknife, profile likelihood), hypothesis tests (z/t/chi2/F, ANOVA, MANOVA, nonparametric), regression (OLS/WLS/GLM/ridge/lasso/quantile), multivariate (PCA, factor analysis, discriminant, clustering, MDS).
+- **Seven bugs** found and fixed (Probleme #63-69), including IRLS inverting the link derivative and OLS/GLM AIC over-counting parameters.
+- **Version 0.9.0.**
+
+## Phase 27 — V0.10.0 `random_matrix` + CI restructure
+- **23 spec names**: GOE/GUE/GSE, Wishart, CUE, empirical spectra (semicircle, Marchenko-Pastur, Tracy-Widom), random rotations, eigenvalue statistics.
+- **End-to-end API sweeps** (`tests/<module>/e2e.py`, 486 exercises across 13 modules) created with a guard that fails if any public name ships without one — caught **twelve shipped bugs** (Probleme #71-82).
+- **CI restructured**: per-module `smoke` matrix, `fail-fast: false`, `cross-suite`, `install-smoke` wheel verification.
+- **Version 0.10.0.**
+
+## Phase 28 — V0.11.0 `advanced_mcmc`
+- **35 spec names**: Metropolis-Hastings, Gibbs, adaptive variants, HMC, NUTS, MALA, manifold MALA, Riemannian HMC, Neutra-HMC, slice sampling, elliptical slice, replica exchange, parallel tempering, SMC, particle MCMC, reversible-jump, transdimensional, diagnostics (R-hat, ESS, Geweke, Raftery-Lewis), variational inference (mean-field, ADVI, black-box, normalizing flows, Stein VI).
+- **Two bugs** found while testing (Probleme #83-84): NUTS never counting divergences, and rank-normalization using the wrong Blom denominator.
+- **Version 0.11.0.**
+
+## Phase 29 — V0.12.0 `numerical_methods`
+- **38 spec names**: Gaussian quadrature (Golub-Welsch), adaptive integration, cubature, ODE solvers (Euler through Dormand-Prince, Adams, BDF), SDE solvers, matrix exponential/logarithm, decompositions (Cholesky, eigen, SVD, QR, Schur), root finding (Brent, Newton, fixed-point), interpolation (splines, PCHIP, barycentric, Chebyshev, NURBS), PDE tools (FEM, finite difference, spectral).
+- **Five bugs** found and fixed (Probleme #85-89), including FEM silently discarding P2 DOFs and a complex-Schur reconstruction failure.
+- **Version 0.12.0.**
+
+## Phase 30 — V0.13.0 `bayesian`
+- **25 spec names**: prior/likelihood framework, conjugate engine (10 families), posterior computation (grid, Laplace, EP, importance, SMC, MCMC), model selection (AIC/BIC/DIC/WAIC/LOO/TIC/Bayes factor), Bayesian models (linear, logistic, naive Bayes, hierarchical, mixtures, networks, Dirichlet process).
+- **Three overflow bugs** in existing distributions fixed (Probleme #90-92): NegBinomial, Gamma, BetaBinomial all overflowed for large conjugate-posterior shapes.
+- **Post-push CI fix**: GLM IRLS domain violation + flaky test seed (Probleme #93).
+- **Version 0.13.0.**
+
+## Phase 31 — V0.14.0 `robust_statistics`
+- **28 spec names**: robust location (trimmed/Winsorized mean, median, Hodges-Lehmann, L/M/R estimators), robust scale (MAD, Qn, Sn, IQR), robust regression (Theil-Sen, Siegal, RANSAC, LTS, MM, Huber), robust covariance (MCD, MVE, OGK, shrinkage), robust bootstrap (percentile, wild, block, stationary).
+- **Four bugs** found and fixed (Probleme #94-97).
+- **Version 0.14.0.**
+
+## Phase 32 — V0.15.0 `nonparametric`
+- **31 spec names**: density estimation (KDE, adaptive KDE, k-NN, orthogonal series, log-spline), empirical methods (ECDF, empirical likelihood), resampling/rank tests (permutation, bootstrap, Mood, Kruskal-Wallis, Friedman, sign, runs, Anderson-Darling, Cramer-von Mises), dependence measures (Spearman, Kendall, distance correlation, Brownian, Hoeffding), local regression (local polynomial, isotonic, spline, GP, quantile).
+- **Four bugs** found and fixed (Probleme #98-101), including a two-sample Cramer-von Mises statistic off by orders of magnitude.
+- **Version 0.15.0.**
+
+## Phase 33 — V0.16.0 `optimization`
+- **32 spec names**: gradient methods (GD, SGD, AdaGrad, RMSProp, Adadelta, Adam, Nadam, AMSGrad), second-order (Newton, BFGS, LBFGS, CG, trust-region, Levenberg-Marquardt), metaheuristics (simulated annealing, genetic algorithm, PSO, differential evolution, CMA-ES, Bayesian optimization, ant colony), stochastic approximation (Robbins-Monro, Kiefer-Wolfowitz, SPSA, CEM, SAA), constrained (penalty, augmented Lagrangian, Lagrangian relaxation, active-set, interior-point).
+- **Six bugs** found and fixed (Probleme #103-108), including Lagrangian dual ascent climbing the wrong way.
+- **CI green-up**: Anderson-Darling critical values unpinned from version-changing scipy internals (Probleme #102).
+- **Version 0.16.0.**
+
+## Phase 34 — V0.17.0 `experimental_design`
+- **29 spec names**: classical designs (full/fractional factorial, Plackett-Burman, CCD, Box-Behnken, Latin/Graeco-Latin squares), optimal designs (D/A/G/I/T, Bayesian), space-filling (LHD, maximin, minimax, uniform, orthogonal array), response surfaces (polynomial, RSM-ANOVA, polynomial chaos, kriging surrogate), analysis (ANOVA, main effects, interaction plots, sensitivity/Sobol indices).
+- **Two existing library bugs** fixed (Probleme #109-110): GP hyperparameter optimization never moving Matern kernels, and MCResult confidence intervals wrong for non-0.95 levels.
+- **Two construction bugs** caught before shipping (Probleme #111-112).
+- **Post-push CI fix**: flaky MetaModel test with unseeded 3-fold split (Probleme #113).
+- **Version 0.17.0.**
+
+## Phase 35 — V0.18.0 `spatial_statistics`
+- **32 spec names**: variograms (spherical/exponential/gaussian/Matern), kriging (simple/ordinary/universal/co/indicator/disjunctive), random fields (Gaussian, Matern, OU, Brownian/fractional-Brownian sheets), point processes (Poisson, inhomogeneous, Thomas, Matern cluster, LGCP), spatial autocorrelation tests (Moran's I, Geary's c, nearest-neighbor), CAR/SAR lattice models.
+- **scipy.stats removed from all 9 remaining library files**; new AST guard prevents return (Probleme #114).
+- **Six real bugs** fixed (Probleme #115-119), including a variogram fit reporting physically meaningless range on weak data.
+- **`spl show` disambiguation** added for names exported by multiple modules.
+- **Version 0.18.0.**
+
+## Phase 36 — V0.19.0 `viz`
+- **35 spec names**: SVG-native statistical plots (zero-dependency renderer) with optional matplotlib backend. Submodules: distributions, processes (ACF/PACF, periodogram, spectrogram, wavelet, trajectory), diagnostics (MCMC trace/posterior, regression residual/leverage/influence, funnel), multivariate (heatmap, correlation, copula, scatter matrix, biplot, dendrogram), special (Markov chain, Brownian/GBM, GP, survival KM, variogram, eigenvalues).
+- **Cross-module hooks**: `InteractionPlot`/`NormalPlot` gained `to_figure()`.
+- **Two bugs** found and fixed (Probleme #120-121): CWT default scale range crashing, and plot_markov_chain dropping self-loops.
+- **`viz-matplotlib` CI job** created (the only place matplotlib is installed).
+- **Version 0.19.0.**
+
+## Phase 37 — V0.20.0 `utils` + library-wide RNG/parallel retrofit
+- **38 spec names**: seed/stream management (`stochpylib._rng`), benchmarking/profiling, parallel/GPU/JIT backends (`stochpylib._parallel`), reproducibility (version lock, environment capture, experiment logger), data utilities (fit, goodness-of-fit, validation, imputation), serialization, interop (numpy/scipy/pandas/torch/jax).
+- **794/794 public names complete** — all 23 modules shipped.
+- **Every module's `random_state=`** now routes through the shared `_rng` helper; ~130 inline `default_rng` calls replaced; new AST guard enforces this.
+- **`n_jobs=`/`parallel_backend=`** retrofitted onto every MC function returning `MCResult`; golden-stream harness verified reproducibility.
+- **Optional backends** (pandas/torch/jax/numba/cupy) lazily imported in `utils/_backends.py` only, mirroring viz's matplotlib discipline.
+- **Seven real bugs** found and fixed (Probleme #122-128).
+- **Version 0.20.0.**
+
+## Phase 38 — V0.20.1 test-infrastructure fixes
+- **Three test-only bugs** fixed (Probleme #129-131): torch-backend tests assuming torch is installed, JIT backend test checking before first call, and jax-interface test not hiding jax.
+- **One flaky test** fixed with MCSE-based threshold (Probleme #132).

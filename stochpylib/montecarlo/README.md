@@ -36,15 +36,16 @@ an honest standard error and confidence interval.
   `generate(n)` calls (`reset()` restarts); integrands map `(m, dim) -> (m,)`.
 - No scipy.stats in library code — it is the test oracle in
   `tests/montecarlo/tests.py`.
-- **`n_jobs=`/`parallel_backend=` (V0.20.0, via `utils.ParallelSimulation`):**
-  `crude_mc()`, `simulate()`, `pi_estimation()`, `option_pricing_mc()` and
-  `reliability_mc()` accept `n_jobs=<int>` (`-1` for all CPUs) to split the run
-  into independently-seeded chunks pooled into one `MCResult`; `n_jobs=None`
-  (the default) is byte-identical to the pre-V0.20.0 single-stream
-  implementation, but a parallel run is **not** bit-identical to it at the same
-  seed (each chunk draws its own child stream). `option_pricing_mc()` also
-  accepts `backend=` (a device name or `utils.GPUBackend`) to move the
-  exp/arithmetic — never the random draw itself — onto that device.
+- **`n_jobs=`/`parallel_backend=` (via `utils.ParallelSimulation`):**
+  - `crude_mc()`, `simulate()`, `pi_estimation()`, `option_pricing_mc()` and
+    `reliability_mc()` accept `n_jobs=<int>` (`-1` for all CPUs), splitting the
+    run into independently-seeded chunks pooled into one `MCResult`.
+  - `n_jobs=None` (the default) matches the legacy serial single-stream result
+    exactly; a parallel run is reproducible but **not** bit-identical to the
+    serial one at the same seed (each chunk draws its own child stream).
+  - `option_pricing_mc()` also accepts `backend=` (a device name or
+    `utils.GPUBackend`) to move the exp/arithmetic — never the random draw
+    itself — onto that device.
 
 ## Known limitations
 

@@ -105,8 +105,9 @@ manual real repro — green unit tests alone have missed real bugs here.
    `development/CHANGELOG.md` · `development/Probleme.md` ·
    `development/Implementation-Checklist.md` (check off names, progress line) ·
    `development/architecture.md` (module map, flow diagram) ·
-   `development/infrastructure.md` (selftest count) · `README.md` (badges,
-   status table, Known Limitations, Mermaid diagrams, Roadmap, CLI counts) ·
+   `development/infrastructure.md` (selftest count) · `README.md` (status table,
+   Known Limitations, Mermaid diagrams, Roadmap, CLI counts — the `tests`/`public names`
+   badges are live and self-update via CI, see §7, so skip those two) ·
    `stochpylib/README.md` (module table) · `stochpylib/selftest.py` (new
    module checks) · `stochpylib/cli.py` (any hardcoded counts; `--help` is
    generated from `__all__`) · `pyproject.toml` + `__init__.py` (version) ·
@@ -145,7 +146,11 @@ preference.
   `utils-optional` (ubuntu + windows) installs CPU torch/pandas/numba/jax and runs
   `tests/utils/backend_optional.py` plus `utils`'s suites again (cupy/CUDA can't run
   on a hosted runner, so it stays untested there); `cross-suite` (library/docs/cli);
-  `install-smoke` (wheel ships every spec name).
+  `update-stats-badge` (push to `main` only, after every other job is green) recomputes
+  `development/stats.json` (`development/scripts/update_stats.py`) and commits it with
+  `[skip ci]` if it changed — the source README's `tests`/`public names` badges read live
+  via a shields.io `dynamic/json` badge over raw.githubusercontent.com, so those two numbers
+  never need a manual README edit; `install-smoke` (wheel ships every spec name).
 - `publish.yml` on `v*` tags: build, smoke-test (`spl --version`,
   `spl --test`), publish via Trusted Publisher. `release.yml` creates the
   GitHub Release. Bump both version files before tagging.

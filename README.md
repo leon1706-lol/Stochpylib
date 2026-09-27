@@ -11,10 +11,10 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10%2B-FF8C00?style=flat-square&labelColor=1A1A1A&logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/%F0%9F%93%84%20license-MIT-8B5CF6?style=flat-square&labelColor=1A1A1A" alt="License: MIT">
-  <img src="https://img.shields.io/badge/tests-2936%20passing-brightgreen?style=flat-square&labelColor=1A1A1A" alt="2936 of 2938 tests passing">
+  <img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fleon1706-lol%2FStochpylib%2Fmain%2Fdevelopment%2Fstats.json&query=%24.tests_badge&label=tests&color=brightgreen&style=flat-square&labelColor=1A1A1A" alt="tests passing (live)">
   <a href="https://github.com/leon1706-lol/Stochpylib/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/leon1706-lol/Stochpylib/ci.yml?branch=main&style=flat-square&labelColor=1A1A1A&label=CI&logo=githubactions&logoColor=white" alt="CI status"></a>
   <a href="https://pypi.org/project/stochpylib/"><img src="https://img.shields.io/pypi/v/stochpylib?style=flat-square&labelColor=1A1A1A&color=FF8C00&logo=pypi&logoColor=white" alt="PyPI version"></a>
-  <img src="https://img.shields.io/badge/public%20names-794%20of%20794-FF8C00?style=flat-square&labelColor=1A1A1A" alt="794 of 794 spec names implemented">
+  <img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fleon1706-lol%2FStochpylib%2Fmain%2Fdevelopment%2Fstats.json&query=%24.spec_names_badge&label=public%20names&color=FF8C00&style=flat-square&labelColor=1A1A1A" alt="public names implemented (live)">
 </p>
 
 <p align="center">
@@ -29,195 +29,69 @@
 ---
 
 stochpylib is not a wrapper around existing statistical libraries — every distribution and
-algorithm is implemented from scratch, with `scipy.special/optimize/integrate` used only as raw
-numerical building blocks and `scipy.stats`, `statsmodels` and `lifelines` serving as
-independent test oracles. At its core is a single load-bearing contract: every distribution
-exposes the same method set
-(`.pdf()/.cdf()/.ppf()/.rvs()/.mean()/.var()/.skewness()/.kurtosis()/.entropy()/.mgf()/.cf()/.fit()/.ks_test()`),
-every stochastic method takes a `random_state=` seed, and every Monte Carlo estimator returns a
-shared result object carrying its point estimate together with an honest standard error and
-confidence interval. Around that contract, twenty-three modules are live today: a **probability
-engine** (sample spaces, Bayes' theorem, exact-integer combinatorics, independence
-testing), **47 distributions** across discrete/continuous/multivariate/heavy-tailed
-families — including stable laws with Chambers–Mallows–Leckie sampling and numerically
-inverted characteristic functions — a **Monte Carlo suite** spanning quasi-random
-sequences (Sobol, Halton, Faure, Niederreiter), variance-reduction techniques (antithetic,
-control variates, Latin hypercube, conditioned MC, rejection control), and applications
-from option pricing validated against Black–Scholes to reliability analysis driven by the
-library's own distribution objects, a **time-series toolkit** (ARIMA family, GARCH family,
-Kalman/particle filters, HMMs, changepoints, spectral analysis), **Gaussian processes**
-(a composable kernel zoo with exact, sparse and approximate-classification inference),
-**survival analysis** (Kaplan-Meier, Cox regression, parametric censored fits, competing
-risks), **queueing theory** (M/M/1 to Jackson networks with discrete-event simulation),
-**copulas** (elliptical, Archimedean and empirical families plus C-/D-/R-vine dependence
-models), **information theory** (entropy families, divergences, mutual information,
-channel capacity, coding), **Lévy processes** (jump-diffusion pricing models, tempered
-and stable subordinators, Hawkes/Cox/branching processes, SDE solvers from Euler-Maruyama
-through strong order 1.5), **financial stochastics** (option pricing from closed-form
-Black-Scholes to Heston/SABR/rough-volatility and Fourier methods, short-rate and LIBOR
-market models, VaR/ES/stress risk, credit risk, portfolio construction) and **statistics**
-(descriptive stats, MLE/MOM/Bayesian/bootstrap estimation, z/t/chi2/F/ANOVA/MANOVA/rank
-tests, OLS/GLM/ridge/lasso/quantile regression, PCA/factor analysis/discriminant analysis/
-clustering/MDS), **random matrix theory** (GOE/GUE/GSE, Wigner, Wishart and Ginibre-type
-ensembles, the semicircle/Marchenko-Pastur/Tracy-Widom laws as full distributions, Haar
-rotations, spacing and edge statistics), and **advanced MCMC** (Metropolis/Gibbs/adaptive
-samplers, HMC/NUTS/MALA and Riemannian variants, slice samplers, parallel tempering,
-sequential Monte Carlo, particle MCMC, reversible-jump samplers, R-hat/ESS diagnostics,
-variational inference and planar normalizing flows), and **numerical methods** (Gauss
-quadrature families, adaptive/composite integration, ODE solvers from Euler through
-embedded Dormand-Prince and implicit BDF, SDE path solvers, native linear algebra —
-matrix exponential/logarithm, eigendecomposition, SVD, QR, Schur — root finding,
-spline/Chebyshev/NURBS interpolation, and finite-difference/finite-element/
-boundary-element/spectral PDE tools), and **Bayesian inference** (priors/likelihoods/
-posteriors with ten closed-form conjugate families, Laplace/expectation-propagation/
-variational/importance-sampling posterior approximations, Bayesian linear/logistic
-regression, naive Bayes, hierarchical models, finite mixtures, discrete Bayesian
-networks, Dirichlet-process mixtures, and AIC/BIC/DIC/WAIC/PSIS-LOO/TIC model selection
-with Bayes factors), and **robust statistics** (trimmed/winsorized means, median with a
-Maritz-Jarrett standard error, Hodges-Lehmann, L/M/R-estimators, MAD/Qn/Sn/IQR/biweight/
-tau/Huber scales, Theil-Sen, Siegel repeated-medians, RANSAC, FAST-LTS, FAST-S+MM and
-Huber regression, FAST-MCD/MVE/OGK covariance, robust correlation, Ledoit-Wolf/OAS/
-constant-correlation shrinkage, and robust/wild/block/stationary bootstraps), and
-**nonparametric methods** (kernel/adaptive/kNN/orthogonal-series/log-spline density
-estimation satisfying the full distribution contract, empirical distribution/CDF/
-characteristic-function estimators, Glivenko-Cantelli bounds, Owen's empirical
-likelihood, permutation/bootstrap/Mood/Kruskal-Wallis/Friedman/sign/runs/
-Anderson-Darling/Cramer-von Mises tests, Spearman/Kendall/distance/Hoeffding
-dependence measures, local-polynomial/isotonic/spline/quantile regression), and
-**stochastic & numerical optimization** (gradient descent and the adaptive-step family,
-Newton/BFGS/L-BFGS/conjugate-gradient/trust-region/Levenberg-Marquardt, simulated
-annealing, genetic algorithms, particle swarm, differential evolution, ant colony,
-CMA-ES, GP-surrogate Bayesian optimization, Robbins-Monro/Kiefer-Wolfowitz/SPSA
-stochastic approximation, the cross-entropy method, sample-average approximation with an
-optimality-gap interval, and penalty/augmented-Lagrangian/active-set/interior-point
-constrained solvers), and **design of experiments** (full/fractional factorials with
-resolution and alias structure, Plackett-Burman, central composite and Box-Behnken
-designs, Latin and Graeco-Latin squares, D/A/G/I/T- and Bayesian optimal designs, Latin
-hypercube/maximin/minimax/uniform/orthogonal-array space-filling designs, response surfaces
-with canonical analysis and lack-of-fit ANOVA, polynomial chaos expansions, universal
-kriging surrogates, DOE ANOVA, Lenth's method, and Morris/Sobol sensitivity analysis), and
-**spatial statistics** (variogram models and fitting, simple/ordinary/universal/co-/
-indicator/disjunctive kriging, covariance-driven Gaussian random fields with exact
-Cholesky/circulant-embedding sampling, Brownian and fractional-Brownian sheets,
-Poisson/Thomas/Matérn-cluster/log-Gaussian-Cox point processes with Ripley's K and the
-pair correlation function, and Moran's I/Geary's C/Getis-Ord/nearest-neighbour spatial
-autocorrelation tests), and **visualization** (pdf/pmf/cdf/survival/hazard/QQ/PP-plots,
-histograms and KDE; ACF/PACF, periodogram/spectrogram/wavelet scalograms, phase
-portraits; MCMC trace/posterior/pair plots, regression residual/leverage/influence,
-meta-analysis funnel plots; heatmaps, correlation matrices, copula views, PCA biplots,
-dendrograms; Markov-chain diagrams, Brownian-motion fans, GP posterior bands,
-Kaplan-Meier curves, variograms and eigenvalue spectra — a from-scratch SVG renderer by
-default, with matplotlib as an optional, lazily-imported backend for raster/PDF output),
-and **utilities** (library-wide seeding and reproducible streams; benchmarking/profiling
-and parallel/GPU/JIT execution — retrofitted as `n_jobs=`/`backend=` onto the Monte Carlo
-pricers/estimators and MCMC sampling; reproducibility scaffolding — version locks,
-environment capture, experiment logging; distribution fitting/goodness-of-fit/outlier-
-detection/missing-data imputation built on the library's own distributions/statistics/
-nonparametric/robust_statistics; JSON/pickle/npz serialization; and interop with numpy/
-scipy/pandas/torch/jax, the last three lazily imported and never a runtime dependency).
-All 23 modules of the design spec are now implemented — see
-[Known Limitations](#known-limitations) and [Roadmap](#roadmap) for what's still evolving
-beyond that. The
-[Architecture](#architecture) section
-below has the structural picture; [`development/architecture.md`](development/architecture.md)
-goes deeper still.
+algorithm is implemented from scratch on top of `scipy.special/optimize/integrate` as raw
+numerical building blocks, with `scipy.stats`, `statsmodels` and `lifelines` used only as
+independent test oracles. One contract holds everywhere: every distribution exposes
+`.pdf()/.cdf()/.ppf()/.rvs()/.mean()/.var()/.skewness()/.kurtosis()/.entropy()/.mgf()/.cf()/
+.fit()/.ks_test()`, every stochastic method takes `random_state=`, and every Monte Carlo
+estimator returns a shared result object with a point estimate, standard error and
+confidence interval.
+
+Twenty-three modules are built on that contract, covering the full design spec
+(794/794 public names): probability, 47 distributions, Monte Carlo, time series, Gaussian
+processes, survival analysis, queueing, copulas, information theory, Lévy processes,
+financial stochastics, statistics, random matrix theory, advanced MCMC, numerical methods,
+Bayesian inference, robust statistics, nonparametric methods, optimization, design of
+experiments, spatial statistics, visualization and utilities (seeding, parallel/GPU/JIT
+execution, reproducibility, data cleaning, serialization, interop). See
+[Current Status](#current-status) for the per-module breakdown,
+[Architecture](#architecture) for the structural picture, and
+[Known Limitations](#known-limitations) for what's still rough at the edges.
 
 ## Known Limitations
 
-- **PyPI lags the repository.** The latest published release is `0.6.4`; the code here is at
-  `0.20.0`. Releases are tag-triggered (see [Release Process](#release-process)) and no tag has
-  been pushed since the early modules — `pip install stochpylib` gets 0.6.4, so for the
-  current state of the library, install from source (`pip install -e .`).
-- **All 23 planned modules are implemented and tested against their spec** (794/794 public
-  names). Exact per-name state:
-  [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md).
-- **`utils`'s optional pandas/torch/jax/numba/cupy interop is lazily imported and confined to
-  one file** (`utils/_backends.py`), mirroring `viz`'s matplotlib discipline — never a runtime
-  dependency, and every other test passes with none of them installed (a separate CI job
-  installs the real ones). `cupy` specifically is exercised in CI only through an injected fake
-  module (GitHub-hosted runners have no GPU) — `GPUBackend("cupy")` is untested against real
-  hardware. `n_jobs=`/`backend=` on `montecarlo`/`financial_stochastics`/`advanced_mcmc` give a
-  result that's reproducible and worker-count-invariant but **not** bit-identical to the
-  pre-V0.20.0 single-stream serial run at the same seed (each chunk/chain draws its own
-  independently spawned child RNG) — `n_jobs=None`/`backend=None` (the defaults everywhere)
-  keep the exact legacy behavior. `goodness_of_fit`'s KS/Anderson-Darling/Cramer-von Mises
-  p-values aren't corrected for parameters estimated from the same data. `queueing`'s
-  `DiscreteEventSim`/`QueueSimulation` dropped their previous hidden implicit seeds (42/12345)
-  for an unseeded call — only unseeded calls are affected, see
-  `stochpylib/utils/README.md`.
-- **`viz` renders natively to SVG; matplotlib is an optional, lazily-imported backend** for
-  `Figure.to_matplotlib()`/`.save('*.png'/'*.pdf')` only — never a runtime dependency, and
-  every plot function's numbers and the native SVG path are tested with no matplotlib
-  installed at all (a separate CI job installs it to test that backend specifically). No
-  interactivity/zoom, no 3-D, and SVG text-layout metrics are approximate.
+- **PyPI lags the repository** (`0.6.4` published vs. `0.20.0` here — no tag pushed since the
+  early modules). Install from source for the current code; see [Download](#download).
+- **`utils`'s pandas/torch/jax/numba/cupy interop is lazy, confined to `utils/_backends.py`**,
+  and never a runtime dependency; `cupy` is untested on real GPU hardware (CI fakes it).
+  `n_jobs=`/`backend=` results are reproducible but not bit-identical to the legacy serial
+  stream (`n_jobs=None`/`backend=None`, the defaults, are unaffected). `goodness_of_fit`
+  p-values aren't corrected for estimated parameters. `queueing`'s unseeded calls no longer
+  use hidden default seeds. Details: `stochpylib/utils/README.md`.
+- **`viz` renders natively to SVG; matplotlib is optional**, backing only
+  `.to_matplotlib()`/`.save()`. No interactivity, no 3-D, approximate SVG text metrics.
 - **`statistics`'s two-sample KS p-value uses the classical asymptotic formula**, not
-  `scipy.stats.ks_2samp`'s finite-sample `kstwo` refinement (no `scipy.special` equivalent
-  exists) — see `stochpylib/statistics/README.md`.
-- **The multivariate distributions deviate from the common interface by design** — the 7
-  multivariate classes expose `.pdf()` instead of `.pmf()` and omit scalar-argument
-  `.mgf()/.cf()`. This is the one sanctioned deviation, asserted as such in the conformance
-  tests.
-- **GP expectation propagation is experimental** — documented convergence issues; prefer
-  Laplace or variational inference (see `stochpylib/gaussian_processes/README.md`).
-- **Gradient-based MCMC has no built-in autodiff.** `advanced_mcmc` takes an optional
-  `grad_log_prob=`; without it HMC/NUTS/MALA fall back to central finite differences
-  (`2 * dim` density evaluations per gradient). `utils.torch_interface(fn).grad`/
-  `jax_interface`-derived wrappers now supply an exact alternative when torch/jax are
-  installed — see `stochpylib/advanced_mcmc/README.md`.
-- **`numerical_methods`'s `FEniCS_Interface` never depends on FEniCS** — it solves
-  natively via the module's own `FiniteElement` by default, and only lazily imports
-  dolfinx/dolfin for `.to_fenics()` (a clear `ImportError` otherwise); its BDF solver is
-  fixed-step and its 2-D finite elements/boundary elements are P1-only — see
-  `stochpylib/numerical_methods/README.md`.
-- **The full test suite is heavy** — statistical convergence tests (GARCH fits, VARMA
-  estimation, vine copulas) put it in the tens of minutes on a laptop. CI runs the same
-  suite on every push, so a locally slow but green run is normal; a red run is not.
-- **`bayesian` has no autodiff and no general-purpose PPL.** Non-conjugate posteriors go
-  through a numerical grid (dim <= 2), Laplace, variational inference (the reported
-  evidence is the ELBO, a lower bound), importance sampling, or `advanced_mcmc` samplers
-  with finite-difference gradients; `EP_Posterior` covers Gaussian-prior, single
-  linear-projection-site models (any analytically evaluable site, via Gauss-Hermite
-  quadrature — not limited to Gaussian-conjugate ones); `MixtureModel`/`DirichletProcess`
-  cover gaussian and 1-D poisson families only; `BayesianNetwork` is discrete-only — see
-  `stochpylib/bayesian/README.md`.
-- **`robust_statistics`'s randomized estimators are seeded, not exact.** `MCD`/`MVE`/
-  `LTS_Regression`/`MMRegression`/`RANSACRegression` and multi-predictor `TheilSenRegression`
-  use exact subset enumeration only when the subset count is <= 5000, else seeded random
-  subsampling; `MCD`/`MVE` carry the chi-square consistency correction but not the Pison/
-  Van Aelst/Willems small-sample factor; `SiegalRegression`/`TheilSenRegression`'s exact
-  confidence interval is simple-regression only; `OGK` is not affine equivariant by
-  construction; `Sn_Estimator` is O(n^2) and `Qn_Estimator` falls back to an O(n log n)
-  bisection above n=1000 — see `stochpylib/robust_statistics/README.md`.
-- **`nonparametric`'s `AndersenDarling` p-value is approximate for a fully-specified
-  reference distribution** (a table interpolation, not an exact closed form) and
-  `CramerVonMises`'s one-sample p-value uses the asymptotic null distribution rather than
-  the finite-sample correction — both documented, statistic-exact deviations; the local
-  regressors (`LocalPolynomialReg`, `QuantileRegression`) are O(active points) per query
-  with no tree-based neighbor search — see `stochpylib/nonparametric/README.md`.
-- **`optimization`'s metaheuristics are single-run, not restarted** — `CMA_ES`,
-  `DifferentialEvolution` and `SimulatedAnnealing` regularly settle in a local basin on
-  strongly multimodal problems, and the published restart schemes (IPOP/BIPOP-CMA) are not
-  implemented; `InteriorPoint` carries equality constraints as a penalty rather than a KKT
-  step and needs a strictly feasible start; `LagrangianRelaxation` returns a dual lower
-  bound and a least-infeasible primal point, not a guaranteed-feasible one; and with no
-  autodiff, missing Hessians cost O(dim^2) finite-difference evaluations — see
-  `stochpylib/optimization/README.md`.
-- **`experimental_design`'s plot classes are data-only, with a `viz`-backed `to_figure()`
-  for rendering, and its constructions have fixed
-  coverage** — `InteractionPlot`/`NormalPlot` return cell means, effect quantiles and
-  Lenth thresholds (`to_figure()` lazily imports `stochpylib.viz`); `BoxBehnken` covers 3–7
-  factors, `GraecoLatin` every order not congruent to 2 mod 4, and `Plackett_Burman` skips
-  orders without a Sylvester/Paley construction (N = 36, 52, …); the optimal designs are
-  multi-start point exchange over a candidate grid (local optima), and
-  `FractionalFactorial` falls back to a seeded random generator search above 200 000
-  candidate sets — see `stochpylib/experimental_design/README.md`.
-- **`spatial_statistics` uses box observation windows only**, and `CoKriging` supports one
-  secondary variable under the Markov Model 1 simplification rather than the general
-  linear model of coregionalization; the isotropic Ripley-K/pair-correlation edge
-  correction is evaluated by angular quadrature, not closed-form corner geometry; cluster
-  point processes (`ThomasProcess`/`MaternCluster`/`LogGaussianCox`/`InhomogeneousPoisson`)
-  fit by minimum contrast or numerical MLE, not a closed form — see
-  `stochpylib/spatial_statistics/README.md`.
+  scipy's finite-sample refinement (no `scipy.special` equivalent exists).
+- **Multivariate distributions expose `.pdf()` (not `.pmf()`) and omit `.mgf()/.cf()`** —
+  the one sanctioned interface deviation.
+- **GP expectation propagation is experimental** — prefer Laplace or VI.
+- **`advanced_mcmc` has no built-in autodiff** — finite differences by default;
+  `utils.torch_interface`/`jax_interface` supply exact gradients when installed.
+- **`numerical_methods`'s `FEniCS_Interface` solves natively by default** (FEniCS only for
+  `.to_fenics()`); its BDF solver is fixed-step, 2-D elements are P1-only.
+- **The full test suite is slow** (tens of minutes locally — GARCH/VARMA/vine-copula
+  convergence tests); CI runs the same suite every push, so slow-but-green is normal.
+- **`bayesian` has no autodiff or general-purpose PPL** — non-conjugate posteriors use a
+  numerical grid, Laplace, VI, importance sampling or MCMC; `MixtureModel`/`DirichletProcess`
+  cover Gaussian/1-D Poisson only; `BayesianNetwork` is discrete-only.
+- **`robust_statistics`'s randomized estimators fall back to seeded subsampling** above
+  5000 candidate subsets (`MCD`/`MVE`/`LTS`/`RANSAC`/etc.); `OGK` isn't affine equivariant;
+  `Sn`/`Qn` estimators aren't sub-quadratic.
+- **`nonparametric`'s Anderson-Darling/Cramér-von Mises p-values use asymptotic/table
+  approximations**, not finite-sample corrections; local regressors are O(n) per query.
+- **`optimization`'s metaheuristics (CMA-ES/DE/SA) are single-run**, with no restart
+  schemes; `InteriorPoint` needs a feasible start; no autodiff means O(dim²)
+  finite-difference Hessians.
+- **`experimental_design`'s optimal designs are multi-start point-exchange** (local optima
+  only); coverage gaps in some `BoxBehnken`/`GraecoLatin`/`Plackett_Burman` orders; plots
+  are data-only with a `viz`-backed `to_figure()`.
+- **`spatial_statistics` supports box observation windows only**; `CoKriging` is
+  Markov-Model-1 with one secondary variable; cluster point processes fit by minimum
+  contrast, not closed form.
+
+Per-module detail for every bullet above lives in that module's own README (linked in
+[Module Documentation](#module-documentation)); exact per-name spec status is in
+[`development/Implementation-Checklist.md`](development/Implementation-Checklist.md).
 
 ## Table of Contents
 
@@ -332,14 +206,15 @@ Then implement or improve one module at a time and run the wrap-up procedure des
 
 ## Architecture
 
-stochpylib is organized as one subpackage per module around the shared distribution
-contract: `scipy.special/optimize/integrate` provide raw numerics, the `probability` and
-`distributions` cores build exact primitives and the common interface, and every
-higher-level module (Monte Carlo, time series, GPs, copulas, survival, queueing,
-information theory) consumes those primitives through the same conventions —
-`random_state=` seeds, fluent `.fit()`, shared result objects (`MCResult`,
-`ForecastResult`, `QueueResult`) — while the test suite treats `scipy.stats`,
-`statsmodels` and `lifelines` as independent oracles that library code never wraps.
+One subpackage per module, all built around the shared distribution contract:
+
+- `scipy.special/optimize/integrate` supply raw numerics only.
+- `probability`/`distributions` build the exact primitives and the common interface.
+- Every higher-level module consumes those primitives through the same conventions:
+  `random_state=` seeds, fluent `.fit()`, shared result objects (`MCResult`/
+  `ForecastResult`/`QueueResult`).
+- The test suite treats `scipy.stats`/`statsmodels`/`lifelines` as independent oracles —
+  library code never wraps them.
 
 #### System Flow
 
@@ -419,29 +294,29 @@ Twenty-three modules implemented and tested — **794 / 794 spec names**:
 
 | Module | Public names | What's inside |
 |---|---|---|
-| `stochpylib.probability` | 21 | sample spaces, events, conditional probability, Bayes' theorem, combinatorics (factorial … derangements, Stirling, Bell, Catalan), independence checks |
-| `stochpylib.distributions` | 60 | 47 distributions (discrete, continuous, multivariate, heavy-tailed) behind the common interface |
-| `stochpylib.montecarlo` | 25 | quasi-random sequences, crude/QMC/importance/rejection/stratified estimators, variance reduction, applications |
-| `stochpylib.timeseries` | 61 | ARIMA/SARIMA/ARFIMA/VAR/VECM, GARCH family, Kalman/EKF/UKF/particle filters, HMM & regime switching, changepoints, spectral analysis, classical diagnostics |
-| `stochpylib.gaussian_processes` | 36 | composable kernel zoo (10 kernels with +/*/² operators), exact GP regression, FITC/VFE sparse approximations, Laplace/EP/VI classification, hyperparameter optimization, DeepGP |
-| `stochpylib.copulas` | 26 | elliptical (Gaussian/t), Archimedean (Clayton/Gumbel/Frank/Joe/AMH/BB1/BB7) + Plackett, empirical (Empirical/Checkerboard/Beta), C-/D-/R-vines with AIC pair selection & rotations, CopulaFit dispatcher, dependence measures |
-| `stochpylib.survival` | 28 | Kaplan-Meier/Nelson-Aalen/life tables, parametric censored fits (Weibull/Exponential/LogNormal/LogLogistic/Gompertz), Cox PH (Breslow/Efron), stratified Cox, Weibull AFT, Aalen additive, Fine-Gray competing risks, log-rank family, Aalen-Johansen CIF |
-| `stochpylib.queueing` | 29 | M/M/1 through M/G/1 priority queues (closed-form), Jackson/closed/BCMP networks with product-form and MVA, Erlang B/C/Engset blocking formulas, discrete-event simulation engine |
-| `stochpylib.information_theory` | 31 | entropy families (Shannon/Rényi/Tsallis/differential/max-entropy), divergences (KL/JS/Wasserstein/Hellinger/TV/chi²/alpha), mutual-information quantities, channel capacity, transfer entropy, Huffman coding, AEP |
-| `stochpylib.levy_processes` | 33 | Lévy-Khintchine core (stable processes, subordination), jump-diffusion pricing (Merton/Kou/Bates/VG/CGMY/NIG via Carr-Madan Fourier inversion), subordinators (gamma/IG/stable/tempered-stable), Hawkes/Cox/renewal/branching/semi-Markov processes, Gaussian random fields, SDE solvers (Euler-Maruyama through strong order 1.5, weak order 2) |
-| `stochpylib.financial_stochastics` | 50 | option pricing (Black-Scholes/trees/Monte Carlo/Longstaff-Schwartz/Fourier-COS) & Greeks, stochastic/local vol (Heston/SABR/rough Heston/rough Bergomi/Dupire/LVSV/variance swaps), short-rate models (Vasicek/CIR/Hull-White/Ho-Lee/G2++/Black-Karasinski/LMM/HJM), risk (VaR/ES/stress/scenario), credit (CDS/Merton/rating migration/copula portfolio loss), portfolio (mean-variance/Black-Litterman/risk parity) |
-| `stochpylib.statistics` | 48 | descriptive stats, MLE/MOM/Bayesian-conjugate/bootstrap/jackknife/delta-method/profile-likelihood estimation, z/t/chi2/F/ANOVA/MANOVA/rank/normality/multiple-comparison tests, OLS/GLM/ridge/lasso/elastic-net/quantile regression, PCA/factor analysis/canonical correlation/discriminant analysis/clustering/MDS |
-| `stochpylib.random_matrix` | 23 | GOE/GUE/GSE, Wigner, Wishart/inverse-Wishart, CUE and Ginibre-type ensembles; Wigner semicircle, Marchenko-Pastur and Tracy-Widom laws as full distributions; beta-Hermite/Laguerre and Jacobi ensembles; Haar O(n)/U(n)/Sp(n); spacing ratios, level repulsion, empirical spectra, Tracy-Widom / Edelman edge statistics |
-| `stochpylib.advanced_mcmc` | 35 | Metropolis-Hastings/independence/Gibbs, adaptive Metropolis (Haario, Vihola RAM), HMC/NUTS (dual averaging, mass adaptation), MALA/manifold MALA/Riemannian HMC/NeuTra, slice samplers (stepping/doubling/elliptical/polar), replica exchange & parallel tempering, adaptive-tempering SMC, particle MCMC, reversible-jump & Carlin-Chib transdimensional samplers, R-hat/ESS/Gelman-Rubin/PSRF/Geweke/Raftery-Lewis diagnostics, mean-field/ADVI/black-box VI, planar normalizing flows, SVGD |
-| `stochpylib.numerical_methods` | 38 | Gauss-Legendre/Hermite/Chebyshev quadrature (Golub-Welsch), adaptive Gauss-Kronrod/Simpson, Romberg, tensor/Smolyak cubature; Euler/RK4/Dormand-Prince/Adams-Bashforth-Moulton/BDF ODE solvers, Euler-Maruyama/Milstein SDE paths; native Padé matrix exponential/logarithm, Cholesky, Jacobi/QR eigendecomposition, one-sided-Jacobi SVD, Householder/Givens QR, Francis-shift real & complex Schur; Bisection/Brent/Secant/Newton/fixed-point root finding; spline/PCHIP/barycentric/Chebyshev/NURBS interpolation; finite-difference/finite-element/boundary-element/spectral PDE solvers plus a FEniCS-style adapter with a native fallback |
-| `stochpylib.bayesian` | 25 | priors/likelihoods (ten exponential families), conjugate posteriors/predictives/evidence in closed form, `posterior()`/`evidence()` falling back to a numerical grid/Laplace/VI/importance-sampling/SMC/MCMC, expectation propagation (Gauss-Hermite moment matching), Bayesian linear/logistic regression, naive Bayes, hierarchical normal model, finite mixtures, discrete Bayesian networks, Dirichlet-process mixtures, AIC/BIC/DIC/WAIC/PSIS-LOO/TIC & Bayes factors |
-| `stochpylib.robust_statistics` | 28 | trimmed/winsorized means, median (Maritz-Jarrett SE, order-statistic CI), Hodges-Lehmann, L/M/R-estimators, MAD/Qn/Sn/IQR/biweight/tau/Huber scales, Theil-Sen (Sen CI)/Siegel/RANSAC/FAST-LTS/FAST-S+MM/Huber regression, FAST-MCD/MVE/OGK covariance, robust correlation (Spearman/Kendall/Gaussian-rank/quadrant), Ledoit-Wolf/OAS/constant-correlation shrinkage, robust/wild/moving-circular-nonoverlapping-block/stationary bootstraps |
-| `stochpylib.nonparametric` | 31 | kernel/adaptive/kNN/orthogonal-series/log-spline density estimation (full distribution contract), empirical distribution/CDF/characteristic-function estimators, Glivenko-Cantelli bounds, empirical likelihood, permutation/bootstrap/Mood/Kruskal-Wallis/Friedman/sign/runs/Anderson-Darling/Cramer-von Mises tests, Spearman/Kendall/distance/Hoeffding dependence measures, local-polynomial/isotonic/spline/quantile regression |
-| `stochpylib.optimization` | 32 | line-searched gradient descent and the adaptive-step family (AdaGrad/RMSProp/Adadelta/Adam/NADAM/AMSGrad), damped Newton, BFGS/L-BFGS, nonlinear conjugate gradient, dogleg/Steihaug trust region, Levenberg-Marquardt least squares; simulated annealing, real-coded genetic algorithm, particle swarm, differential evolution, ant-colony TSP, CMA-ES, GP-surrogate Bayesian optimization (EI/UCB/PI); Robbins-Monro/Kiefer-Wolfowitz/SPSA stochastic approximation, cross-entropy method, sample-average approximation with a replicated optimality-gap interval; penalty/augmented-Lagrangian/Lagrangian-relaxation/active-set/interior-point constrained solvers |
-| `stochpylib.experimental_design` | 29 | full/fractional factorials (searched maximum resolution + minimum aberration, alias structure, fold-over), Plackett-Burman (Sylvester/Paley), central composite (rotatable/orthogonal/face/inscribed), Box-Behnken, Latin and Graeco-Latin squares with ANOVA; D/A/G/I/T-optimal and Bayesian (linear and pseudo-Bayesian nonlinear) designs by point exchange; Latin hypercube, Morris-Mitchell maximin, minimax, good-lattice-point uniform and Bush orthogonal-array (Tang OA-LHS) designs; response surfaces with canonical analysis, steepest ascent and lack-of-fit ANOVA, polynomial chaos with analytic Sobol indices, universal kriging with expected-improvement sequential design, CV surrogate selection; DOE ANOVA, main effects, interaction and Lenth normal-plot data, Morris/SRC/PRCC screening, Saltelli/Jansen Sobol indices |
-| `stochpylib.spatial_statistics` | 32 | variogram models (spherical/exponential/gaussian/general-nu-Matern/cubic/linear/power/nugget) and fitting, simple/ordinary/universal/co-/indicator/disjunctive kriging, covariance-driven Gaussian random fields (exact Cholesky/circulant embedding), Matern fields, Ornstein-Uhlenbeck fields, Brownian and fractional-Brownian sheets, Poisson/inhomogeneous-Poisson/Thomas/Matern-cluster/log-Gaussian-Cox point processes with Ripley's K and the pair correlation function, Moran's I/Geary's C/Getis-Ord/nearest-neighbour spatial autocorrelation tests |
-| `stochpylib.viz` | 35 | pdf/pmf/cdf/survival/hazard, QQ/PP-plots, histograms and KDE; ACF/PACF, periodogram/Welch/spectrogram, Morlet/DWT wavelets, phase portraits; MCMC trace/posterior/pair plots, OLS residual/leverage/influence, meta-analysis funnel plots; heatmaps, correlation matrices, copula scatter/density, PCA biplots, dendrograms; Markov-chain diagrams, Brownian/GBM fans, GP posterior bands, Kaplan-Meier curves, variograms, eigenvalue spectra — native SVG renderer, matplotlib optional |
-| `stochpylib.utils` | 38 | seeding & reproducible streams (`set_seed`/`random_state`/`spawn_generator`/`Generator`/`SeedSequence`); benchmarking/profiling and parallel/GPU/JIT execution (`Benchmark`/`Profiler`/`ParallelSimulation`/`GPUBackend`/`JIT_compile`/`VectorizedOps`/`MemoryPool`); reproducibility (`Reproducibility`/`RandomStream`/`VersionLock`/`EnvironmentCapture`/`ExperimentLogger`); distribution fitting, goodness-of-fit, outlier detection, missing-data imputation; JSON/pickle/npz serialization, nested configuration, logging; numpy/scipy/pandas/torch/jax interop |
+| `stochpylib.probability` | 21 | Sample spaces, Bayes' theorem, exact combinatorics, independence checks |
+| `stochpylib.distributions` | 60 | 47 distributions (discrete/continuous/multivariate/heavy-tailed) |
+| `stochpylib.montecarlo` | 25 | QMC sequences, MC estimators, variance reduction, applications |
+| `stochpylib.timeseries` | 61 | ARIMA/GARCH families, Kalman/particle filters, HMMs, spectral analysis |
+| `stochpylib.gaussian_processes` | 36 | Kernel zoo, exact/sparse/approximate-classification GPs, DeepGP |
+| `stochpylib.copulas` | 26 | Elliptical/Archimedean/empirical copulas, vines, dependence measures |
+| `stochpylib.survival` | 28 | Kaplan-Meier, Cox regression, parametric censored fits, competing risks |
+| `stochpylib.queueing` | 29 | M/M/1–Jackson networks, blocking formulas, discrete-event simulation |
+| `stochpylib.information_theory` | 31 | Entropy, divergences, mutual information, channel capacity, coding |
+| `stochpylib.levy_processes` | 33 | Jump-diffusion pricing, subordinators, Hawkes/branching processes, SDE solvers |
+| `stochpylib.financial_stochastics` | 50 | Option pricing, stochastic/local vol, rate models, risk, credit, portfolio |
+| `stochpylib.statistics` | 48 | Estimation, hypothesis tests, regression, multivariate methods |
+| `stochpylib.random_matrix` | 23 | Classical ensembles, limit laws, Haar rotations, spectral statistics |
+| `stochpylib.advanced_mcmc` | 35 | MH/Gibbs/HMC/NUTS/SMC samplers, diagnostics, variational inference |
+| `stochpylib.numerical_methods` | 38 | Quadrature, ODE/SDE solvers, linear algebra, root finding, PDE tools |
+| `stochpylib.bayesian` | 25 | Conjugate/grid/Laplace/VI posteriors, Bayesian models, model selection |
+| `stochpylib.robust_statistics` | 28 | Robust location/scale, high-breakdown regression, MCD/MVE/OGK, bootstraps |
+| `stochpylib.nonparametric` | 31 | Density estimation, resampling/rank tests, dependence measures, local regression |
+| `stochpylib.optimization` | 32 | Gradient/quasi-Newton methods, metaheuristics, stochastic approximation, constrained solvers |
+| `stochpylib.experimental_design` | 29 | Classical/optimal/space-filling designs, response surfaces, sensitivity analysis |
+| `stochpylib.spatial_statistics` | 32 | Variograms, kriging, random fields, point processes, spatial autocorrelation |
+| `stochpylib.viz` | 35 | SVG-native statistical plots, matplotlib optional |
+| `stochpylib.utils` | 38 | Seeding, parallel/GPU/JIT backends, reproducibility, data cleaning, interop |
 
 Exact progress against the full design spec lives in
 [`development/Implementation-Checklist.md`](development/Implementation-Checklist.md)
@@ -522,20 +397,17 @@ conventions and its documented limitations — this table is the index:
 pytest tests/ -v
 ```
 
-**2936 passed / 2 skipped** as of the V0.20.0 `utils` implementation (the 2 permanent skips
-are the VonMises/Kumaraswamy scipy cross-checks — no direct scipy mapping, covered by
-dedicated checks instead). Tests are deterministic (fixed seeds everywhere), live outside
-the installed package, and use `scipy.stats`, `statsmodels` and brute-force references as
-independent oracles. Statistical assertions are set at ≥ 3 standard errors so results are
-stable while staying meaningful. A dedicated documentation-consistency suite
-(`tests/docs/`) keeps every number on this page in sync with reality — if a doc claim
-drifts from the package (test counts, versions, module tables, links), the suite fails,
-and a CLI suite (`tests/cli/`) covers the `spl` surface with mocked PyPI responses so no
-test ever touches the network. Every module additionally carries an **end-to-end API sweep**
-(`tests/<module>/e2e.py`): one realistic exercise per public name, each its own pytest
-case, with a guard that fails the moment a name ships without one. CI runs one visible
-`smoke (<module>)` job per module (oracle suite + sweep + `spl demo`) so a red module is
-spotted at a glance. Additionally, `spl --test` re-verifies any installation in seconds.
+**2937 passed / 2 skipped** (the 2 skips are documented VonMises/Kumaraswamy scipy
+cross-checks, covered by dedicated checks instead).
+
+- Deterministic — fixed seeds everywhere, lives outside the installed package.
+- Oracles: `scipy.stats`, `statsmodels`, brute-force references; assertions set at ≥ 3 SE.
+- `tests/docs/` keeps every number on this page in sync with reality — fails on any drift.
+- `tests/cli/` covers the `spl` surface with mocked PyPI responses; no test touches the network.
+- Every module carries an **end-to-end API sweep** (`tests/<module>/e2e.py`) — one exercise
+  per public name, guarded so a new name can't ship without one.
+- CI runs one visible `smoke (<module>)` job per module (oracle suite + sweep + `spl demo`).
+- `spl --test` re-verifies any installation in seconds, no pytest needed.
 
 ## CLI Reference
 
@@ -543,10 +415,11 @@ Every install (PyPI wheel or `pip install -e .`) registers one console command, 
 
 ### `spl --help`
 
-Prints a full inventory of the installed library: which modules are available (with public
-name counts), all public functions per module, every distribution class (generated
-dynamically from the package's `__all__`, so it never goes stale), the common distribution
-interface, and a runnable quick-start snippet. Running bare `spl` shows the same thing.
+- Full inventory of the installed library: modules (with public name counts), all public
+  functions per module, every distribution class.
+- Generated dynamically from the package's `__all__`, so it never goes stale.
+- Also shows the common distribution interface and a runnable quick-start snippet.
+- Bare `spl` shows the same thing.
 
 ### `spl --version`
 
@@ -556,12 +429,12 @@ $ spl --version
 latest on PyPI: 0.6.4  (installed version is newer / unreleased)
 ```
 
-Prints the installed version — reads pip package metadata, falling back to the in-code version
-when not installed through pip — then compares it against the **latest version published on
-PyPI** and states the relationship (update available / up to date / installed is newer). The
-check is non-blocking and offline-safe: it uses a 4-second timeout, caches the PyPI answer
-for 24 h, degrades to a clear "PyPI check unavailable" message when offline, and is disabled
-entirely by setting `STOCHPYLIB_SKIP_UPDATE_CHECK=1`.
+- Prints the installed version (pip metadata, falling back to the in-code version).
+- Compares against the **latest version published on PyPI** and states the relationship
+  (update available / up to date / installed is newer).
+- Non-blocking and offline-safe: 4-second timeout, 24h cache, a clear "PyPI check
+  unavailable" message when offline.
+- Disable entirely with `STOCHPYLIB_SKIP_UPDATE_CHECK=1`.
 
 ### `spl --version --list`
 
@@ -575,17 +448,18 @@ latest on PyPI: 0.6.4  (installed version is newer / unreleased)
   0.6.4         latest
 ```
 
-Additionally lists **every version ever published on PyPI** in release order — the installed
-version is marked `* installed`, the newest `latest`. Always fetches fresh metadata (never
-served from the 24 h cache).
+- Lists **every version ever published on PyPI**, in release order.
+- Installed version marked `* installed`, newest marked `latest`.
+- Always fetches fresh metadata (never served from the 24h cache).
 
 ### `spl --test`
 
-Runs the embedded self-check suite shipped inside the wheel (**291 checks**): package sanity and per-module spec
-conformance, one closed-form spot check per distribution family, Monte Carlo
-convergence sanity, cross-module workflows, and the offline CLI-helper logic. This works
-after any `pip install` — no pytest, no source checkout — making it the quickest way to verify
-an installation. Exits non-zero on any failure.
+- The embedded self-check suite shipped inside the wheel (**291 checks**): package sanity,
+  per-module spec conformance, one closed-form spot check per distribution family, Monte
+  Carlo convergence sanity, cross-module workflows, offline CLI-helper logic.
+- Works after any `pip install` — no pytest, no source checkout — the quickest way to
+  verify an installation.
+- Exits non-zero on any failure.
 
 ### `spl update`
 
@@ -593,10 +467,8 @@ an installation. Exits non-zero on any failure.
 spl update [--vers VERSION] [--yes] [--dry-run] [--force]
 ```
 
-**Switches the installed PyPI package to any published version** — upgrade, downgrade, or
-pin (`spl update --vers 0.6.1`); without `--vers` it updates to the latest release. The
-safety rails, in order:
-
+- Switches the installed PyPI package to any published version — upgrade, downgrade, or
+  pin (`spl update --vers 0.6.1`); without `--vers` it updates to the latest release.
 - Validates the target against PyPI's actual release list and refuses unknown versions
   (printing the most recent published ones).
 - Detects editable/source installs (`spl update` manages the *pip* package, not a source
@@ -607,9 +479,10 @@ safety rails, in order:
 
 ### `spl info`
 
-Environment report: stochpylib version and install mode (editable/wheel/source), Python and
-platform, NumPy/SciPy versions, and the module inventory with per-module public-name counts.
-The quickest answer to "what exactly is installed here?"
+- Environment report: stochpylib version, install mode (editable/wheel/source).
+- Python and platform, NumPy/SciPy versions.
+- Module inventory with per-module public-name counts.
+- The quickest answer to "what exactly is installed here?"
 
 ### `spl show`
 
@@ -617,10 +490,10 @@ The quickest answer to "what exactly is installed here?"
 spl show <Name>
 ```
 
-Prints the qualified path, constructor signature, and docstring of any public name —
-`spl show Normal`, `spl show GARCH`, `spl show bayes_theorem`. Searches every implemented
-module's exports; unknown names get `did you mean:` suggestions from close matches and a
-non-zero exit.
+- Prints the qualified path, constructor signature and docstring of any public name —
+  `spl show Normal`, `spl show GARCH`, `spl show bayes_theorem`.
+- Searches every implemented module's exports.
+- Unknown names get `did you mean:` suggestions from close matches and a non-zero exit.
 
 ### `spl demo`
 
@@ -628,38 +501,47 @@ non-zero exit.
 spl demo [module]
 ```
 
-Runs a **live mini-example** for one implemented module against the real installation —
-deterministic, fixed seeds, a few seconds each (Bayes screening, distribution fit + KS,
-Sobol + option pricing vs Black-Scholes, AR fit + forecast, GP regression with
-uncertainty, copula AIC selection, Kaplan-Meier, M/M/1 closed form, entropy + Huffman,
-Kou jump-diffusion pricing + a tempered-stable subordinator path, Black-Scholes/Heston
-pricing + historical VaR, descriptive stats + t-test + OLS regression + PCA, GOE spectrum
-vs the semicircle + Marchenko-Pastur + level repulsion, NUTS on a correlated Gaussian
-with R-hat/ESS + slice sampling + SMC evidence vs closed form, Gauss-Legendre quadrature
-+ Dormand-Prince energy conservation + Brent implied-volatility recovery + a
-Crank-Nicolson Black-Scholes PDE price + a CTMC transition-matrix exponential, a
-conjugate coin-flip posterior + Bayesian linear regression with WAIC + a Bayes factor +
-a sprinkler-network Bayesian-network query, a contaminated-sample location/scale
-comparison + Theil-Sen/MM vs OLS regression under outliers + MCD outlier flags + a
-block-bootstrap standard error, a bimodal KDE density fit + Kruskal-Wallis on a
-shifted group + distance correlation on y=x^2 + a local-linear smoother's R^2 + an
-isotonic-regression monotonicity check, BFGS on Rosenbrock + particle swarm and
-CMA-ES on Rastrigin-5 + Levenberg-Marquardt on a noisy exponential decay + an
-augmented-Lagrangian equality-constrained solve, a resolution-V 2^(5-1) fraction's alias
-structure + Lenth's method on Montgomery's unreplicated 2^4 + a D-optimal quadratic design's
-efficiencies + a CCD response-surface stationary point + Ishigami Sobol indices vs their
-analytic values + a maximin Latin hypercube, and a fitted variogram + ordinary kriging with
-a confidence interval + a Moran's I test + a Ripley-K CSR envelope verdict + a Thomas
-cluster process, a QQ-plot of Gamma-fitted draws + an AR(1) ACF + a Kaplan-Meier
-median with an availability check for the optional matplotlib backend, and a
-`set_seed()` reproducibility check + an AIC-ranked distribution fit + a parallel-pooled
-pi estimate + a benchmark timing + an optional-backend availability report). Bare
-`spl demo` lists the available demos.
+A **live mini-example** for one implemented module against the real installation —
+deterministic, fixed seeds, a few seconds each:
+
+- **probability** — Bayes screening problem
+- **distributions** — distribution fit + KS test
+- **montecarlo** — Sobol sequence + option pricing vs. Black-Scholes
+- **timeseries** — AR fit + forecast
+- **gaussian_processes** — GP regression with uncertainty
+- **copulas** — copula AIC selection
+- **survival** — Kaplan-Meier
+- **queueing** — M/M/1 closed form
+- **information_theory** — entropy + Huffman coding
+- **levy_processes** — Kou jump-diffusion pricing + a tempered-stable subordinator path
+- **financial_stochastics** — Black-Scholes/Heston pricing + historical VaR
+- **statistics** — descriptive stats + t-test + OLS regression + PCA
+- **random_matrix** — GOE spectrum vs. the semicircle + Marchenko-Pastur + level repulsion
+- **advanced_mcmc** — NUTS on a correlated Gaussian (R-hat/ESS) + slice sampling + SMC evidence
+- **numerical_methods** — Gauss-Legendre quadrature + Dormand-Prince energy conservation +
+  Brent implied vol + Crank-Nicolson PDE price + a CTMC transition-matrix exponential
+- **bayesian** — conjugate coin-flip posterior + Bayesian linear regression (WAIC) +
+  a Bayes factor + a Bayesian-network query
+- **robust_statistics** — contaminated-sample comparison + Theil-Sen/MM vs. OLS under
+  outliers + MCD outlier flags + a block-bootstrap SE
+- **nonparametric** — bimodal KDE fit + Kruskal-Wallis + distance correlation +
+  local-linear R² + an isotonic-regression check
+- **optimization** — BFGS on Rosenbrock + particle swarm/CMA-ES on Rastrigin-5 +
+  Levenberg-Marquardt + an augmented-Lagrangian solve
+- **experimental_design** — a 2^(5-1) fraction's alias structure + Lenth's method +
+  a D-optimal design + a CCD stationary point + Ishigami Sobol indices + a maximin LHS
+- **spatial_statistics** — a fitted variogram + ordinary kriging + Moran's I +
+  a Ripley-K CSR verdict + a Thomas cluster process
+- **viz** — a QQ-plot + AR(1) ACF + Kaplan-Meier median (+ matplotlib availability check)
+- **utils** — `set_seed()` reproducibility + AIC-ranked fit + parallel pi estimate +
+  a benchmark timing + backend availability report
+
+Bare `spl demo` lists the available demos.
 
 ### `spl cite`
 
-Prints citation text for research use: a plain-text citation plus a ready-to-paste BibTeX
-entry, versioned with the installed release.
+- Plain-text citation plus a ready-to-paste BibTeX entry.
+- Versioned with the installed release.
 
 ## Release Process
 
@@ -681,11 +563,12 @@ Publishing.
 
 ## Roadmap
 
-All 23 modules of the design spec are implemented (794/794 public names). Ongoing work is
-incremental: closing the documented Known Limitations above, and whatever the owner's
-[`todo.md`](todo.md) sets as the next objective. All finished work and changes can be found
-in [`development/CHANGELOG.md`](development/CHANGELOG.md), kept separate to keep this
-README short.
+All 23 modules of the design spec are implemented (794/794 public names). Ongoing work:
+
+- Close the documented [Known Limitations](#known-limitations) above.
+- Whatever [`todo.md`](todo.md) sets as the next objective.
+
+Full history: [`development/CHANGELOG.md`](development/CHANGELOG.md).
 
 ---
 

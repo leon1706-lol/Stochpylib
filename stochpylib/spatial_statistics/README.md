@@ -3,11 +3,13 @@
 Geostatistics and spatial modeling: variogram models and fitting, kriging (simple,
 ordinary, universal, co-, indicator, disjunctive), covariance-driven random fields (exact
 Cholesky/circulant-embedding sampling, plus Brownian/fractional-Brownian sheets), spatial
-point processes (Poisson, Thomas, Matern cluster, log-Gaussian Cox) with Ripley's K and the
+point processes (Poisson, Thomas, Matérn cluster, log-Gaussian Cox) with Ripley's K and the
 pair correlation function, and spatial autocorrelation tests (Moran's I, Geary's C,
 Getis-Ord, nearest-neighbour distance) — 32 spec names across five submodules, natively on
-numpy/scipy. `SARModel`/`CARModel` (lattice models) and `SpatialWeights`/`SpatialFunction`
-are documented extras beyond the spec.
+numpy/scipy.
+
+- `SARModel`/`CARModel` (lattice models) and `SpatialWeights`/`SpatialFunction` are
+  documented extras beyond the spec.
 
 **Status:** implemented & tested (32/32 spec names).
 

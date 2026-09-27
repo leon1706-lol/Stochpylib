@@ -22,11 +22,7 @@ ship inside the wheel — `development/Probleme.md` [3]).
 ## Layout
 
 - `tests/<module>/tests.py` — one oracle suite per implemented module (twenty-three
-  today: probability, distributions, montecarlo, timeseries, gaussian_processes,
-  copulas, survival, queueing, information_theory, levy_processes,
-  financial_stochastics, statistics, random_matrix, advanced_mcmc,
-  numerical_methods, bayesian, robust_statistics, nonparametric, optimization,
-  experimental_design, spatial_statistics, viz, utils).
+  today, one per name in `stochpylib.__all__`).
 - `tests/<module>/e2e.py` — the end-to-end API sweep of the same module: an
   `EXERCISES` registry with one realistic exercise per name in the module's
   `__all__`, each run as its own `test_exercise[<name>]` case, plus
@@ -34,46 +30,30 @@ ship inside the wheel — `development/Probleme.md` [3]).
   without an exercise. Fast (seconds to ~2 min per module); heavy statistical
   validation stays in `tests.py`. CI runs each module's pair as its own
   `smoke (<module>)` job.
-- `tests/library/tests.py` — the cross-module suite: spec-name conformance for
-  all 794 implemented public names (generated from
-  `development/Implementation-Checklist.md` via `_extract_spec_names.py`, cached
-  in `_spec_names.json`), pinned documented extras (`MCResult`,
-  `DigitalNetBase2`, timeseries result objects, GP kernel base/ops,
-  `BaseCopula`, numerical_methods' `QuadratureResult`/`RootResult`/`ODESolution`/
-  `SDESolution`/`Mesh`, bayesian's `Prior`/`Likelihood`/`ConjugateFamily`/
-  `Posterior`/`PosteriorApproximation`/`ICResult`/`EmpiricalPredictive`,
-  robust_statistics' `RobustEstimator`/`RobustRegressor`/`RobustCovarianceEstimator`/
-  `Resampler`/`SiegelRegression`, nonparametric's `NonparametricDensity`/
-  `NonparametricTest`/`DependenceMeasure`/`NonparametricRegressor`/`AndersonDarling`,
-  optimization's `Objective`/`Optimizer`/`PopulationOptimizer`/
-  `ConstrainedOptimizer`/`OptimizeResult`, experimental_design's `Design`/
-  `DesignGenerator`/`OptimalDesign`, spatial_statistics' `SpatialWeights`/
-  `SpatialFunction`/`SARModel`/`CARModel`, viz's `Figure`/`Axes`, utils'
-  `FitResult`/`OutlierResult`/`from_pickle`),
-  the sanctioned multivariate method-contract
-  deviation, and end-to-end workflows spanning modules (reliability MC on library
-  Weibull, t-copula margins through the library Student_t, ARIMA vs GP forecasting
-  agreement, `CopulaFit` refit round trips, Sobol-QMC vs crude consistency, a
-  conjugate Bayesian posterior cross-checked against `statistics.bayesian_estimator`
-  and an MCMC sampler, robust regression/correlation/covariance cross-checked
-  against `statistics.linear_regression`/`copulas.kendall_tau`/a library
-  `MultivariateNormal`, nonparametric's KendallTau/KruskalWallis/GPR_Nonparametric
-  cross-checked against `copulas.kendall_tau`/`statistics.TestResult`/
-  `gaussian_processes.GPRegression`, spatial_statistics' simple kriging cross-checked
-  against `gaussian_processes.GPRegression` and ordinary kriging against
-  `experimental_design.KrigingSurrogate`, viz plots recomputed against the models
-  underneath them from five different modules, `utils.fit`/`goodness_of_fit`/`ecdf`/
-  `outlier_detection` cross-checked against `distributions`/`nonparametric`/
-  `robust_statistics.MCD`, and `set_seed`/`to_json`/`ParallelSimulation` exercised
-  across `distributions`/`montecarlo`/`timeseries`), plus a package-wide AST-based
-  guard that no `stochpylib/**/*.py` file imports `scipy.stats`, a second guard that
-  `matplotlib` is imported only inside `stochpylib/viz/_mpl.py`'s function bodies (never
-  at module import time, so `import stochpylib.viz` never requires it installed), a
-  third that pandas/torch/jax/jaxlib/numba/cupy are imported only inside
-  `stochpylib/utils/_backends.py`'s function bodies, and a fourth that
-  `np.random.default_rng`/`np.random.seed`/`RandomState(` with a non-constant or
-  no argument appear only in the shared `stochpylib/_rng.py` helper (plus the CLI
-  demo/self-check suites and `utils/random.py`'s own `numpy_global=` path).
+- `tests/library/tests.py` — the cross-module suite:
+  - **Spec-name conformance** for all 794 implemented public names (generated from
+    `development/Implementation-Checklist.md` via `_extract_spec_names.py`, cached in
+    `_spec_names.json`), plus every documented extra beyond the checklist (e.g.
+    `MCResult`, `BaseCopula`, GP kernel base/ops, and each module's own result-object
+    types — see each module's README for its own extras).
+  - **The sanctioned multivariate method-contract deviation** (`.pdf()` not `.pmf()`,
+    no `.mgf()`/`.cf()`).
+  - **Cross-module workflows**: reliability MC on library Weibull, t-copula margins
+    through library Student_t, ARIMA vs. GP forecasting agreement, `CopulaFit`
+    round trips, a conjugate Bayesian posterior cross-checked against an MCMC
+    sampler, robust regression/correlation/covariance against their
+    `statistics`/`copulas` counterparts, nonparametric tests against
+    `copulas`/`statistics`/`gaussian_processes`, spatial kriging against
+    `gaussian_processes`/`experimental_design`, viz plots recomputed against the
+    models underneath them, and `utils.fit`/`goodness_of_fit`/`ecdf`/
+    `outlier_detection`/`set_seed`/`to_json`/`ParallelSimulation` exercised across
+    several modules.
+  - **Import-discipline guards**: no `stochpylib/**/*.py` file imports `scipy.stats`;
+    `matplotlib` is imported only inside `stochpylib/viz/_mpl.py` function bodies;
+    pandas/torch/jax/jaxlib/numba/cupy only inside `stochpylib/utils/_backends.py`
+    function bodies; `np.random.default_rng`/`.seed`/`RandomState(` with a
+    non-constant or missing argument appear only in `stochpylib/_rng.py` (plus the
+    CLI demo/self-check suites and `utils/random.py`'s own `numpy_global=` path).
 - `tests/docs/tests.py` — the documentation-consistency suite: every number the
   docs claim (test counts, versions, spec-name tables, links, checklist
   progress) is recomputed from reality; a drifted doc fails the suite.

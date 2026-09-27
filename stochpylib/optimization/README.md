@@ -1,15 +1,16 @@
 # stochpylib.optimization
 
-Stochastic and numerical optimization: first-order and adaptive-step gradient methods,
-quasi-Newton and trust-region second-order methods, derivative-free global metaheuristics,
+Stochastic and numerical optimization: first-order/adaptive-step gradient methods,
+quasi-Newton/trust-region second-order methods, derivative-free global metaheuristics,
 stochastic approximation, and constrained solvers — 32 spec names across five submodules,
-natively on numpy/scipy. Every optimizer subclasses `Optimizer`, is driven by
-`minimize(fun, x0)` returning `self`, and reports a single `OptimizeResult` (point, value,
-effort counters, convergence status). Objectives are wrapped in `Objective`, which supplies
-finite-difference gradients and Hessians so second-order methods work without analytic
-derivatives. Where an answer is itself a Monte Carlo quantity — `SAA`'s optimality gap,
-`CEM`'s elite objective — it is returned as a `stochpylib.montecarlo.MCResult` rather than
-as a bare number.
+natively on numpy/scipy.
+
+- Every optimizer subclasses `Optimizer`, driven by `minimize(fun, x0)` returning `self`.
+- Reports one `OptimizeResult` (point, value, effort counters, convergence status).
+- Objectives wrap in `Objective`, which supplies finite-difference gradients/Hessians so
+  second-order methods work without analytic derivatives.
+- A Monte Carlo answer (`SAA`'s optimality gap, `CEM`'s elite objective) comes back as a
+  `stochpylib.montecarlo.MCResult`, not a bare number.
 
 **Status:** implemented & tested (32/32 spec names).
 

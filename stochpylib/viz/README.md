@@ -1,12 +1,14 @@
 # stochpylib.viz
 
-Statistical visualization, native on this library's own numbers. Every `plot_*()`
-computes its data by calling straight into the module that owns it (distributions,
-timeseries, survival, gaussian_processes, spatial_statistics, advanced_mcmc, statistics,
-copulas, random_matrix, ...) rather than re-deriving anything, and returns a `Figure` — a
-small scene graph, not a matplotlib object — 35 spec names across five submodules.
-`Figure`/`Axes` are documented extras beyond the spec (the scene graph every plot function
-returns/composes into).
+Statistical visualization, native on this library's own numbers — 35 spec names across
+five submodules.
+
+- Every `plot_*()` computes its data by calling straight into the module that owns it
+  (distributions, timeseries, survival, gaussian_processes, spatial_statistics,
+  advanced_mcmc, statistics, copulas, random_matrix, ...) rather than re-deriving anything.
+- Returns a `Figure` — a small scene graph, not a matplotlib object.
+- `Figure`/`Axes` are documented extras beyond the spec (the scene graph every plot
+  function returns/composes into).
 
 **Status:** implemented & tested (35/35 spec names).
 

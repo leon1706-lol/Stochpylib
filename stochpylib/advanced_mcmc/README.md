@@ -1,13 +1,17 @@
 # stochpylib.advanced_mcmc
 
-State-of-the-art sampling algorithms: standard and adaptive Metropolis/Gibbs samplers,
-gradient-based samplers (HMC, NUTS, MALA, manifold MALA, Riemannian HMC, NeuTra HMC),
-slice samplers (stepping-out, doubling, elliptical, Gibbsian polar), population/sequential
-methods (replica exchange, parallel tempering, adaptive-tempering SMC, particle MCMC), and
-trans-dimensional samplers (reversible-jump, Carlin-Chib product-space), convergence
-diagnostics (R-hat, ESS, Gelman-Rubin/PSRF, Geweke, Raftery-Lewis, autocorrelation time),
-and variational inference (mean-field, ADVI, black-box VI, planar normalizing flows, SVGD).
-35 public names across six submodules, natively on numpy/scipy — no wrapper dependencies.
+State-of-the-art sampling algorithms, natively on numpy/scipy — no wrapper dependencies.
+35 public names across six submodules:
+
+- Standard and adaptive Metropolis/Gibbs samplers.
+- Gradient-based samplers: HMC, NUTS, MALA, manifold MALA, Riemannian HMC, NeuTra HMC.
+- Slice samplers: stepping-out, doubling, elliptical, Gibbsian polar.
+- Population/sequential methods: replica exchange, parallel tempering,
+  adaptive-tempering SMC, particle MCMC.
+- Trans-dimensional samplers: reversible-jump, Carlin-Chib product-space.
+- Convergence diagnostics: R-hat, ESS, Gelman-Rubin/PSRF, Geweke, Raftery-Lewis,
+  autocorrelation time.
+- Variational inference: mean-field, ADVI, black-box VI, planar normalizing flows, SVGD.
 
 **Status:** implemented & tested (35/35 spec names).
 
@@ -76,21 +80,22 @@ and variational inference (mean-field, ADVI, black-box VI, planar normalizing fl
   given enough draws — see Known limitations).
 - Library code never imports `scipy.stats`; `scipy.special` is the only numerical building
   block, and `scipy.stats`/`statsmodels` are the test suite's independent oracles only.
-- **`n_jobs=`/`backend=` (V0.20.0, via `utils._parallel`).** The base `MCMCSampler.sample`
-  (used directly by `AdaptiveMetropolis`/`EllipticalSliceSampling`/`GibbsSampler`/
+- **`n_jobs=`/`backend=` via `utils._parallel`.** The base `MCMCSampler.sample` (used
+  directly by `AdaptiveMetropolis`/`EllipticalSliceSampling`/`GibbsSampler`/
   `IndependenceSampler`/`MALA`/`MMALA`/`MetropolisHastings`/`Polar_Slice`/`RiemannianHMC`/
   `RobustAdaptiveMetropolis`/`SliceSampling`) accepts `sample(theta_init, random_state=,
-  n_jobs=None, backend="thread")`: with `n_jobs=` set, each chain runs on its own
-  deep-copied sampler (so per-chain adaptation state never leaks across chains) via a
-  thread or process pool, but every chain already draws from its own independent child
-  RNG regardless, so `chains_`/`log_probs_`/`acceptance_rates_` are numerically identical
-  to the serial run either way — `n_jobs=None` (the default) keeps the exact pre-V0.20.0
-  single-process loop. Samplers that override `sample()` themselves for extra bookkeeping
-  (`HamiltonianMonteCarlo`, `NoUTurnSampler`, and `NeutraHMC`'s divergence tracking) don't
-  yet forward `n_jobs=` — parallelize multiple runs of those externally with
-  `utils.ParallelSimulation` instead. `grad_log_prob=` can also now
-  be supplied via `utils.torch_interface(fn).grad`/`jax_interface`-derived autodiff, an
-  exact alternative to the finite-difference fallback above.
+  n_jobs=None, backend="thread")`:
+  - With `n_jobs=` set, each chain runs on its own deep-copied sampler (so per-chain
+    adaptation state never leaks across chains) via a thread or process pool.
+  - Every chain draws from its own independent child RNG regardless, so
+    `chains_`/`log_probs_`/`acceptance_rates_` are numerically identical to the serial run
+    either way — `n_jobs=None` (the default) is the plain single-process loop.
+  - Samplers that override `sample()` for extra bookkeeping (`HamiltonianMonteCarlo`,
+    `NoUTurnSampler`, `NeutraHMC`'s divergence tracking) don't forward `n_jobs=` yet —
+    parallelize multiple runs of those externally with `utils.ParallelSimulation`.
+  - `grad_log_prob=` can also be supplied via `utils.torch_interface(fn).grad`/
+    `jax_interface`-derived autodiff, an exact alternative to the finite-difference
+    fallback above.
 
 ## Known limitations
 

@@ -14,14 +14,9 @@ working on the library — they hold the structure and plan context.
 | [`Probleme.md`](Probleme.md) | Audit log of bugs and infrastructure issues, each with a severity rating (1–10) and a status from the legend at the top (fixed / partial / closed). Add an entry for every bug you find and fix |
 | [`Implementation-Checklist.md`](Implementation-Checklist.md) | Every planned module/submodule/public name as checkboxes — the single-glance progress tracker (currently 794/794). Update it whenever you implement |
 
-Module status snapshot: `probability`, `distributions`, `montecarlo`,
-`timeseries`, `gaussian_processes`, `copulas`, `survival`, `queueing`,
-`information_theory`, `levy_processes`, `financial_stochastics`, `statistics`,
-`random_matrix`, `advanced_mcmc`, `numerical_methods`, `bayesian`,
-`robust_statistics`, `nonparametric`, `optimization`, `experimental_design`,
-`spatial_statistics`, `viz` and `utils` are all
-complete and tested (794/794 spec names across twenty-three modules) — see the
-checklist for the authoritative per-name state.
+All twenty-three modules are complete and tested (794/794 spec names) — see
+[`Implementation-Checklist.md`](Implementation-Checklist.md) for the authoritative
+per-name state.
 
 Wrap-up procedure for any task: see the vault's `Essential-Tasks.md`
 (`../Stochpylib-Obsidian-Vault/Essential-Tasks.md`).

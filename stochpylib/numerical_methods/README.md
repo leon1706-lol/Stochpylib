@@ -1,18 +1,21 @@
 # stochpylib.numerical_methods
 
-Numerical analysis backbone: Gauss quadrature families (Legendre/Hermite/Chebyshev via
-Golub-Welsch), adaptive Gauss-Kronrod and Simpson quadrature, Romberg extrapolation,
-tensor/Smolyak-sparse cubature, and a Monte-Carlo facade; ODE solvers from explicit
-Euler through embedded Dormand-Prince, multistep Adams-Bashforth(-Moulton), and
-implicit BDF; Euler-Maruyama/Milstein SDE path solvers; native linear algebra (Pade
-matrix exponential, inverse-scaling matrix logarithm, Cholesky, Jacobi/QR
-eigendecomposition, one-sided-Jacobi SVD, Householder/Gram-Schmidt/Givens QR,
-Francis-shift real and complex Schur); root finding (bisection, Brent, secant, Newton,
-fixed point); interpolation (cubic splines, PCHIP-style cubic Hermite, barycentric
-Lagrange, Chebyshev series, NURBS); and PDE tools (finite difference, finite element,
-a FEniCS-style adapter with a native fallback, boundary elements, spectral methods).
-38 public names across six submodules, natively on numpy/scipy — no wrapper
-dependencies.
+Numerical analysis backbone, natively on numpy/scipy — no wrapper dependencies. 38 public
+names across six submodules:
+
+- Quadrature: Gauss families (Legendre/Hermite/Chebyshev via Golub-Welsch), adaptive
+  Gauss-Kronrod/Simpson, Romberg extrapolation, tensor/Smolyak-sparse cubature, a
+  Monte-Carlo facade.
+- ODE/SDE solvers: explicit Euler through embedded Dormand-Prince, multistep
+  Adams-Bashforth(-Moulton), implicit BDF, Euler-Maruyama/Milstein SDE paths.
+- Native linear algebra: Padé matrix exponential, inverse-scaling matrix logarithm,
+  Cholesky, Jacobi/QR eigendecomposition, one-sided-Jacobi SVD,
+  Householder/Gram-Schmidt/Givens QR, Francis-shift real and complex Schur.
+- Root finding: bisection, Brent, secant, Newton, fixed point.
+- Interpolation: cubic splines, PCHIP-style cubic Hermite, barycentric Lagrange,
+  Chebyshev series, NURBS.
+- PDE tools: finite difference, finite element, a FEniCS-style adapter with a native
+  fallback, boundary elements, spectral methods.
 
 **Status:** implemented & tested (38/38 spec names).
 

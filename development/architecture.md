@@ -4,11 +4,12 @@
 public names — see [`Implementation-Checklist.md`](Implementation-Checklist.md)
 for the authoritative per-name state).
 
-**How to read this document:** read top to bottom. The objective and the two
-diagrams give the whole picture; the contract sections describe what every
-shipped module owns and the cross-cutting conventions that bind them. History
-(what was built when, what broke) lives in [`CHANGELOG.md`](CHANGELOG.md) and
-[`Probleme.md`](Probleme.md); this document describes only the current state.
+**How to read this document:**
+
+- The objective and the two diagrams give the whole picture.
+- The contract sections describe what every module owns and the conventions binding them.
+- History (what was built when, what broke) lives in [`CHANGELOG.md`](CHANGELOG.md) and
+  [`Probleme.md`](Probleme.md) — this document describes only the current state.
 
 ## Objective
 
@@ -265,10 +266,6 @@ README per module):
   interop. `n_jobs=`/`backend=` were retrofitted onto `montecarlo`/`financial_stochastics`
   (Monte Carlo pricers/estimators) and `advanced_mcmc` (the base `MCMCSampler.sample`).
 
-All 23 modules in the map are now implemented, at the same bar: native implementations,
-the shared conventions, full tests against independent oracles, honest documentation of
-deviations.
-
 ## The Common Distribution Contract
 
 Every class in `stochpylib/distributions/` exposes the same 13-method surface —
@@ -286,7 +283,7 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
 
 - **Seeds**: every stochastic method takes `random_state=None` (anything
   `np.random.default_rng` accepts) — never a bare global seed. Every module resolves it
-  through the shared `stochpylib._rng.as_generator` (V0.20.0), so `utils.set_seed()`
+  through the shared `stochpylib._rng.as_generator`, so `utils.set_seed()`
   makes `random_state=None` reproducible library-wide; an AST guard pins that no
   `np.random.default_rng`/`.seed`/`RandomState(` call with a non-constant or missing
   argument exists outside that one helper.
@@ -403,7 +400,7 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
   backend (`_mpl.py`) for raster/PDF output — the scipy-policy bullet above covers the
   import discipline this requires. `Figure`/`Axes` are the only new result-shaped types
   (a scene graph, not an estimate).
-- **Utils conventions** (established by `utils`, V0.20.0): `fit()`/`goodness_of_fit()`/
+- **Utils conventions** (established by `utils`): `fit()`/`goodness_of_fit()`/
   `moment_matching()`/`ecdf()`/`outlier_detection()` delegate to `distributions`/
   `statistics`/`nonparametric`/`robust_statistics` rather than re-deriving anything, and
   return `montecarlo.MCResult`/`statistics.TestResult` rather than a new result type
@@ -411,9 +408,9 @@ where they exist and are cross-checked against `scipy.stats` as the test oracle.
   are reproducible and worker-count-invariant (each chunk/chain draws its own
   independently spawned child RNG) but not bit-identical to the legacy single-stream
   serial run at the same seed; `n_jobs=None`/`backend=None` (the defaults everywhere)
-  keep the exact pre-V0.20.0 behavior. `set_seed()` sets an opt-in library-wide root that
-  `random_state=None` spawns children from — it never touches numpy's or Python's own
-  global random state unless asked to.
+  keep the exact legacy single-stream behavior. `set_seed()` sets an opt-in library-wide
+  root that `random_state=None` spawns children from — it never touches numpy's or
+  Python's own global random state unless asked to.
 
 ## Package Layout Convention
 

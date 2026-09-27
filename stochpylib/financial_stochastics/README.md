@@ -80,22 +80,22 @@ dependencies.
 - `RiskParity.optimize()` solves Spinu's convex objective over *unnormalized*
   weights and normalizes only once, after convergence — renormalizing every
   coordinate-descent sweep breaks the fixed point (see `Probleme.md`).
-- **`n_jobs=`/`backend=` (V0.20.0, via `utils.ParallelSimulation`/`GPUBackend`):**
-  every path-based Monte Carlo pricer — `MonteCarloOptionPricing.price()` (plain
-  and antithetic; rejects `n_jobs` together with `qmc=True`, since scrambling
-  loses its low-discrepancy guarantee if split into independently-seeded
-  chunks), `.price_path_dependent()`, `.asian_price()`, `HestonModel`/
-  `RoughHeston`/`RoughBergomi.call_price_mc()`, `LocalVol`/`LVSV.price_mc()`,
-  `BlackKarasinski.zcb_price()`, `LMM.caplet_price_mc()`,
-  `HJM.zcb_price_mc()` — accepts `n_jobs=<int>` (chunked, independently
-  reseeded, pooled into one `MCResult`; `n_jobs=None` is byte-identical to the
-  pre-V0.20.0 implementation, but not bit-identical to a parallel run at the
-  same seed). `MonteCarloOptionPricing.simulate_paths()`/`.price()` and
-  `option_pricing_mc()` additionally accept `backend=` (a device name or
-  `utils.GPUBackend`) to move the GBM exp/arithmetic, never the random draw
-  itself, onto that device. `LongstaffSchwartz` (regression needs every path
-  together), QMC scrambling, the greeks (dict-returning) and VaR/ES
-  (quantile-based) are intentionally excluded.
+- **`n_jobs=`/`backend=` parallel/GPU execution** (via
+  `utils.ParallelSimulation`/`GPUBackend`):
+  - Every path-based MC pricer accepts `n_jobs=<int>` (chunked, independently reseeded,
+    pooled into one `MCResult`): `MonteCarloOptionPricing.price()` (plain/antithetic;
+    rejects `n_jobs` together with `qmc=True`, since scrambling loses its
+    low-discrepancy guarantee once split into independently-seeded chunks),
+    `.price_path_dependent()`, `.asian_price()`, `HestonModel`/`RoughHeston`/
+    `RoughBergomi.call_price_mc()`, `LocalVol`/`LVSV.price_mc()`,
+    `BlackKarasinski.zcb_price()`, `LMM.caplet_price_mc()`, `HJM.zcb_price_mc()`.
+  - `n_jobs=None` (the default) matches the legacy serial single-stream result
+    exactly; it is not bit-identical to a parallel run at the same seed.
+  - `MonteCarloOptionPricing.simulate_paths()`/`.price()` and `option_pricing_mc()`
+    also accept `backend=` (a device name or `utils.GPUBackend`) to move the GBM
+    exp/arithmetic — never the random draw itself — onto that device.
+  - Excluded by design: `LongstaffSchwartz` (regression needs every path together),
+    QMC scrambling, the greeks (dict-returning), VaR/ES (quantile-based).
 
 ## Known limitations
 

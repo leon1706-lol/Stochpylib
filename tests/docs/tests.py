@@ -19,6 +19,10 @@ PKG_README = REPO / "stochpylib" / "README.md"
 DEV_README = REPO / "development" / "README.md"
 CHECKLIST = REPO / "development" / "Implementation-Checklist.md"
 SPEC_JSON = REPO / "tests" / "library" / "_spec_names.json"
+STATS_JSON = REPO / "development" / "stats.json"
+STATS_RAW_URL = (
+    "raw.githubusercontent.com%2Fleon1706-lol%2FStochpylib%2Fmain%2Fdevelopment%2Fstats.json"
+)
 
 # The two permanently-skipped tests are the VonMises and Kumaraswamy scipy
 # cross-checks in tests/distributions/tests.py — no direct scipy mapping
@@ -52,16 +56,37 @@ def _pytest_collect_count():
     return int(match.group(1))
 
 
-def test_readme_badge_matches_collected_test_count():
+def test_readme_test_and_names_badges_are_live_dynamic_json_badges():
+    """README's tests/public-names badges no longer bake the numbers into the badge URL --
+    they're shields.io dynamic/json badges reading development/stats.json live from
+    raw.githubusercontent.com, so a fresh number never requires a README edit at all. This
+    only checks the badges point at the right file/field; test_stats_json_matches_live_reality
+    checks the numbers themselves."""
+    readme = _read(README)
+    assert STATS_RAW_URL in readme, "README badge doesn't reference development/stats.json"
+    assert "query=%24.tests_badge" in readme, "README lacks the tests_badge dynamic query"
+    assert "query=%24.spec_names_badge" in readme, (
+        "README lacks the spec_names_badge dynamic query"
+    )
+
+
+def test_stats_json_matches_live_reality():
     collected = _pytest_collect_count()
     expected_passing = collected - KNOWN_CONDITIONAL_SKIPS
-    readme = _read(README)
-    match = re.search(r"tests-(\d+)%20passing", readme)
-    assert match, "README test badge not found"
-    assert int(match.group(1)) == expected_passing, (
-        f"README badge says {match.group(1)} passing, "
-        f"but {collected} collected - {KNOWN_CONDITIONAL_SKIPS} skips = {expected_passing}"
-    )
+    spec = json.loads(SPEC_JSON.read_text(encoding="utf-8"))
+    spec_total = sum(len(v) + (13 if k == "distributions" else 0) for k, v in spec.items())
+    text = _read(CHECKLIST)
+    sections = re.findall(r"^## \[[a-z_]+\][^\n]*\((\d+)/(\d+)\)", text, re.MULTILINE)
+    spec_done = sum(int(done) for done, _ in sections)
+
+    stats = json.loads(_read(STATS_JSON))
+    assert stats["tests_collected"] == collected, "development/stats.json is stale (collected)"
+    assert stats["tests_passed"] == expected_passing, "development/stats.json is stale (passed)"
+    assert stats["tests_skipped"] == KNOWN_CONDITIONAL_SKIPS
+    assert stats["tests_badge"] == f"{expected_passing} of {collected} passing"
+    assert stats["spec_names_total"] == spec_total == 794
+    assert stats["spec_names_done"] == spec_done
+    assert stats["spec_names_badge"] == f"{spec_done} of {spec_total}"
 
 
 def test_readme_test_suite_section_states_pass_and_skip():

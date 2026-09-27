@@ -1,15 +1,20 @@
 # stochpylib.robust_statistics
 
-Outlier-resistant estimators: robust location (trimmed/winsorized means, median with a
-Maritz-Jarrett standard error and a distribution-free order-statistic confidence interval,
-Hodges-Lehmann, L/M/R-estimators), robust scale (MAD, Qn, Sn, IQR, and a Huber/biweight/
-tau/Qn/Sn dispatcher), high-breakdown regression (Theil-Sen, Siegel repeated medians,
-RANSAC, FAST-LTS, FAST-S+MM, Huber), robust covariance (FAST-MCD, MVE, OGK, robust
-correlation), covariance shrinkage (Ledoit-Wolf, OAS, constant correlation), and resampling
-(i.i.d./wild/block/stationary bootstraps). 28 public names across five submodules, natively
-on numpy/scipy. Location/scale estimators and regressors reuse
-`stochpylib.statistics.EstimateResult`/`RegressionResult` as result objects rather than
-defining new ones.
+Outlier-resistant estimators, natively on numpy/scipy. 28 public names across five
+submodules:
+
+- Robust location: trimmed/winsorized means, median (Maritz-Jarrett SE, a
+  distribution-free order-statistic CI), Hodges-Lehmann, L/M/R-estimators.
+- Robust scale: MAD, Qn, Sn, IQR, and a Huber/biweight/tau/Qn/Sn dispatcher.
+- High-breakdown regression: Theil-Sen, Siegel repeated medians, RANSAC, FAST-LTS,
+  FAST-S+MM, Huber.
+- Robust covariance: FAST-MCD, MVE, OGK, robust correlation.
+- Covariance shrinkage: Ledoit-Wolf, OAS, constant correlation.
+- Resampling: i.i.d./wild/block/stationary bootstraps.
+
+Location/scale estimators and regressors reuse
+`stochpylib.statistics.EstimateResult`/`RegressionResult` rather than defining new
+result types.
 
 **Status:** implemented & tested (28/28 spec names).
 

@@ -52,11 +52,32 @@ Registered by every install (PyPI wheel or `pip install -e .`) via
 
 ## GitHub Actions
 
-| Workflow | Trigger | Jobs |
-|---|---|---|
-| `.github/workflows/ci.yml` | every push / PR | Job `test`: matrix Python 3.10–3.13 × ubuntu-latest + windows-latest, `fail-fast: false` (one red cell never cancels the others); installs `-e ".[dev]" lifelines`, runs `pytest tests/ -v`, then smoke-verifies the install (`spl --version`, `spl --test`). Job `module-smoke` (`smoke (<module>)`, ubuntu, py3.12, one matrix cell per module in `stochpylib.__all__`, `fail-fast: false`): the module's oracle suite `tests/<module>/tests.py`, its end-to-end API sweep `tests/<module>/e2e.py`, then `spl demo <module>` — `tests/docs` asserts the matrix equals `stochpylib.__all__`. Job `viz-matplotlib` (`viz (matplotlib backend)`, ubuntu + windows, py3.12, `fail-fast: false`): the only job that installs matplotlib — runs `tests/viz/backend_mpl.py` (the real-matplotlib backend checks, never collected by the plain `pytest tests/` run) plus `tests/viz/tests.py`/`e2e.py` again and `spl demo viz`, proving matplotlib's presence changes nothing about the native-SVG numbers. Job `utils-optional` (`utils (optional backends)`, ubuntu + windows, py3.12, `fail-fast: false`): installs CPU torch, pandas, numba and jax, then runs `tests/utils/backend_optional.py` (real-backend checks, never collected by the plain `pytest tests/` run) plus `tests/utils/tests.py`/`e2e.py` again and `spl demo utils` — cupy/CUDA has no hosted-runner equivalent and stays untested here (`utils`'s own suite fakes it with an injected module). Job `cross-suite` (ubuntu, py3.12): `pytest tests/library tests/docs tests/cli`. Job `install-smoke` (ubuntu, py3.12): builds and installs the wheel, verifies every spec name of every module (from `tests/library/_spec_names.json`) imports from the installed copy and that the stdlib `statistics` module still resolves separately, runs `spl --test` |
-| `.github/workflows/publish.yml` | `v*` tag | Job 1: full pytest. Job 2 (`environment: pypi`, `id-token: write`): build sdist + wheel, install the wheel and smoke-verify (`spl --version`, `spl --test`, then `spl demo <module>` for every module in `stochpylib.__all__`), publish to PyPI via Trusted Publisher (OIDC — no API tokens stored anywhere) |
-| `.github/workflows/release.yml` | `v*` tag | Creates the matching GitHub Release with auto-generated changelog notes |
+Three workflows in `.github/workflows/`:
+
+- **`ci.yml`** — every push/PR:
+  - `test` — matrix Python 3.10–3.13 × ubuntu/windows (`fail-fast: false`); full
+    `pytest tests/ -v`, then `spl --version`/`spl --test` install smoke-check.
+  - `module-smoke` (`smoke (<module>)`, ubuntu, py3.12, one cell per module in
+    `stochpylib.__all__`) — the module's oracle suite, its end-to-end API sweep, `spl demo <module>`.
+  - `viz-matplotlib` (ubuntu + windows) — the only job that installs matplotlib; runs the
+    real-backend checks (`tests/viz/backend_mpl.py`) plus `viz`'s suites again, proving
+    matplotlib's presence changes nothing about the native-SVG numbers.
+  - `utils-optional` (ubuntu + windows) — installs CPU torch/pandas/numba/jax; runs the
+    real-backend checks (`tests/utils/backend_optional.py`) plus `utils`'s suites again
+    (cupy/CUDA has no hosted-runner equivalent, so it stays untested here).
+  - `cross-suite` (ubuntu) — `pytest tests/library tests/docs tests/cli`.
+  - `update-stats-badge` (ubuntu, push to `main` only, after every job above is green) —
+    recomputes `development/stats.json` (`development/scripts/update_stats.py`) and commits
+    it (`[skip ci]`) if it changed; README's `tests`/`public names` badges are shields.io
+    `dynamic/json` badges reading that file live over raw.githubusercontent.com, so they
+    self-update with no README edit.
+  - `install-smoke` (ubuntu) — builds + installs the wheel, verifies every spec name of
+    every module imports from it (stdlib `statistics` still resolves separately), `spl --test`.
+- **`publish.yml`** — on a `v*` tag: full pytest, then build sdist + wheel, smoke-verify it
+  (`spl --version`/`--test`/`demo <module>` for every module), publish to PyPI via Trusted
+  Publisher (OIDC, no stored tokens).
+- **`release.yml`** — on a `v*` tag: creates the matching GitHub Release with
+  auto-generated changelog notes.
 
 ## Release process
 

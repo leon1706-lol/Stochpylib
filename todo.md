@@ -9,124 +9,17 @@ are for — see `AGENTS.md`).
 
 -----
 
-## V0.20.1 round 2 — two more CI-only bugs found after the owner's first v0.20.1 commit
+## V0.20.4
 
-The owner committed/pushed the round-1 fixes below as `d8f49dc` ("V0.20.0 fixed ci jobs").
-The next run (`36317307837`) still had 2 failures, both genuinely new (not the same bugs):
 
-1. **`utils (optional backends) (ubuntu-latest)`** —
-   `tests/utils/tests.py::TestCompat::test_jax_interface_import_error_when_missing` never hid jax
-   via `sys.modules` (unlike its pandas/torch siblings) and instead relied on jax simply not being
-   installed; CI's `utils-optional` job genuinely installs jax, so `jax_interface(...)` succeeded
-   instead of raising. Fixed by adding the same `monkeypatch.setitem(sys.modules, "jax", None)`
-   guard already used for pandas/torch.
-2. **`utils (optional backends) (windows-latest)`** —
-   `tests/utils/backend_optional.py::TestTorchBackend::test_hmc_driven_by_torch_autodiff_gradient`
-   asserted a hardcoded `abs(samples.mean()) < 0.2`; HMC's leapfrog trajectory is chaotic, so even
-   at a fixed seed, platform float-rounding differences in torch's gradients can diverge the
-   accept/reject path (failed at 0.214 on windows, passed on ubuntu and locally). Fixed by
-   replacing the magic number with this codebase's established MCSE convention (`ESS`-based
-   standard error, `abs(mean) < 5*se`), the same pattern `tests/advanced_mcmc/tests.py` already
-   uses everywhere.
+- cut down on code comments by deleting unecesary comments
+- cuting somewhat important comments to one or two short sentences
+- only leaving important commants
+- only touch code files no md documentation files 
+- add to agent md the convention of how to write clean code commands 
 
-Write-ups in `development/Probleme.md` #131-132. Verified locally: full
-`pytest tests/utils/tests.py tests/utils/e2e.py tests/utils/backend_optional.py -v` →
-193 passed, 6 skipped (jax/numba skip here as before), 0 failed. Not committed — owner is
-committing this round manually too. Did not re-check whether the full `test (X.Y, os)` matrix
-also hits either of these two (round-1's torch-in-financial_stochastics fix already covers that
-matrix; these two bugs live only in `tests/utils/*`, which the main `test` job also runs — worth
-a glance at whichever run covers this commit, same as last time).
 
-## V0.20.1 round 1 — CI fixes for the pushed V0.20.0 commit (`70c1626`)
-
-The owner pushed V0.20.0 directly. GitHub Actions run `36316453989` on `main` then showed 3
-real failing jobs (11 total once every matrix job was checked, but all 11 reduced to these
-same 2 root causes), fixed and committed by the owner as `d8f49dc`:
-
-1. **`smoke (financial_stochastics)`** — `TestParallelAndGPURetrofit.test_price_backend_torch_matches_numpy`/
-   `test_simulate_paths_backend_torch_matches_numpy` assumed torch is always installed; that job's
-   `pip install -e ".[dev]"` doesn't include it. Fixed in `tests/financial_stochastics/tests.py` to
-   branch on `utils._backends.is_installed("torch")` (real comparison vs. `pytest.raises(ImportError)`).
-2. **`utils (optional backends)` (ubuntu + windows, identical failure on both)** —
-   `TestNumbaBackend.test_jit_compile_uses_numba_and_matches_python` asserted `.backend_` before
-   ever calling the JIT-wrapped function, so it always read the lazy-init `None`. Never caught
-   locally because this sandbox's numba is broken (numpy version mismatch) and the test always
-   skipped here. Fixed in `tests/utils/backend_optional.py` — call `compiled(x)` first, then assert
-   `.backend_`, matching the sibling `test_jit_compile_backend_jax` pattern. `_JITWrapper`'s
-   lazy-compile design in `stochpylib/utils/performance.py` was correct and untouched.
-
-Both write-ups are in `development/Probleme.md` #129-130. Verified locally:
-`pytest tests/financial_stochastics/tests.py -k TestParallelAndGPURetrofit -v` → 8 passed;
-`pytest tests/utils/backend_optional.py -v` → 5 passed / 6 skipped (numba/jax skip here as before).
-Checked every job in the completed run (`36316453989`): 11 failed in total, not just the 3 first
-flagged — all 8 `test (3.10-3.13, ubuntu/windows)` matrix jobs failed too, but on the exact same
-two torch tests (`2 failed, 2934 passed, 2 skipped` on every one of them). No other distinct
-failures anywhere in the run; both fixes above cover all 11. Committed by the owner as `d8f49dc`
-("V0.20.0 fixed ci jobs") — but that commit's own CI run (`36317307837`) surfaced 2 more, unrelated
-bugs, see "round 2" above. No `spl`/`__init__.py`/`pyproject.toml` version bump was made either
-round since only tests changed (no library behavior changed).
-
------
-
-## V0.20.0 `utils` — verification complete, ready for the commit ask
-
-Implementation, documentation, and full-suite verification are all done. Every one of the
-23 modules plus `library`/`docs`/`cli` was individually run and confirmed green this
-session (per-module `pytest -q` pass counts, summing to the full tree):
-
-```
-probability+survival+information_theory+optimization  402
-distributions                                          175 passed / 2 skipped (sanctioned)
-montecarlo                                              81
-timeseries+nonparametric                               222
-gaussian_processes+spatial_statistics                  229
-copulas+bayesian+levy_processes                        237
-financial_stochastics                                  171
-statistics+viz                                         359
-random_matrix+numerical_methods                        226
-robust_statistics+experimental_design                  308
-advanced_mcmc                                          101
-utils                                                  188
-library                                                 73
-docs                                                     16
-queueing+cli                                           148
-------------------------------------------------------------
-total                                                 2936 passed / 2 skipped
-```
-
-A full per-module `--collect-only` reconciliation confirms this sums to exactly 2938
-collected, matching a fresh whole-tree `--collect-only` run — so the numbers already
-written into README.md/CHANGELOG.md/etc. (2938 collected, 2936 passed, 2 skipped) are
-correct as-is; no doc changes needed. (One false alarm along the way: `financial_stochastics`
-appeared to be missing 8 tests against an earlier session's "163 passed" reading — a clean
-rerun showed 171 passed / 0 skipped, matching collection exactly. That earlier number was
-just a bad reading, not a real gap.)
-
-### Still open before this can be called shipped
-
-1. **Vault handoff** (AGENTS.md §5.7, not started): from `Stochpylib-Obsidian-Vault/` run
-   `python scripts/generate_code_graph.py --repo-root .. --vault . --append-handoff --agent
-   <name> --summary "..."` then `python scripts/regenerate_vault.py --repo-root .. --vault .
-   --append-handoff --agent <name> --action updated --summary "..."`, then append a manual
-   `HANDOFF.MD` entry summarizing the whole task (see existing entries in that file for the
-   format: Timestamp/Agent/Action/Summary/Files changed).
-2. **Git: nothing staged or committed yet**, correctly deferred. Once the vault handoff
-   above is done, propose staging exactly the files `git status --short` shows (the new
-   `stochpylib/_rng.py`/`_parallel.py`/`utils/`/`tests/utils/`, plus every retrofitted
-   module file and doc it lists) and the message
-   `v0.20.0: utils module + library-wide RNG/parallel/backend retrofit`, then wait for
-   approval. No tag, no publish.
-3. Minor/optional, not a bug: a Python 3.14 diagnostic ("Current thread's C stack trace ...
-   cannot get C stack on this system") printed once during an earlier `montecarlo` run,
-   apparently from concurrent first-time lazy `scipy.special` imports across worker threads
-   under `ThreadPoolExecutor`. The run still finished green every time and this wasn't
-   investigated further — worth a glance if it recurs more disruptively.
-4. The golden-stream stream-neutrality regression script used throughout this work only
-   ever existed in a session scratchpad, not the repo — it's a diagnostic tool, not part of
-   the shipped test suite, so nothing to commit, but regenerate it if you want to
-   re-verify RNG-retrofit stream-neutrality again later.
-
-## Next candidate (after V0.20.0 actually ships)
+# Next candidate (after V0.20.0 actually ships)
 
 The design spec is fully implemented (794/794). Open-ended directions for whatever comes
 next (no decision made — ask, or pick one and say so):
@@ -154,7 +47,7 @@ next (no decision made — ask, or pick one and say so):
   — an I/O/scheduling artifact of this box, not a code performance issue; budget generous
   timeouts and prefer background runs (`run_in_background`) for anything beyond a single
   module. `pytest --collect-only -q tests/` (no execution, just AST collection) completes
-  fast even though a full run doesn't — use it to get an exact test count (currently 2938).
+  fast even though a full run doesn't — use it to get an exact test count (currently 2939).
 - **Don't poll for background results.** A `run_in_background` command delivers its own
   completion notification automatically the moment it finishes — repeatedly calling
   `ReadNotifications`/checking process CPU in a tight loop while waiting burns tokens for

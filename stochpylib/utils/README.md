@@ -3,9 +3,11 @@
 Infrastructure & utilities: seeding/reproducible streams, benchmarking/profiling and
 parallel/GPU/JIT execution, reproducibility scaffolding, distribution fitting & data
 cleaning, serialization, and interop with numpy/scipy/pandas/torch/jax — 38 spec names
-across six submodules. `FitResult`/`OutlierResult`/`from_pickle` are documented extras
-beyond the spec (a fit-comparison table, an outlier report, and the untrusted-pickle
-counterpart to `to_pickle`).
+across six submodules.
+
+- `FitResult`/`OutlierResult`/`from_pickle` are documented extras beyond the spec: a
+  fit-comparison table, an outlier report, and the untrusted-pickle counterpart to
+  `to_pickle`.
 
 **Status:** implemented & tested (38/38 spec names).
 
@@ -85,12 +87,12 @@ to_json(est, path="estimate.json")
   `random_state=None` calls spawn independent children from; it never touches numpy's
   or Python's own global random state unless `numpy_global=`/`python_random=True` is
   passed explicitly.
-- **Parallel results are reproducible but not legacy-equivalent.** `ParallelSimulation`/
+- **Parallel results are reproducible but not serial-equivalent.** `ParallelSimulation`/
   `n_jobs=` on `montecarlo`/`financial_stochastics`/`advanced_mcmc` give the same answer
   for any worker count at a fixed `(seed, n, chunk_size)`, because each chunk draws an
-  independently spawned child stream — but that answer differs from the pre-V0.20.0
-  single-stream serial result at the same seed. `n_jobs=None`/`backend=None` (the
-  defaults everywhere) keep the exact legacy single-stream behavior.
+  independently spawned child stream — but that differs from the single-stream serial
+  result at the same seed. `n_jobs=None`/`backend=None` (the defaults everywhere) run the
+  exact single-stream serial path.
 - **Optional backends never gate import.** `import stochpylib.utils` (and the rest of
   the library) needs none of pandas/torch/jax/numba/cupy; each is imported only when a
   function that actually needs it is called, and a missing or broken one raises one

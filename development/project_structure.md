@@ -71,7 +71,9 @@ Stochpylib/
 │   ├── CHANGELOG.md             # append-only per-phase build history
 │   ├── Probleme.md              # bug audit log (Problem → Fix → Verification, severity, status)
 │   ├── Implementation-Checklist.md  # every planned public name as a checkbox (794/794 done)
-│   └── logo.png                 # project logo, referenced by the README banner
+│   ├── logo.png                 # project logo, referenced by the README banner
+│   ├── stats.json               # live counts; README's tests/public-names badges read this
+│   └── scripts/update_stats.py  # recomputes stats.json from pytest/checklist ground truth
 ├── build/  dist/  *.egg-info/   # local build artifacts (gitignored, never edited by hand)
 └── Stochpylib-Obsidian-Vault/   # the full design-spec vault (private, not part of the repo)
     ├── Modules/<name>.md        # per-module target API (23 modules)

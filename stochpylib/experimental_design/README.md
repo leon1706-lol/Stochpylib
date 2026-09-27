@@ -1,12 +1,15 @@
 # stochpylib.experimental_design
 
-Design of experiments: classical factorial, screening and response-surface designs, exact
+Design of experiments: classical factorial/screening/response-surface designs, exact
 optimal designs, space-filling designs for computer experiments, response-surface and
-surrogate models, and the analysis of designed experiments — 29 spec names across five
-submodules, natively on numpy/scipy. Every design class returns a `Design` (the run matrix
-plus factor names, units, bounds and the design's properties) from `generate()`; surrogates
-and analyses are fitted with `.fit(...)` returning `self` and reuse the library's result
-types (`statistics.TestResult`/`RegressionResult`, `montecarlo.MCResult`).
+surrogate models, and analysis of designed experiments — 29 spec names across five
+submodules, natively on numpy/scipy.
+
+- Every design class returns a `Design` (run matrix + factor names, units, bounds,
+  properties) from `generate()`.
+- Surrogates and analyses fit with `.fit(...)` returning `self`.
+- Both reuse the library's own result types (`statistics.TestResult`/`RegressionResult`,
+  `montecarlo.MCResult`) rather than a new one.
 
 **Status:** implemented & tested (29/29 spec names).
 

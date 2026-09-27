@@ -1,12 +1,18 @@
 # stochpylib.nonparametric
 
-Distribution-free methods: kernel/series density estimation, empirical distribution/CDF/
-characteristic-function estimators and Glivenko-Cantelli bounds, Owen's empirical
-likelihood, resampling and rank-based hypothesis tests, rank/distance dependence measures,
-and local/isotonic/spline regression. 31 public names across five submodules, natively on
-numpy/scipy. Density estimators satisfy the full 13-method distribution contract; hypothesis
-tests and dependence measures reuse `stochpylib.statistics.TestResult`/`EstimateResult`
-rather than defining new result types.
+Distribution-free methods, natively on numpy/scipy. 31 public names across five
+submodules:
+
+- Kernel/series density estimation.
+- Empirical distribution/CDF/characteristic-function estimators and Glivenko-Cantelli
+  bounds; Owen's empirical likelihood.
+- Resampling and rank-based hypothesis tests.
+- Rank/distance dependence measures.
+- Local/isotonic/spline regression.
+
+Density estimators satisfy the full 13-method distribution contract; hypothesis tests
+and dependence measures reuse `stochpylib.statistics.TestResult`/`EstimateResult` rather
+than defining new result types.
 
 **Status:** implemented & tested (31/31 spec names).
 

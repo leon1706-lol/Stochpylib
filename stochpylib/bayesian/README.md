@@ -1,15 +1,19 @@
 # stochpylib.bayesian
 
-Bayesian inference framework: priors/likelihoods/posteriors with ten closed-form
-conjugate families (predictives and evidence included), posterior approximations
-(Laplace, expectation propagation, variational inference, importance sampling), model
-selection (AIC/BIC/DIC/WAIC/PSIS-LOO/TIC, Bayes factors), and seven Bayesian models
-(linear/logistic regression, naive Bayes, a hierarchical normal model, finite mixtures,
-discrete Bayesian networks, Dirichlet-process mixtures). 25 public names across four
-submodules, natively on numpy/scipy — MCMC, SMC and variational inference delegate to
-`stochpylib.advanced_mcmc` rather than duplicating it (per the vault's design-scorecard
-note that `bayesian.computation`'s VI was thin relative to `advanced_mcmc.variational`);
-expectation propagation's moment matching delegates to `stochpylib.numerical_methods`.
+Bayesian inference framework, natively on numpy/scipy. 25 public names across four
+submodules:
+
+- Priors/likelihoods/posteriors with ten closed-form conjugate families (predictives
+  and evidence included).
+- Posterior approximations: Laplace, expectation propagation, variational inference,
+  importance sampling.
+- Model selection: AIC/BIC/DIC/WAIC/PSIS-LOO/TIC, Bayes factors.
+- Seven Bayesian models: linear/logistic regression, naive Bayes, a hierarchical normal
+  model, finite mixtures, discrete Bayesian networks, Dirichlet-process mixtures.
+
+MCMC, SMC and variational inference delegate to `stochpylib.advanced_mcmc` rather than
+duplicating it; expectation propagation's moment matching delegates to
+`stochpylib.numerical_methods`.
 
 **Status:** implemented & tested (25/25 spec names).
 
@@ -64,10 +68,9 @@ expectation propagation's moment matching delegates to `stochpylib.numerical_met
   siblings of `statistics.EstimateResult`/`TestResult` — a point answer plus enough to
   quantify it (`credible_interval()`, `sample()`, `float(ICResult)`).
 - **`.fit(X, y)` returns `self`**, fitted attributes end in `_`, every stochastic method
-  takes `random_state=` — the same fluent convention as the rest of the library
-  (`BayesianLogistic.predict_proba(..., method="mc")`'s Monte Carlo draw gained an
-  explicit `random_state=0` default, in place of a hardcoded seed, as part of V0.20.0's
-  library-wide RNG retrofit).
+  takes `random_state=` — the same fluent convention as the rest of the library.
+  `BayesianLogistic.predict_proba(..., method="mc")`'s Monte Carlo draw defaults to
+  `random_state=0`.
 - **Delegation, not duplication.** MCMC posteriors run through `advanced_mcmc`'s
   samplers, `MFVariational` through `MeanFieldVI`/`ADVI`, SMC evidence through
   `SequentialMonteCarlo`, and EP's per-site moment matching through
