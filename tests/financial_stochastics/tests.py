@@ -1283,13 +1283,25 @@ class TestParallelAndGPURetrofit:
         assert r1.estimate == r2.estimate
 
     def test_price_backend_torch_matches_numpy(self):
+        from stochpylib.utils._backends import is_installed
+
         m = fs_op.MonteCarloOptionPricing(100, 100, 1, 0.05, 0.2)
         r_np = m.price(n_paths=5000, random_state=8, backend="numpy")
-        r_torch = m.price(n_paths=5000, random_state=8, backend="torch")
-        assert abs(r_np.estimate - r_torch.estimate) < 1e-8
+        if is_installed("torch"):
+            r_torch = m.price(n_paths=5000, random_state=8, backend="torch")
+            assert abs(r_np.estimate - r_torch.estimate) < 1e-8
+        else:
+            with pytest.raises(ImportError):
+                m.price(n_paths=5000, random_state=8, backend="torch")
 
     def test_simulate_paths_backend_torch_matches_numpy(self):
+        from stochpylib.utils._backends import is_installed
+
         m = fs_op.MonteCarloOptionPricing(100, 100, 1, 0.05, 0.2)
         a = m.simulate_paths(500, 30, random_state=9)
-        b = m.simulate_paths(500, 30, random_state=9, backend="torch")
-        assert np.allclose(a, b, atol=1e-8)
+        if is_installed("torch"):
+            b = m.simulate_paths(500, 30, random_state=9, backend="torch")
+            assert np.allclose(a, b, atol=1e-8)
+        else:
+            with pytest.raises(ImportError):
+                m.simulate_paths(500, 30, random_state=9, backend="torch")

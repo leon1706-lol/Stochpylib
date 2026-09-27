@@ -2744,3 +2744,40 @@ sites at them instead of importing jax directly.
 **Verification:** The AST guard (`tests/library/tests.py`) now passes; `jax_interface`'s and
 `GPUBackend("jax")`'s behavior is unchanged (same underlying `jax.numpy`/`jax.scipy.stats`
 objects), confirmed by `tests/utils/backend_optional.py`'s jax tests.
+
+### 129. `tests/financial_stochastics`'s torch-backend tests assumed torch is always installed
+
+**Severity:** 4/10 · **Status:** 🟢 `fixed` (V0.20.1)
+
+**Problem:** `TestParallelAndGPURetrofit.test_price_backend_torch_matches_numpy`/
+`test_simulate_paths_backend_torch_matches_numpy` called `backend="torch"` unconditionally. They
+passed locally only because torch happens to be installed in the dev sandbox, but CI's
+`smoke (financial_stochastics)` job installs only `.[dev]` (no torch), so both failed there.
+
+**Fix:** Both tests now branch on `utils._backends.is_installed("torch")`: real numeric comparison
+when torch is present, `pytest.raises(ImportError)` when it isn't — the same pattern already used
+by `tests/utils/e2e.py`'s optional-interop exercises.
+
+**Verification:** `pytest tests/financial_stochastics/tests.py -k TestParallelAndGPURetrofit -v`
+passes locally (torch installed, real path exercised); the CI job that lacks torch now hits the
+`ImportError` branch instead of failing.
+
+### 130. `utils.performance.JIT_compile`'s `backend_` test checked it before ever calling the wrapper
+
+**Severity:** 3/10 · **Status:** 🟢 `fixed` (V0.20.1)
+
+**Problem:** `_JITWrapper.backend_` is `None` until `_compile()` runs, which is lazily triggered by
+the *first call* to the wrapper (by design — compiling a function that's never invoked would be
+wasted work). `tests/utils/backend_optional.py::TestNumbaBackend::test_jit_compile_uses_numba_and_matches_python`
+asserted `compiled.backend_ == "numba"` right after construction, before calling `compiled(x)`,
+so it always read `None`. This was invisible locally because the dev sandbox's numba raises
+`ImportError` on import (numpy version mismatch), so `_require_or_skip("numba")` always skipped
+the test there; CI's `utils-optional` job installs a genuinely working numba and hit the bug.
+
+**Fix:** The test now calls `compiled(x)` first (triggering `_compile()`), then asserts
+`.backend_`, matching the pattern the adjacent `test_jit_compile_backend_jax` already used.
+`_JITWrapper`'s lazy-compile design itself was correct and is unchanged.
+
+**Verification:** Reasoned through against CI's log (`assert None == 'numba'` on both ubuntu and
+windows `utils-optional` jobs); locally the test now skips cleanly instead of ever reaching the
+assertion, since numba is unusable in this sandbox.

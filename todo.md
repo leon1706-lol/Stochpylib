@@ -9,6 +9,36 @@ are for — see `AGENTS.md`).
 
 -----
 
+## V0.20.1 — CI fixes for the pushed V0.20.0 commit (`70c1626`), ready for manual commit
+
+The owner pushed V0.20.0 directly. GitHub Actions run `36316453989` on `main` then showed 3
+real failing jobs, all now fixed in the working tree (not yet committed — the owner is
+committing this patch manually):
+
+1. **`smoke (financial_stochastics)`** — `TestParallelAndGPURetrofit.test_price_backend_torch_matches_numpy`/
+   `test_simulate_paths_backend_torch_matches_numpy` assumed torch is always installed; that job's
+   `pip install -e ".[dev]"` doesn't include it. Fixed in `tests/financial_stochastics/tests.py` to
+   branch on `utils._backends.is_installed("torch")` (real comparison vs. `pytest.raises(ImportError)`).
+2. **`utils (optional backends)` (ubuntu + windows, identical failure on both)** —
+   `TestNumbaBackend.test_jit_compile_uses_numba_and_matches_python` asserted `.backend_` before
+   ever calling the JIT-wrapped function, so it always read the lazy-init `None`. Never caught
+   locally because this sandbox's numba is broken (numpy version mismatch) and the test always
+   skipped here. Fixed in `tests/utils/backend_optional.py` — call `compiled(x)` first, then assert
+   `.backend_`, matching the sibling `test_jit_compile_backend_jax` pattern. `_JITWrapper`'s
+   lazy-compile design in `stochpylib/utils/performance.py` was correct and untouched.
+
+Both write-ups are in `development/Probleme.md` #129-130. Verified locally:
+`pytest tests/financial_stochastics/tests.py -k TestParallelAndGPURetrofit -v` → 8 passed;
+`pytest tests/utils/backend_optional.py -v` → 5 passed / 6 skipped (numba/jax skip here as before).
+Checked every job in the completed run (`36316453989`): 11 failed in total, not just the 3 first
+flagged — all 8 `test (3.10-3.13, ubuntu/windows)` matrix jobs failed too, but on the exact same
+two torch tests (`2 failed, 2934 passed, 2 skipped` on every one of them). No other distinct
+failures anywhere in the run; both fixes above cover all 11. Not committed — per instruction, the owner is committing this as v0.20.1
+themselves; no `spl`/`__init__.py`/`pyproject.toml` version bump was made since only tests changed
+(no library behavior changed), so bump those only if the owner wants an actual version tag for this.
+
+-----
+
 ## V0.20.0 `utils` — verification complete, ready for the commit ask
 
 Implementation, documentation, and full-suite verification are all done. Every one of the

@@ -140,8 +140,9 @@ class TestNumbaBackend:
 
         compiled = JIT_compile(f)
         x = np.arange(10.0)
+        result = compiled(x)
         assert compiled.backend_ == "numba"
-        assert abs(compiled(x) - f(x)) < 1e-10
+        assert abs(result - f(x)) < 1e-10
 
 
 class TestPandasBackend:
