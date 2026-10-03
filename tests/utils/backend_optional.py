@@ -76,9 +76,9 @@ class TestTorchBackend:
                                         n_warmup=150, step_size=0.5, n_leapfrog=10)
         sampler.sample(np.zeros(2), random_state=1)
         samples = sampler.get_samples()
-        # MCSE-based bound (this module's own ESS), not a fixed magic number -- the
-        # leapfrog trajectory is chaotic, so a hardcoded threshold flakes across
-        # platforms even at a fixed random_state (torch's float rounding differs).
+        # MCSE-based bound (this module's own ESS), not a fixed number: the leapfrog trajectory is
+        # chaotic, so a hardcoded threshold flakes across platforms (torch's float rounding
+        # differs).
         for j in range(samples.shape[1]):
             col = samples[:, j]
             ess = ESS(col[None, :, None])

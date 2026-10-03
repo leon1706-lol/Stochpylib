@@ -20,13 +20,13 @@ def exercise(name):
 
 _RNG = np.random.default_rng(0)
 _N = 600
-_X = _RNG.integers(0, 2, _N).astype(float)          # treatment indicator
+_X = _RNG.integers(0, 2, _N).astype(float)
 _T_TRUE = _RNG.exponential(np.where(_X == 1, 4.0, 2.0))
 _C = _RNG.uniform(1.0, 10.0, _N)
 T = np.minimum(_T_TRUE, _C)
 E = (_T_TRUE <= _C).astype(int)
 G = np.where(_X == 1, "B", "A")
-CAUSE = np.where(E == 1, _RNG.integers(1, 3, _N), 0)  # competing risks: 0 censored, 1 / 2 causes
+CAUSE = np.where(E == 1, _RNG.integers(1, 3, _N), 0)
 _TIMES = np.array([1.0, 2.0, 4.0])
 
 
@@ -72,7 +72,7 @@ def _empirical():
 def _breslow():
     be = mod.BreslowEstimator().fit(T, E, np.exp(-0.5 * _X))
     s0 = np.asarray(be.baseline_survival_(_TIMES), dtype=float)
-    h0 = np.asarray(be.predict(_TIMES), dtype=float)     # baseline cumulative hazard
+    h0 = np.asarray(be.predict(_TIMES), dtype=float)
     assert np.all((s0 >= 0) & (s0 <= 1)) and np.all(np.diff(h0) >= -1e-12)
     assert np.allclose(np.exp(-h0), s0)
 
@@ -100,7 +100,7 @@ def _cumulative_hazard():
 @exercise("ResidualLifetime")
 def _residual():
     rl = mod.ResidualLifetime(source=Weibull(1.0, 2.0))
-    assert abs(rl.value(1.0) - 2.0) < 0.05   # memoryless: mean residual life = scale
+    assert abs(rl.value(1.0) - 2.0) < 0.05
 
 
 @exercise("MeanResidualLife")

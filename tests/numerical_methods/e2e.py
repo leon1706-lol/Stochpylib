@@ -21,8 +21,6 @@ def _finite(a):
     return bool(np.all(np.isfinite(np.asarray(a))))
 
 
-# ----------------------------------------------------------------- integration
-
 @exercise("GaussLegendre")
 def _gl():
     gl = mod.GaussLegendre(10)
@@ -70,8 +68,6 @@ def _cr():
     assert abs(r.value - 0.25) < 1e-10
 
 
-# ----------------------------------------------------------------- ode_sde
-
 @exercise("EulerMethod")
 def _euler():
     sol = mod.EulerMethod().solve(lambda t, y: -y, (0, 1), [1.0], n_steps=1000)
@@ -117,8 +113,6 @@ def _mil_sde():
         (0, 1.0), [100.0], n_steps=100, n_paths=200, random_state=0)
     assert _finite(sol.terminal)
 
-
-# ------------------------------------------------------------ linear_algebra
 
 @exercise("MatrixExponential")
 def _me():
@@ -169,8 +163,6 @@ def _schur():
     assert np.max(np.abs(s.reconstruct() - A)) < 1e-6
 
 
-# ------------------------------------------------------------------ root_solve
-
 @exercise("Bisection")
 def _bis():
     r = mod.Bisection(lambda x: x ** 2 - 2, 0, 2)
@@ -207,8 +199,6 @@ def _rf():
     r = rf.solve()
     assert abs(r.root - np.sqrt(2)) < 1e-8
 
-
-# --------------------------------------------------------------- interpolation
 
 @exercise("SplineInterpolation")
 def _spline():
@@ -250,8 +240,6 @@ def _interp():
     interp = mod.Interpolation(x, np.sin(x), method="cubic")
     assert abs(interp(2.5) - np.sin(2.5)) < 1e-2
 
-
-# ---------------------------------------------------------------------- pde
 
 @exercise("Mesh")
 def _mesh():
@@ -313,8 +301,6 @@ def _spectral():
     du = sm.fourier_derivative(np.sin(x), 2 * np.pi)
     assert np.max(np.abs(du - np.cos(x))) < 1e-8
 
-
-# -------------------------------------------------------------- result objects
 
 @exercise("QuadratureResult")
 def _qres():

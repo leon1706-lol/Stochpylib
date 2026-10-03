@@ -87,7 +87,6 @@ class WignerSemicircle(_SpectralLaw):
         return out if out.ndim else float(out)
 
     def rvs(self, size=1, random_state=None):
-        # semicircle(R) = R * (2 * Beta(3/2, 3/2) - 1)
         b = np.asarray(Beta(1.5, 1.5).rvs(size, random_state=random_state), dtype=float)
         return self.radius * (2.0 * b - 1.0)
 
@@ -101,7 +100,7 @@ class WignerSemicircle(_SpectralLaw):
         return 0.0
 
     def kurtosis(self):
-        return -1.0  # excess kurtosis of the semicircle
+        return -1.0
 
     def moment(self, k):
         """Raw moment E[X^k]: zero for odd k, Catalan(k/2) * (R/2)^k for even k."""
@@ -174,7 +173,6 @@ class MarchenkoPastur(_SpectralLaw):
     def _grid(self):
         if self._table is None:
             x, F = _grid_law(self._density, self.lam_minus, self.lam_plus, 6001)
-            # analytic total mass of the continuous part: min(1, 1/gamma)
             F = F * (min(1.0, 1.0 / self.gamma) / F[-1])
             self._table = _GridInterp(x, F)
         return self._table

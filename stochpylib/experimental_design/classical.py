@@ -40,8 +40,6 @@ def _effect_label(indices, names):
     return sep.join(parts)
 
 
-# ---------------------------------------------------------------------- full factorial
-
 class FullFactorial(DesignGenerator):
     """Full factorial design.
 
@@ -92,8 +90,6 @@ class FullFactorial(DesignGenerator):
                       bounds=None if explicit else self.bounds, properties=props)
 
 
-# ---------------------------------------------------------------- fractional factorial
-
 def _popcount(v):
     return bin(v).count("1")
 
@@ -141,7 +137,6 @@ class FractionalFactorial(DesignGenerator):
         self.max_order = int(max_order)
         self.random_state = random_state
 
-    # --------------------------------------------------------------- generator parsing
     def _parse(self):
         """``(names, columns)``: columns[j] is a bitmask over the *base* factors."""
         gens = self.generators
@@ -155,7 +150,6 @@ class FractionalFactorial(DesignGenerator):
             return base + lhs, ([1 << i for i in range(len(base))]
                                 + [self._word_mask(w, base) for w in added])
         if any(len(t) == 1 for t in tokens):
-            # pyDOE style: single letters are base factors, words are generated columns
             base = [t for t in tokens if len(t) == 1]
             names, cols, used = [], [], set(base)
             for t in tokens:
@@ -168,7 +162,6 @@ class FractionalFactorial(DesignGenerator):
                     names.append(nxt)
                     cols.append(self._word_mask(t, base))
             return names, cols
-        # list of words for the added factors, over the leading base letters
         letters = sorted({c for w in tokens for c in w}, key=_LETTERS.index)
         b = _LETTERS.index(letters[-1]) + 1
         base = list(_LETTERS[:b])
@@ -187,7 +180,6 @@ class FractionalFactorial(DesignGenerator):
             raise ValueError(f"generator {word!r} must involve at least two base factors")
         return mask
 
-    # --------------------------------------------------------------- generator search
     @classmethod
     def _search(cls, k, p, rng):
         b = k - p
@@ -213,7 +205,6 @@ class FractionalFactorial(DesignGenerator):
                 best_key, best = key, combo
         return best
 
-    # ---------------------------------------------------------------------- generate
     def _columns(self, rng):
         if self.generators is not None:
             return self._parse()
@@ -228,7 +219,7 @@ class FractionalFactorial(DesignGenerator):
             for cand in range(k - 2, 0, -1):
                 b = k - cand
                 if (1 << b) - b - 1 < cand:
-                    continue  # too few base factors to generate that many columns
+                    continue
                 gens = self._search(k, cand, rng)
                 full = [w | (1 << (k - cand + j)) for j, w in enumerate(gens)]
                 if min(_popcount(w) for w in _subgroup(full)) >= int(self.resolution):
@@ -253,7 +244,6 @@ class FractionalFactorial(DesignGenerator):
         for j, c in enumerate(cols):
             members = [i for i in range(b) if c >> i & 1]
             pts[:, j] = np.prod(base[:, members], axis=1)
-        # defining words over the full factor set: generated factor j times its base word
         base_pos = {i: base_idx[i] for i in range(b)}
         words = []
         for j, c in enumerate(cols):
@@ -307,8 +297,6 @@ class FractionalFactorial(DesignGenerator):
         return Design(np.vstack([d.points, -d.points]), factor_names=list(d.factor_names),
                       space="coded", kind="fold-over fractional factorial", properties=props)
 
-
-# ---------------------------------------------------------------------- Plackett-Burman
 
 def _paley_prime(q):
     """Cyclic Paley design of order q+1 for prime q = 3 mod 4 (the published PB rows)."""
@@ -391,8 +379,6 @@ class Plackett_Burman(DesignGenerator):
                       properties={"n_runs": N, "hadamard_order": N})
 
 
-# ------------------------------------------------------------------ central composite
-
 class CCD(DesignGenerator):
     """Central composite design: a two-level cube, ``2k`` axial runs and centre runs.
 
@@ -444,8 +430,6 @@ class CCD(DesignGenerator):
                                   "n_runs": len(pts)})
 
 
-# ------------------------------------------------------------------------ Box-Behnken
-
 # Box & Behnken (1960) block structures for k = 6, 7 (0-based factor indices); k = 3..5
 # use all factor pairs.
 _BB_BLOCKS = {
@@ -484,8 +468,6 @@ class BoxBehnken(DesignGenerator):
                       properties={"n_edge": len(runs), "n_center": self.center,
                                   "n_blocks": len(blocks), "n_runs": len(pts)})
 
-
-# ------------------------------------------------------------- Latin / Graeco-Latin
 
 def _square_anova(y, factors, names, n):
     """ANOVA for an n x n square with the given (n*n,) factor columns of integer levels."""

@@ -13,8 +13,6 @@ from stochpylib.advanced_mcmc._common import _DualAveraging, _Welford, _cholesky
 __all__ = ["HamiltonianMonteCarlo", "MALA", "MMALA", "NeutraHMC", "NoUTurnSampler", "RiemannianHMC"]
 
 
-# --------------------------------------------------------------------------- shared bits
-
 def _kinetic(p, inv_mass):
     if inv_mass.ndim == 1:
         return 0.5 * float(p @ (inv_mass * p))
@@ -64,8 +62,8 @@ def _find_reasonable_step_size(target, theta, grad, inv_mass, rng, diag):
             eps *= 0.5 if a > 0 else 2.0
             tries += 1
             continue
-        # a=+1: keep doubling while acceptance prob stays above 0.5; a=-1: keep halving
-        # while it stays below 0.5. Stop once it has crossed to the other side.
+        # a=+1: double while acceptance stays above 0.5; a=-1: halve while it stays below; stop once
+        # it crosses.
         if a * diff <= a * np.log(0.5):
             break
         eps = eps * (2.0 ** a)
@@ -209,8 +207,7 @@ class HamiltonianMonteCarlo(MCMCSampler):
             self._eps = self._dual.final()
         self.step_size_ = self._eps
         self.mass_matrix_ = (1.0 / self._inv_mass) if self._diag else np.linalg.inv(self._inv_mass)
-        # divergences_ counts only the kept post-warmup transitions (transient warmup
-        # divergences while step size/mass are still converging are not diagnostic).
+        # divergences_ counts only post-warmup transitions; warmup divergences aren't diagnostic.
         self._divergences = 0
         self._divergences_per_chain[-1] = 0
 
@@ -384,7 +381,6 @@ class NoUTurnSampler(HamiltonianMonteCarlo):
         result = super().sample(theta_init, random_state)
         n = self.n_samples * self.thin
         depths = np.array(self._tree_depths[-self.n_samples * self.thin:]) if self._tree_depths else np.array([0])
-        # keep only the post-warmup depths, thinned like the chain itself
         kept = depths[self.thin - 1::self.thin][:self.n_samples] if self.thin > 1 else depths[:self.n_samples]
         if len(kept) < self.n_samples:
             kept = np.pad(kept, (0, self.n_samples - len(kept)), constant_values=(kept[-1] if len(kept) else 0))

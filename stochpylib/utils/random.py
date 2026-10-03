@@ -15,7 +15,7 @@ from stochpylib import _rng
 
 __all__ = ["Generator", "SeedSequence", "random_state", "set_seed", "spawn_generator"]
 
-#: identity re-exports -- these ARE numpy's own classes, not stochpylib wrappers.
+# Identity re-exports: numpy's own classes, not stochpylib wrappers.
 Generator = np.random.Generator
 SeedSequence = np.random.SeedSequence
 

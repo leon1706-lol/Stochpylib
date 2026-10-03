@@ -38,10 +38,6 @@ def _norm_logpdf(x):
     return -0.5 * np.asarray(x, dtype=float) ** 2 - _LOG_SQRT_2PI
 
 
-# ---------------------------------------------------------------------------
-# classification: Laplace
-
-
 class LaplacePropagation:
     """Laplace approximation for binary classification (RW Algorithm 3.1).
 
@@ -119,10 +115,6 @@ class LaplacePropagation:
         if return_std:
             return probs, std
         return probs
-
-
-# ---------------------------------------------------------------------------
-# classification: EP and variational
 
 
 class ExpectationPropagation:

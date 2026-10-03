@@ -64,7 +64,7 @@ class ExactInference:
         X_test = _as_2d(X_test)
         K_star = self.kernel(X_test, self.X_train)
         mean = K_star @ self.alpha_
-        v = np.linalg.solve(self.L_, K_star.T)                     # (n_train, n_test)
+        v = np.linalg.solve(self.L_, K_star.T)
         k_ss_diag = self.kernel.diag(X_test) - np.sum(v**2, axis=0)
         if full_cov:
             cov = self.kernel(X_test, X_test) - v.T @ v

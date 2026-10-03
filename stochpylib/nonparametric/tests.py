@@ -26,8 +26,6 @@ __all__ = ["PermutationTest", "BootstrapTest", "MoodTest", "KruskalWallis",
 _EXACT_LIMIT = 20000
 
 
-# --------------------------------------------------------------------- resampling
-
 class PermutationTest(NonparametricTest):
     """Permutation test over two independent samples (``permutation_type=
     "independent"``, the default), paired data with a permuted correspondence
@@ -218,8 +216,6 @@ class BootstrapTest(NonparametricTest):
                            self.alternative, extras={"n_boot": B})
 
 
-# --------------------------------------------------------------------- rank tests
-
 class MoodTest(NonparametricTest):
     """Mood's two-sample test: ``kind="scale"`` (rank-dispersion test for equal
     scale, matches ``scipy.stats.mood`` exactly) or ``kind="median"`` (median
@@ -348,8 +344,6 @@ class FriedmanTest(NonparametricTest):
         return TestResult(float(stat), pvalue, df, "no treatment effect", "Friedman")
 
 
-# --------------------------------------------------------------------- sign / runs
-
 class SignTest(NonparametricTest):
     """One-sample (or paired, via two equal-length arrays) exact sign test of
     ``H0: median(x) == mu0`` -- matches an exact two-sided binomial test at
@@ -461,13 +455,11 @@ class WaldWolfowitz(NonparametricTest):
                            "Wald-Wolfowitz", extras={"n_runs": n_runs})
 
 
-# --------------------------------------------------------------------- goodness of fit
-
 _AD_NORM_CRIT = np.array([0.561, 0.631, 0.752, 0.873, 1.035])
 _AD_EXPON_CRIT = np.array([0.916, 1.062, 1.321, 1.591, 1.959])
 _AD_SIG = np.array([15.0, 10.0, 5.0, 2.5, 1.0]) / 100.0
-# Case-0 ("all parameters known") asymptotic critical values, D'Agostino &
-# Stephens (1986) Table 4.2 -- used only for a fully-specified reference dist.
+# Case-0 asymptotic critical values (D'Agostino & Stephens 1986, Table 4.2), only for a fully
+# specified reference distribution.
 _AD_KNOWN_CRIT = np.array([1.248, 1.610, 1.933, 2.492, 3.070, 3.857, 4.500])
 _AD_KNOWN_SIG = np.array([25.0, 15.0, 10.0, 5.0, 2.5, 1.0, 0.5]) / 100.0
 
@@ -637,9 +629,8 @@ class CramerVonMises(NonparametricTest):
     def _fit_two_sample(self, x, y):
         nx, ny = len(x), len(y)
         N = nx + ny
-        # rank the SORTED x/y concatenation (not the original order): the
-        # statistic compares each sample's own order statistics to their
-        # expected pooled rank, so x and y must each be sorted first.
+        # Rank the SORTED x/y concatenation: the statistic compares each sample's order statistics
+        # to their expected pooled rank.
         pooled = np.concatenate([np.sort(x), np.sort(y)])
         r = _rank_ties(pooled)
         rx, ry = r[:nx], r[nx:]

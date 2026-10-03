@@ -76,9 +76,8 @@ _MODULES = {
     "viz": viz,
 }
 
-# Documented public extras beyond the 229 spec names (utilities & result
-# objects introduced during implementation). Pinned so they cannot silently
-# disappear either.
+# Documented public extras beyond the 229 spec names (utilities and result objects), pinned so they
+# can't silently disappear.
 _EXTRAS = {
     "distributions": {"Distribution", "MultivariateDistribution"},
     "montecarlo": {"MCResult", "DigitalNetBase2"},
@@ -124,8 +123,6 @@ _METHOD_NAMES = ("pdf", "cdf", "ppf", "rvs", "mean", "var", "skewness",
                  "kurtosis", "entropy", "mgf", "cf", "fit", "ks_test")
 
 
-# ---------------------------------------------------------------- conformance
-
 @pytest.mark.parametrize("name", sorted(_MODULES))
 def test_spec_names_present(name):
     mod = _MODULES[name]
@@ -148,13 +145,12 @@ def test_total_spec_name_count():
                    "advanced_mcmc", "numerical_methods", "bayesian",
                    "robust_statistics", "nonparametric", "optimization",
                    "experimental_design", "spatial_statistics", "viz", "utils")
-    total = sum(len(_SPEC[k]) for k in implemented) + 60  # +60 distributions
-    assert total == 794  # 794/794 across all twenty-three modules
+    total = sum(len(_SPEC[k]) for k in implemented) + 60
+    assert total == 794
 
 
-# Multivariate distributions legitimately deviate from the scalar-method
-# contract: they expose pdf (not pmf) and cannot offer scalar-argument
-# mgf/cf (the multinomial/wishart transforms are vector-valued).
+# Multivariate: pdf instead of pmf; scalar-argument mgf/cf are inapplicable (vector-valued
+# transforms).
 _MULTIVARIATE = {"Multinomial", "Dirichlet", "InverseWishart",
                  "MultivariateNormal", "MultivariatePareto", "MultivariateT",
                  "Wishart"}
@@ -168,9 +164,6 @@ def test_every_distribution_class_exposes_common_interface():
         cls = getattr(distributions, name)
         required = set(_METHOD_NAMES) | {"pmf"}
         if name in _MULTIVARIATE:
-            # multivariate: pdf instead of pmf; scalar-argument mgf/cf are
-            # mathematically inapplicable (vector-valued transforms) — the
-            # documented contract deviation for these 7 classes
             required -= {"pmf", "mgf", "cf"}
             required |= {"pdf"}
         for meth in sorted(required):
@@ -184,9 +177,8 @@ def test_top_level_package_wiring():
         "montecarlo", "nonparametric", "numerical_methods", "optimization",
         "probability", "queueing", "random_matrix", "robust_statistics", "spatial_statistics",
         "statistics", "survival", "timeseries", "utils", "viz"}
-    # version consistency, never a literal: the installed metadata and the
-    # in-code __version__ must agree (a hardcoded literal here broke CI on
-    # every version bump — development/Probleme.md [39])
+    # Version consistency, never a literal: the installed metadata and in-code __version__ must
+    # agree.
     from importlib.metadata import version, PackageNotFoundError
     try:
         assert version("stochpylib") == stochpylib.__version__
@@ -194,13 +186,10 @@ def test_top_level_package_wiring():
         pass
 
 
-# ---------------------------------------------------------------- integration
-
 def test_montecarlo_reliability_driven_by_library_weibull():
     """E2E: reliability_mc consumes library distribution objects and matches
     the closed-form failure probability of a stress-strength problem."""
     from stochpylib.distributions import Weibull
-    # X ~ Weibull(k=2, scale=10): P(X <= 5) = 1 - exp(-(5/10)^2) ~= 0.2212
     p_true = 1 - np.exp(-0.25)
     res = montecarlo.reliability_mc(
         lambda X: X[:, 0], [Weibull(2.0, 10.0)], threshold=5.0, n=100_000,
@@ -219,7 +208,7 @@ def test_t_copula_margins_follow_library_student_t():
     z = rng.standard_normal((4000, 2)) @ np.linalg.cholesky(R).T
     w = rng.chisquare(4, 4000)
     t_draws = z * np.sqrt(4 / w)[:, None]
-    data = stats.t.cdf(t_draws, 4)              # copula-scale (uniform)
+    data = stats.t.cdf(t_draws, 4)
 
     fitted = StudentTCopula().fit(data)
     assert 3.0 < fitted.df_ < 6.5
@@ -270,7 +259,6 @@ def test_qmc_integral_agrees_between_apis():
         random_state=3).estimate(n=16384)
     qmc = float(qmc_res.estimate)
     crude = montecarlo.crude_mc(f, n=16384, dim=2, random_state=4)
-    # ground truth by dense quadrature
     g = np.linspace(0, 1, 801)
     uu, vv = np.meshgrid(g, g)
     exact = float(np.trapezoid(
@@ -313,8 +301,6 @@ def test_montecarlo_reliability_with_survival_km_cross_check():
         random_state=53)
     mc_fail = res.estimate
 
-    # KM S(2) = P(T>2), so failure prob P(T<=2)=1-S(2); MC uses uncensored
-    # exp(0.5) draws so they should be consistent within MC noise
     assert abs((1 - km_s_at_2) - mc_fail) < .06
 
 
@@ -711,8 +697,6 @@ def test_viz_renders_real_models_from_five_modules():
     assert np.allclose(fig.data["rhat"], advanced_mcmc.Rhat(sampler.get_chains()))
 
 
-# ------------------------------------------------------------ utils / V0.20.0 retrofit
-
 _OPTIONAL_BACKEND_MODULES = ("pandas", "torch", "jax", "jaxlib", "numba", "cupy")
 
 
@@ -745,8 +729,7 @@ def test_library_code_never_imports_optional_backends_outside_utils_backends():
                 continue
             rel = path.relative_to(pkg_dir).as_posix()
             assert rel == "utils/_backends.py", f"optional backend imported outside utils/_backends.py: {path}"
-            # walk up to the nearest enclosing scope; it must be a function, not
-            # module level or a bare module-level try/if block
+            # Walk up to the nearest enclosing scope; it must be a function, not module level.
             n = node
             while n in parents:
                 n = parents[n]
@@ -814,9 +797,8 @@ def test_rng_goes_through_the_shared_helper():
             if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
                 continue
             name = _attr_chain_name(node.func)
-            # only numpy's own RNG is in scope -- e.g. cupy.random.default_rng is a
-            # genuinely different, intentional native-device RNG (GPUBackend's
-            # native_rng=True path), not a missed random_state= retrofit spot.
+            # Only numpy's own RNG is in scope; e.g. cupy.random.default_rng is an intentional
+            # native-device RNG (GPUBackend native_rng=True), not a missed random_state= spot.
             if name not in ("np.random.RandomState", "numpy.random.RandomState",
                            "np.random.seed", "numpy.random.seed",
                            "np.random.default_rng", "numpy.random.default_rng"):

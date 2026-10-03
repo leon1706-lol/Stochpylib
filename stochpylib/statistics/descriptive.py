@@ -16,8 +16,6 @@ __all__ = [
 ]
 
 
-# ---------------------------------------------------------------- location / spread
-
 def mean(x, weights=None, trim=0.0, axis=None):
     """Arithmetic mean, optionally weighted or symmetrically trimmed.
 

@@ -325,8 +325,8 @@ class SAA(Optimizer):
         x_hat, mean_cost = self._solve_batch(x0, scenarios, bounds)
         f_hat = mean_cost(x_hat)
 
-        # gap replications: each batch gives (cost of x_hat) - (optimal cost) on its own
-        # scenarios, an upward-biased but consistent estimator of the true optimality gap
+        # Each batch gives (cost of x_hat) - (optimal cost) on its own scenarios: an upward-biased
+        # but consistent gap estimator.
         gaps = []
         for _ in range(int(self.n_batches)):
             batch = self._sampler(int(self.batch_size), rng)

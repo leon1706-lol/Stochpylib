@@ -41,9 +41,6 @@ def _parse(fig):
     return ET.fromstring(fig.to_svg())
 
 
-# ============================================================================== ticks
-
-
 class TestTicks:
     @pytest.mark.parametrize("lo,hi", [(0, 97), (-3.2, 3.2), (0.001, 0.004), (-500, 1200)])
     def test_nice_ticks_cover_range(self, lo, hi):
@@ -82,8 +79,7 @@ class TestTicks:
         assert fmt(v) == "0"
 
     def test_fmt_tiny_nonzero_values_are_not_rounded_to_zero(self):
-        # a tiny but genuinely nonzero value must stay visibly nonzero -- only exact
-        # (positive or negative) zero collapses to "0"
+        # A tiny but nonzero value must stay visibly nonzero; only exact zero collapses to "0".
         assert fmt(-1e-12) == "-1e-12"
         assert fmt(1e-12) == "1e-12"
 
@@ -93,12 +89,9 @@ class TestTicks:
         assert fmt(3.0) == "3"
 
 
-# ============================================================================== colors
-
-
 class TestColors:
     def test_palette_cycles(self):
-        assert palette(0) == palette(10)  # 10-color cycle
+        assert palette(0) == palette(10)
 
     def test_palette_returns_valid_hex(self):
         for i in range(12):
@@ -110,7 +103,7 @@ class TestColors:
         cm = colormap("viridis")
         lo = tuple(int(cm(0.0)[i : i + 2], 16) for i in (1, 3, 5))
         hi = tuple(int(cm(1.0)[i : i + 2], 16) for i in (1, 3, 5))
-        assert sum(lo) < sum(hi)  # dark purple -> bright yellow
+        assert sum(lo) < sum(hi)
 
     def test_rdbu_center_is_near_white(self):
         c = colormap("RdBu")(0.5)
@@ -121,8 +114,8 @@ class TestColors:
         cm = colormap("RdBu")
         blue = cm(0.0)
         red = cm(1.0)
-        assert int(blue[5:7], 16) > int(blue[1:3], 16)  # more blue than red
-        assert int(red[1:3], 16) > int(red[5:7], 16)  # more red than blue
+        assert int(blue[5:7], 16) > int(blue[1:3], 16)
+        assert int(red[1:3], 16) > int(red[5:7], 16)
 
     def test_unknown_colormap_raises(self):
         with pytest.raises(ValueError):
@@ -132,24 +125,21 @@ class TestColors:
         assert to_hex((2.0, -1.0, 0.5)) == "#FF0080"
 
 
-# ============================================================================== figure model
-
-
 class TestFigureModel:
     def test_line_extent_and_padding(self):
         fig = Figure()
         fig.ax.line([0, 1, 2], [0, 5, 0])
         (xlo, xhi), (ylo, yhi) = fig.ax.data_limits()
         assert xlo < 0 and xhi > 2
-        assert ylo < 0 and yhi > 5  # 5% padding both sides
+        assert ylo < 0 and yhi > 5
 
     def test_nan_splits_line_into_runs(self):
-        # two >=2-point runs either side of the NaN (a length-1 run alone can't draw a
-        # segment and is correctly dropped, so this needs 3 points on each side)
+        # Two >=2-point runs either side of the NaN (a length-1 run can't draw a segment and is
+        # dropped).
         fig = Figure()
         fig.ax.line([0, 1, 2, 3, 4, 5], [0.0, 0.5, np.nan, 1.0, 1.5, 2.0])
         svg = fig.to_svg()
-        assert svg.count("<polyline") == 2  # split around the NaN
+        assert svg.count("<polyline") == 2
 
     def test_ax_composition_returns_owning_figure(self):
         fig = Figure(nrows=1, ncols=2)
@@ -203,9 +193,6 @@ class TestFigureModel:
         arr = _RNG.standard_normal((50, 2))
         assert _extract_samples(arr).shape == (50, 2)
         assert _extract_samples(_RNG.standard_normal(50)).shape == (50, 1)
-
-
-# ============================================================================== SVG rendering
 
 
 class TestSVG:
@@ -274,8 +261,8 @@ class TestSVG:
 
         fig = plot_pdf(Normal(0, 1))
         root = _parse(fig)
-        # ElementTree namespaces every tag ("{http://www.w3.org/2000/svg}clipPath"), so a
-        # plain "clipPath/rect" XPath never matches -- walk and match by local name instead
+        # ElementTree namespaces every tag, so a plain "clipPath/rect" XPath never matches; match by
+        # local name.
         clip_path_el = next(el for el in root.iter() if el.tag.endswith("clipPath"))
         clip_rect = next(child for child in clip_path_el if child.tag.endswith("rect"))
         x0, y0 = float(clip_rect.get("x")), float(clip_rect.get("y"))
@@ -295,9 +282,6 @@ class TestSVG:
         fig.ax.line(freqs, power)
         fig.ax.set(yscale="log")
         _parse(fig)
-
-
-# ============================================================================== matplotlib backend
 
 
 class _FakeMplAxes:
@@ -391,9 +375,6 @@ class TestMatplotlibBackend:
         assert type(mfig).__name__ == "Figure"
 
 
-# ============================================================================== distributions
-
-
 class TestDistributionsSubmodule:
     def test_plot_pdf_matches_scipy(self):
         from stochpylib.distributions import Gamma
@@ -468,9 +449,8 @@ class TestDistributionsSubmodule:
         assert np.allclose(fig.data["hazard"], -np.log(1.0 - g.cdf(fig.data["x"])), rtol=1e-6)
 
     def test_plot_qqplot_matches_scipy_probplot(self):
-        # dist=None fits Normal(mean, std) and reports theoretical quantiles already
-        # scaled to the sample's units (mean + std * z), not scipy probplot's raw
-        # standard-normal osm -- rescale scipy's osm the same way before comparing.
+        # dist=None fits Normal(mean, std) and reports theoretical quantiles already in sample units
+        # (mean + std * z), not scipy probplot's raw osm; rescale scipy's osm before comparing.
         data = _RNG.standard_normal(50)
         (osm, osr), _ = stats.probplot(data, dist="norm", fit=True)
         fig = plot_qqplot(data)
@@ -533,9 +513,6 @@ class TestDistributionsSubmodule:
     def test_nan_data_raises(self):
         with pytest.raises(ValueError):
             plot_kde([1.0, 2.0, np.nan])
-
-
-# ============================================================================== processes
 
 
 class TestProcessesSubmodule:
@@ -668,9 +645,6 @@ class TestProcessesSubmodule:
             plot_trajectory(_RNG.standard_normal(10))
 
 
-# ============================================================================== diagnostics
-
-
 class TestDiagnosticsSubmodule:
     def _hmc_samples(self, seed=0, n_samples=400, n_warmup=200, n_chains=4, corr=0.0):
         from stochpylib.advanced_mcmc import HamiltonianMonteCarlo
@@ -692,10 +666,8 @@ class TestDiagnosticsSubmodule:
         assert np.allclose(fig.data["ess"], ESS(sampler.get_chains()))
 
     def test_trace_plot_rhat_near_one_for_converged_chains(self):
-        # HMC trajectories are chaotically sensitive to platform-level floating-point
-        # differences (BLAS/libm) even from an identical seed, so R-hat itself is not
-        # bit-reproducible across environments -- a generous "did it basically converge"
-        # bound, not a tight one, is what's actually testable here.
+        # HMC trajectories are chaotically sensitive to platform floating point even from one seed,
+        # so R-hat isn't bit-reproducible; only a generous "basically converged" bound is testable.
         sampler = self._hmc_samples(n_samples=1200, n_warmup=500)
         fig = trace_plot(sampler)
         assert np.all(fig.data["rhat"] < 1.1)
@@ -706,9 +678,8 @@ class TestDiagnosticsSubmodule:
         assert fig.data["chains"].shape == (4, 100, 2)
 
     def test_posterior_plot_mean_near_zero_for_standard_normal(self):
-        # MCMC draws are autocorrelated, so the naive i.i.d. se = 1/sqrt(n_total) understates
-        # the true standard error of the sample mean -- use the effective sample size
-        # (advanced_mcmc.ESS) instead, per AGENTS.md's >= 3 SE convention.
+        # MCMC draws are autocorrelated, so the naive i.i.d. se = 1/sqrt(n_total) understates the
+        # error; use the effective sample size (advanced_mcmc.ESS).
         from stochpylib.advanced_mcmc import ESS
 
         sampler = self._hmc_samples(n_samples=1000, n_warmup=400)
@@ -726,10 +697,8 @@ class TestDiagnosticsSubmodule:
         assert fig.data["hdi"][0] == (lo, hi)
 
     def test_pair_plot_corr_matches_numpy(self):
-        # An exact-recomputation check (does pair_plot report np.corrcoef of whatever it
-        # actually plotted?), not a statistical convergence one -- a small chain suffices.
-        # max_points must exceed the sample count, or pair_plot's default thinning
-        # (max_points=2000) would compute corr on a random subset instead.
+        # Exact-recomputation check (pair_plot reports np.corrcoef of what it plotted); max_points
+        # must exceed the sample count or default thinning (2000) computes corr on a subset.
         sampler = self._hmc_samples(corr=-0.3, n_samples=150, n_warmup=100, n_chains=2)
         s = sampler.get_samples()
         fig = pair_plot(sampler, max_points=len(s))
@@ -828,9 +797,6 @@ class TestDiagnosticsSubmodule:
             funnel_plot([1, 2, 3], [1, 2])
 
 
-# ============================================================================== multivariate
-
-
 class TestMultivariateSubmodule:
     def test_plot_heatmap_data_roundtrip(self):
         Z = _RNG.random((4, 5))
@@ -910,9 +876,6 @@ class TestMultivariateSubmodule:
         assert np.allclose(fig.data["Z"], Z)
 
 
-# ============================================================================== special
-
-
 class TestSpecialSubmodule:
     def test_plot_markov_chain_stationary_matches_power_iteration(self):
         P = np.array([[0.9, 0.1], [0.3, 0.7]])
@@ -930,7 +893,7 @@ class TestSpecialSubmodule:
         P = np.array([[0.9, 0.1], [0.3, 0.7]])
         fig = plot_markov_chain(P)
         svg = fig.to_svg()
-        assert svg.count("<circle") >= 2 + 2  # 2 nodes + >=2 self-loop rings
+        assert svg.count("<circle") >= 2 + 2
 
     def test_plot_brownian_terminal_moments(self):
         fig = plot_brownian(n_paths=4000, n_steps=100, sigma=1.5, mu=0.2, T=2.0,
@@ -1039,9 +1002,6 @@ class TestSpecialSubmodule:
             plot_eigenvalues(_RNG.standard_normal(50))
 
 
-# ============================================================================== cross-module
-
-
 class TestCrossModule:
     def test_interaction_plot_to_figure(self):
         from stochpylib.experimental_design import FullFactorial, InteractionPlot
@@ -1068,16 +1028,13 @@ class TestCrossModule:
     def test_plot_variogram_renders_spatial_function(self):
         from stochpylib.spatial_statistics import PoissonPointProcess, RipleyK
 
-        # intensity is per unit AREA: keep the point count small since RipleyK's pairwise
-        # distances are O(n^2), repeated once per Monte Carlo simulation.
+        # Intensity is per unit AREA: keep the count small since RipleyK's pairwise distances are
+        # O(n^2) per simulation.
         window = [(0.0, 10.0), (0.0, 10.0)]
         pts = PoissonPointProcess(intensity=2.0, window=window).sample(random_state=3)
         sf = RipleyK(pts, window=window, n_simulations=10, random_state=4)
         fig = plot_variogram(sf)
         assert np.allclose(fig.data["estimate"], sf.estimate)
-
-
-# ============================================================================== hygiene
 
 
 class TestHygiene:

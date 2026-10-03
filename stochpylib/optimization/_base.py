@@ -53,8 +53,8 @@ class Objective:
     def __call__(self, x):
         self.n_evals += 1
         x = np.atleast_1d(np.asarray(x, dtype=float))
-        # a diverging iterate legitimately overflows the objective; this wrapper's job is
-        # to turn that into +inf, so numpy's warning about it is noise, not information
+        # A diverging iterate legitimately overflows the objective; the wrapper turns that into
+        # +inf, so numpy's warning is noise.
         try:
             with np.errstate(all="ignore"):
                 v = float(self.fun(x, *self.args))

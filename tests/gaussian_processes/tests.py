@@ -20,25 +20,17 @@ from stochpylib.gaussian_processes import (
     DeepGP, GPClassification, LaplacePropagation, RBFKernel, VariationalInference,
 )
 
-# ------------------------------------------------------------------ export surface
-
 SPEC_NAMES = {
-    # kernels
     "RBFKernel", "MaternKernel", "PeriodicKernel", "LinearKernel",
     "PolynomialKernel", "RationalQuadraticKernel", "WhiteNoiseKernel",
     "SpectralMixtureKernel", "NeuralNetworkKernel", "ArcCosineKernel",
-    # kernel ops
     "KernelSum", "KernelProduct", "KernelPower", "KernelComposition",
     "StationaryKernelOp", "NonStationaryKernelOp", "kernel_matrix", "kernel_grad",
-    # models
     "GaussianProcess", "GPRegression", "GPClassification",
     "GPTimeSeriesModel", "SparseGaussianProcess",
     "InducingPointGP", "DeepGP",
-    # inference
     "LaplacePropagation", "ExpectationPropagation", "VariationalInference",
-    # sparse
     "FITC", "VFE", "SparseVFE",
-    # hyperparams
     "ARD", "MarginalLikelihood", "optimize_hyperparams", "cross_validate_gp",
 }
 
@@ -62,16 +54,12 @@ def test_gaussian_processes_wired_into_top_level_package():
 
 
 def test_inference_module_is_classification_only():
-    # the broken duplicate FITC/VFE copy was removed from inference.py (Probleme [21])
     import stochpylib.gaussian_processes.inference as inf
 
     for name in ("FITC", "VFE", "SparseVFE"):
         assert not hasattr(inf, name), f"{name} must live in sparse.py only"
     for name in ("LaplacePropagation", "ExpectationPropagation", "VariationalInference"):
         assert hasattr(inf, name)
-
-
-# ------------------------------------------------------------------ kernels
 
 
 def _sample_X(n=30, d=2, seed=5):
@@ -130,7 +118,7 @@ def test_operator_identities():
     assert np.allclose(k_pow(X), expected_pow)
 
     comp = k_sum * k_mat
-    assert np.linalg.eigvalsh(comp(X).T @ comp(X)).min() >= -1e-10  # full-rank
+    assert np.linalg.eigvalsh(comp(X).T @ comp(X)).min() >= -1e-10
 
 
 def test_kernel_grad_matches_finite_difference():
@@ -150,8 +138,7 @@ def test_matern_kernel_nu_validation():
 
 
 def test_diag_matches_full_matrix_all_kernels():
-    # Regression lock for the broken single-arg BaseKernel.diag (Probleme [24]):
-    # every kernel must expose a working diag() equal to diag(k(X, X)).
+    # Every kernel must expose a working diag() equal to diag(k(X, X)).
     X = np.linspace(-1.5, 1.5, 21)[:, None]
     makes = dict(KERNEL_ZOO)
     makes["RBF_ARD"] = lambda: gp.RBFKernel(length_scale=np.array([1.0]))
@@ -164,8 +151,8 @@ def test_diag_matches_full_matrix_all_kernels():
 
 
 def test_composite_diag_and_predict_with_product_kernel():
-    # KernelProduct/KernelPower used to inherit the broken diag() and crashed any
-    # exact-GP prediction built on a composed kernel (Probleme [24]).
+    # KernelProduct/KernelPower used to inherit the broken diag() and crashed exact-GP prediction on
+    # composed kernels.
     rng = np.random.default_rng(965)
     X = np.linspace(0, 4, 100)[:, None]
     y = np.sin(2 * np.pi * X[:, 0]) + 0.05 * rng.standard_normal(100)
@@ -181,9 +168,6 @@ def test_composite_diag_and_predict_with_product_kernel():
     k_prod = gp.RBFKernel(0.8) * gp.WhiteNoiseKernel(0.2)
     assert np.allclose(k_prod.diag(X), np.diag(k_prod(X)))
     assert np.allclose(k_prod.diag(X), gp.RBFKernel(0.8).diag(X) * 0.2)
-
-
-# ------------------------------------------------------------------ exact regression
 
 
 def test_gp_regression_zero_noise_interpolation():
@@ -228,9 +212,6 @@ def ForecastResult_check(mean, std):
     return ForecastResult(mean=mean, std=std)
 
 
-# ------------------------------------------------------------------ hyperparams
-
-
 def test_optimize_hyperparams_recovers_lengthscale():
     rng = np.random.default_rng(94)
     ls_true = 1.0
@@ -249,8 +230,8 @@ def test_optimize_hyperparams_recovers_lengthscale():
 
 @pytest.mark.parametrize("nu", [0.5, 1.5, 2.5])
 def test_optimize_hyperparams_moves_matern_and_keeps_nu_fixed(nu):
-    # regression: nu was log-packed with the continuous parameters, so every trial step
-    # set an invalid nu, was rejected, and the start point came back as "success"
+    # Regression: nu was log-packed with the continuous parameters, so every trial step set an
+    # invalid nu and the start point came back as "success".
     rng = np.random.default_rng(96)
     X = rng.uniform(0, 1, (25, 2))
     y = np.sin(6 * X[:, 0]) + X[:, 1]
@@ -279,14 +260,14 @@ def test_cross_validate_gp_returns_valid_structure():
 
 
 def test_kernel_composition_supports_scalar_weights():
-    # regression: non-unit weights built KernelProduct([k, w]) which the composite base
-    # rejected as "part 1 is not a kernel" (development/Probleme.md #74)
+    # Regression: non-unit weights built KernelProduct([k, w]), which the composite base rejected as
+    # "part 1 is not a kernel".
     X = np.array([[0.0], [0.5], [1.5]])
     k = gp.KernelComposition([gp.RBFKernel(1.0), gp.LinearKernel()], weights=[0.5, 2.0])
     expected = 0.5 * gp.kernel_matrix(gp.RBFKernel(1.0), X) + 2.0 * gp.kernel_matrix(gp.LinearKernel(), X)
     assert np.allclose(gp.kernel_matrix(k, X), expected)
     assert np.allclose(k.diag(X), np.diag(expected))
-    k.set_params({"part0__part0__length_scale": 2.0})       # scalar factors carry no params
+    k.set_params({"part0__part0__length_scale": 2.0})
     assert k.get_params()["part0__part0__length_scale"] == 2.0
     scaled = 3.0 * gp.RBFKernel(1.0)
     assert np.allclose(gp.kernel_matrix(scaled, X), 3.0 * gp.kernel_matrix(gp.RBFKernel(1.0), X))
@@ -295,8 +276,8 @@ def test_kernel_composition_supports_scalar_weights():
 
 
 def test_spectral_mixture_dimension_keeps_components():
-    # regression: dimension=d overwrote the q component vectors with d-vectors and then
-    # failed its own length check for d != q (development/Probleme.md #75)
+    # Regression: dimension=d overwrote the q component vectors with d-vectors and failed its own
+    # length check for d != q.
     k = gp.SpectralMixtureKernel(q=3, dimension=2)
     assert len(k.weights) == len(k.means) == len(k.scales) == 3 and k.dimension == 2
     X = np.random.default_rng(0).normal(size=(10, 2))
@@ -307,9 +288,6 @@ def test_spectral_mixture_dimension_keeps_components():
 def test_ard_initializer():
     v = gp.ARD(3)
     assert isinstance(v, np.ndarray) and np.allclose(v, 1.0)
-
-
-# ------------------------------------------------------------------ sparse
 
 
 def test_sparse_vfe_approximates_exact_gp():
@@ -323,16 +301,16 @@ def test_sparse_vfe_approximates_exact_gp():
 
     mu_exact = exact.predict(X, return_std=False)
     mu_sparse = sparse.predict(X, return_std=False)
-    # With the whitened (numerically stable) posterior the pseudo-point
-    # approximation tracks the exact GP closely at M=30 for T=200.
+    # With the whitened posterior the pseudo-point approximation tracks the exact GP closely at
+    # M=30, T=200.
     corr = np.corrcoef(mu_exact, mu_sparse)[0, 1]
     assert corr > 0.999
     assert np.max(np.abs(mu_exact - mu_sparse)) < 0.05
 
 
 def test_sparse_equals_exact_gp_when_inducing_points_are_training_points():
-    # M = T: the low-rank prior spans the full covariance, so VFE/FITC must
-    # reproduce the exact GP posterior to machine precision.
+    # M = T: the low-rank prior spans the full covariance, so VFE/FITC must reproduce the exact GP
+    # posterior.
     rng = np.random.default_rng(961)
     X = np.linspace(-2, 2, 40)[:, None]
     y = np.sin(2 * X.ravel()) + 0.05 * rng.standard_normal(40)
@@ -348,9 +326,8 @@ def test_sparse_equals_exact_gp_when_inducing_points_are_training_points():
 
 
 def test_sparse_stable_for_many_inducing_points():
-    # Regression lock for the raw-inverse instability (Probleme [23]): with the
-    # whitened engine, growing M must converge to the exact posterior instead of
-    # blowing up once Kuu becomes near-singular.
+    # Growing M must converge to the exact posterior instead of blowing up as Kuu becomes
+    # near-singular.
     rng = np.random.default_rng(962)
     X = np.linspace(-3, 3, 120)[:, None]
     y = np.sin(2 * X.ravel()) + 0.05 * rng.standard_normal(120)
@@ -401,9 +378,6 @@ def test_inducing_point_gp_tracks_data():
                                noise=0.03).fit(X, y)
     mu = model.predict(X, return_std=False)
     assert np.max(np.abs(mu - y)) < 0.15
-
-
-# ------------------------------------------------------------------ classification
 
 
 class TestClassification:
@@ -484,9 +458,6 @@ class TestGPClassificationFacade:
             clf.predict_proba(np.zeros((3, 2)))
 
 
-# ------------------------------------------------------------------ deep gp
-
-
 def test_deep_gp_smoke():
     rng = np.random.default_rng(99)
     Xr = rng.uniform(-3, 3, 200)[:, None]
@@ -502,9 +473,6 @@ def test_deep_gp_smoke():
     mu, std = deep.predict(Xr[:50], return_std=True)
     assert len(mu) == 50 and len(std) == 50
     assert np.all(np.isfinite(mu)) and np.all(np.isfinite(std)) and np.all(std > 0)
-
-
-# ------------------------------------------------------------------ determinism
 
 
 def test_determinism_same_seed_bitwise():

@@ -127,7 +127,7 @@ def plot_periodogram(x, fs=1.0, method="periodogram", log=True, nperseg=256, ax=
         freqs, power = PowerSpectrum(x, fs=fs, nperseg=nperseg)
     else:
         raise ValueError("method must be 'periodogram' or 'welch'")
-    plot_freqs, plot_power = freqs[1:], power[1:]  # skip DC for a log axis
+    plot_freqs, plot_power = freqs[1:], power[1:]
     if log:
         axes.line(plot_freqs, plot_power, color=color)
         axes.set(yscale="log")

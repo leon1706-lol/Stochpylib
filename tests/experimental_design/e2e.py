@@ -35,8 +35,6 @@ _MONTGOMERY_Y = np.array([45, 71, 48, 65, 68, 60, 80, 65, 43, 100, 45, 104, 75, 
                          dtype=float)
 
 
-# ------------------------------------------------------------------ base and result
-
 @exercise("Design")
 def _design():
     d = mod.FullFactorial(2, 2, bounds=[(150, 200), (1.0, 3.0)]).generate()
@@ -63,8 +61,6 @@ def _optimal_design():
     d = gen.generate()
     assert 0 < d.properties["D_efficiency"] <= 1 and d.properties["n_candidates"] == 9
 
-
-# ------------------------------------------------------------------------- classical
 
 @exercise("FullFactorial")
 def _full_factorial():
@@ -102,7 +98,7 @@ def _box_behnken():
 def _latin_square():
     ls = mod.LatinSquare(4, random_state=2)
     d = ls.generate()
-    y = 10 + d.points[:, 2] + _RNG.normal(0, 0.2, 16)   # a real treatment effect
+    y = 10 + d.points[:, 2] + _RNG.normal(0, 0.2, 16)
     assert ls.analyze(y).pvalue < 0.01
 
 
@@ -113,8 +109,6 @@ def _graeco_latin():
     pairs = {(a, b) for a, b in zip(g.latin_.ravel(), g.greek_.ravel())}
     assert len(pairs) == 25
 
-
-# --------------------------------------------------------------------------- optimal
 
 @exercise("D_OptimalDesign")
 def _d_optimal():
@@ -154,8 +148,6 @@ def _bayesian_design():
     assert sorted(d.points[:, 0]) == pytest.approx([0.0, 2.0])
 
 
-# --------------------------------------------------------------------- space filling
-
 @exercise("LatinHypercubeDesign")
 def _latin_hypercube():
     d = mod.LatinHypercubeDesign(10, 3, criterion="maximin", n_iter=20,
@@ -191,8 +183,6 @@ def _orthogonal_array():
         for b in range(a + 1, 4):
             assert len({tuple(r) for r in oa.array_[:, [a, b]]}) == 9
 
-
-# ------------------------------------------------------------------ response surface
 
 @exercise("ResponseSurface")
 def _response_surface():
@@ -238,8 +228,6 @@ def _kriging():
     mu, sd = kr.predict(xs, return_std=True)
     assert np.max(np.abs(mu - f(xs))) < 0.1 and np.all(sd >= 0)
 
-
-# -------------------------------------------------------------------------- analysis
 
 @exercise("ANOVA_DOE")
 def _anova_doe():

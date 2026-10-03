@@ -26,7 +26,7 @@ def _event_table(times, events):
     ts = times[order]
     es = events[order]
     uniq = np.unique(ts)
-    idx_of = np.searchsorted(uniq, ts)          # each subject -> its block
+    idx_of = np.searchsorted(uniq, ts)
     deaths_all = np.bincount(idx_of, weights=es.astype(float),
                              minlength=len(uniq))
     keep = deaths_all > 0
@@ -63,10 +63,9 @@ class KaplanMeier(SurvivalFitter):
         s = np.cumprod(ratios)
         self.survival_function_ = self._step_array(uniq, s)
 
-        # Greenwood variance of log S
         greenwood = np.cumsum(deaths / np.maximum(
             at_risk * (at_risk - deaths), _EPS))
-        var_log_s = s ** 2 * greenwood          # var(S) = S^2 * sum(...)
+        var_log_s = s ** 2 * greenwood
         z = stats_z(self.alpha)
         if self.ci_method == "loglog":
             with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
@@ -87,7 +86,6 @@ class KaplanMeier(SurvivalFitter):
         ci["time"], ci["lower"], ci["upper"] = uniq, lo, hi
         self.confidence_interval_ = ci[np.argsort(ci["time"])]
 
-        # median: first time S drops to <= 0.5 (inf if never)
         below = np.flatnonzero(s <= 0.5)
         self.median_survival_time_ = float(uniq[below[0]]) if len(below) \
             else float("inf")
@@ -163,12 +161,11 @@ class LifeTable(SurvivalFitter):
         deaths = np.bincount(idx, weights=e.astype(float), minlength=k)
         censured = np.bincount(idx, weights=(1 - e).astype(float),
                                minlength=k)
-        # entering numbers via reverse sweep
         enter = np.zeros(k + 1)
         enter[0] = len(t)
         for j in range(k):
             enter[j + 1] = enter[j] - deaths[j] - censured[j]
-        eff = enter[:k] - censured / 2.0                      # effective risk
+        eff = enter[:k] - censured / 2.0
         q = np.where(eff > 0, deaths / np.maximum(eff, _EPS), 0.0)
         p = 1.0 - q
         surv = np.cumprod(p)
@@ -234,7 +231,6 @@ class BreslowEstimator:
         order = np.argsort(t, kind="mergesort")
         ts, ws = t[order], w[order]
         uniq, at_risk, deaths = _event_table(t, e)
-        # risk-sum of exp(x beta) among subjects still at risk (t >= u)
         first_at_risk = np.searchsorted(ts, uniq, side="left")
         prefix = np.concatenate([[0.0], np.cumsum(ws)])
         risk_sum = prefix[-1] - prefix[first_at_risk]

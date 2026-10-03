@@ -407,10 +407,8 @@ class MonteCarloOptionPricing:
 
         method = "mc-antithetic" if antithetic else "mc-plain"
         res = _mc_result(payoff, method, discount=disc)
-        # antithetic pairing halves the array of *statistical replicates*
-        # (each pair contributes one averaged payoff) but the convention set
-        # by montecarlo.applications.option_pricing_mc reports n_samples as
-        # the number of paths actually simulated, not the replicate count.
+        # Antithetic pairs halve the statistical replicates, but n_samples reports paths simulated
+        # (as montecarlo.option_pricing_mc does).
         res.n_samples = n_paths
         return res
 

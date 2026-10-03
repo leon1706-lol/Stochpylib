@@ -208,7 +208,7 @@ def funnel_plot(effects, std_errors, pooled=None, ax=None, title=None):
     axes.line(pooled - 1.96 * se_grid, se_grid, color="#999999", dash="dash")
     axes.vline(pooled, color="#E15759", label="pooled")
     axes.set(title=title, xlabel="effect size", ylabel="standard error", legend="best")
-    axes.ylim = (se.max() * 1.15, 0.0)  # invert: precise studies (small SE) at the top
+    axes.ylim = (se.max() * 1.15, 0.0)
 
     # Egger's regression: SND_i = a + b * precision_i, precision = 1/se
     precision = 1.0 / se

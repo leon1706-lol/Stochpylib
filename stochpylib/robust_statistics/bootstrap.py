@@ -182,7 +182,7 @@ class WildBootstrap(Resampler):
             return beta
         from copy import deepcopy
         m = deepcopy(self.model)
-        m.fit_intercept = False  # Xd already carries the intercept column
+        m.fit_intercept = False
         m.fit(Xd, y)
         return m.coef_
 

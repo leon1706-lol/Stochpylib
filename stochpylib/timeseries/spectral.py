@@ -33,9 +33,6 @@ def _detrended_tapered(x):
     return z * w
 
 
-# --------------------------------------------------------------------------- periodogram
-
-
 def Periodogram(x, fs=1.0, detrend=True):
     """One-sided periodogram ``(frequencies, power)``.
 
@@ -53,8 +50,8 @@ def Periodogram(x, fs=1.0, detrend=True):
         z = x - x.mean()
     Xf = np.fft.rfft(z)
     freqs = np.fft.rfftfreq(n, d=1.0 / fs)
-    # one-sided density normalization: integrating power * df reproduces the
-    # detrended series' variance exactly (Parseval)
+    # One-sided density normalization: integrating power * df reproduces the detrended variance
+    # (Parseval).
     power = (np.abs(Xf) ** 2) * 2.0 / (n * fs)
     power[0] /= 2.0
     if n % 2 == 0:
@@ -102,7 +99,7 @@ class SpectralAnalysis:
 
     def dominant_frequency(self):
         freqs, psd = self.power_spectrum(min(256, max(64, len(self.x) // 4)))
-        return float(freqs[int(np.argmax(psd[1:]) + 1)])  # skip DC bin
+        return float(freqs[int(np.argmax(psd[1:]) + 1)])
 
     def total_power(self):
         """Parseval check: time-domain variance ≈ integrated one-sided spectrum."""
@@ -112,9 +109,6 @@ class SpectralAnalysis:
         df = self.fs / len(self.x)
         spec_power = float(np.sum(power) * df)
         return {"time_domain": time_power, "frequency_domain": spec_power}
-
-
-# --------------------------------------------------------------------------- CWT
 
 
 def _morlet(scale, omega0=6.0):
@@ -146,9 +140,9 @@ def CWTTransform(x, scales=None, fs=1.0, wavelet="morlet", omega0=6.0):
         raise NotImplementedError("only the Morlet wavelet is implemented")
 
     n = len(x)
-    # Pad by at least each wavelet's own half-support (not just n): a 'valid' convolution
-    # needs padded_len - wavelet_len + 1 >= n, which a fixed n-sample pad violates once a
-    # scale's wavelet exceeds ~2n in length (the default max scale n/8 always does).
+    # Pad by at least each wavelet's half-support: a 'valid' convolution needs padded_len -
+    # wavelet_len + 1 >= n, which a fixed n-sample pad violates once a wavelet exceeds ~2n (the
+    # default max scale n/8 always does).
     max_length = max((int(np.ceil(10.0 * s)) for s in scales), default=0)
     pad = max(n, max_length, 1)
     padded = np.pad(x, pad, mode="reflect")
@@ -170,9 +164,6 @@ def WaveletTransform(x, scales=None, fs=1.0, kind="cwt"):
         coeffs = DWTTransform(x, level=None)
         return coeffs
     raise ValueError("kind must be 'cwt' or 'dwt'")
-
-
-# --------------------------------------------------------------------------- DWT
 
 
 _HAAR_LO = np.array([1.0, 1.0]) / np.sqrt(2.0)
@@ -261,9 +252,6 @@ def IDWTTransform(coeffs):
     for detail in reversed(coeffs["details"]):
         current = _synthesis_pass(current, detail, lo, hi)
     return current
-
-
-# --------------------------------------------------------------------------- STFT / Hilbert
 
 
 def STFT(x, fs=1.0, window_len=256, hop=128, detrend=True):

@@ -55,11 +55,11 @@ def plot_markov_chain(P, states=None, threshold=0.01, ax=None, title=None):
     node_r = 0.08 + 0.12 * np.sqrt(pi / (pi.max() or 1.0))
     for i in range(k):
         axes.circle(xs[i], ys[i], node_r[i], color="#4E79A7")
-        # label below the node, not inside it -- a long state name would otherwise
-        # overflow a small (low-stationary-probability) node's circle
+        # Label below the node, not inside it: a long state name would overflow a small node's
+        # circle.
         axes.text(xs[i], ys[i] - node_r[i] - 0.06, labels[i], anchor="middle", size=10,
                   color="#000000")
-        if P[i, i] >= threshold:  # self-loop: a small circle tangent to the node's top
+        if P[i, i] >= threshold:
             loop_r = 0.05
             axes.circle(xs[i], ys[i] + node_r[i] + loop_r, loop_r, color="#999999", fill=False)
             axes.text(xs[i], ys[i] + node_r[i] + 2 * loop_r + 0.05, f"{P[i, i]:.2f}",
@@ -70,8 +70,8 @@ def plot_markov_chain(P, states=None, threshold=0.01, ax=None, title=None):
                 continue
             curve = 0.25 if P[j, i] >= threshold else 0.08
             axes.arrow(xs[i], ys[i], xs[j], ys[j], curved=curve, color="#999999", width=1.0)
-            # label near the source end (not the shared midpoint), so the i->j and j->i
-            # labels for a bidirectional pair don't land on top of each other
+            # Label near the source end so the i->j and j->i labels of a bidirectional pair don't
+            # overlap.
             t_frac = 0.3
             lx = xs[i] + t_frac * (xs[j] - xs[i])
             ly = ys[i] + t_frac * (ys[j] - ys[i])
@@ -189,7 +189,7 @@ def plot_survival_km(km_or_durations, events=None, groups=None, ci=True, censor_
     for name, km in fits.items():
         sf = km.survival_function_
         t, s = sf["time"], sf["value"]
-        if t[0] > 0:  # conventional KM start: S(0) = 1 held until the first event
+        if t[0] > 0:
             t = np.concatenate([[0.0], t])
             s = np.concatenate([[1.0], s])
         step_artist = axes.step(t, s, where="post", label=name or "KM")
@@ -223,7 +223,7 @@ def plot_variogram(obj, model=None, coords=None, values=None, bins=15, ax=None, 
     """Experimental (semi)variogram points plus a fitted model curve, spatial-covariance
     curve, or a spatial summary function (Ripley's K / pair correlation) with its envelope."""
     fig, axes = _get_fig_ax(ax)
-    if hasattr(obj, "r") and hasattr(obj, "estimate"):  # SpatialFunction
+    if hasattr(obj, "r") and hasattr(obj, "estimate"):
         axes.scatter(obj.r, obj.estimate, label=obj.name or "estimate")
         axes.line(obj.r, obj.theoretical, color="#E15759", label="theoretical (CSR)")
         if obj.lower is not None:
@@ -232,7 +232,7 @@ def plot_variogram(obj, model=None, coords=None, values=None, bins=15, ax=None, 
         fig.data = {"r": obj.r, "estimate": obj.estimate, "theoretical": obj.theoretical}
         return fig
 
-    if hasattr(obj, "lags_"):  # ExperimentalVariogram (already fitted)
+    if hasattr(obj, "lags_"):
         exp_vario = obj
     elif coords is not None:
         from stochpylib.spatial_statistics import ExperimentalVariogram

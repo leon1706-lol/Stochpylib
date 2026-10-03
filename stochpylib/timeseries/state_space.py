@@ -40,8 +40,8 @@ def _vec(v, k, name):
 class FilterPath:
     """Filtered/smoothed paths from a Kalman-type estimator."""
 
-    means: np.ndarray            # (T, k)
-    covs: np.ndarray             # (T, k, k)
+    means: np.ndarray
+    covs: np.ndarray
     loglik: float = float("nan")
     smoothed_means: np.ndarray | None = None
     smoothed_covs: np.ndarray | None = None
@@ -108,7 +108,7 @@ class KalmanFilter(StateSpaceModel):
             innov_t = obs[t] - self.H @ x
             x = x + K @ innov_t
             P = (I_k - K @ self.H) @ P
-            P = 0.5 * (P + P.T)  # numerical symmetry
+            P = 0.5 * (P + P.T)
             sign, logdet = np.linalg.slogdet(S)
             if sign <= 0:
                 raise np.linalg.LinAlgError("innovation covariance not positive definite")
@@ -185,9 +185,6 @@ class KalmanSmoother:
             P_smooth[t] = 0.5 * (P_smooth[t] + P_smooth[t].T)
         return FilterPath(means=x_smooth, covs=P_smooth, loglik=kf.loglik_,
                           smoothed_means=x_smooth, smoothed_covs=P_smooth)
-
-
-# --------------------------------------------------------------------------- EKF / UKF
 
 
 def _nonlinear_rts(xf, Pf, x_pred, P_pred, C, loglik):
@@ -374,9 +371,6 @@ class UnscentedKalmanFilter(StateSpaceModel):
                               self._pred_covs, self._cross_covs, self.loglik_)
 
 
-# --------------------------------------------------------------------------- particle
-
-
 class ParticleFilter:
     """Bootstrap sequential-importance-resampling particle filter.
 
@@ -449,9 +443,6 @@ class ParticleFilter:
 
     def smooth(self):
         raise NotImplementedError("particle smoothing (FFBS) not implemented")
-
-
-# --------------------------------------------------------------------------- Rao-Blackwell
 
 
 class RaoBlackwellFilter:

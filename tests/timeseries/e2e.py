@@ -192,13 +192,13 @@ def _ks():
 def _nonlinear_filter(cls):
     rng = np.random.default_rng(7)
     x = np.cumsum(0.05 * rng.standard_normal(300)) + 1.5
-    y = x + 0.2 * x ** 3 + 0.25 * rng.standard_normal(300)          # monotone nonlinearity
+    y = x + 0.2 * x ** 3 + 0.25 * rng.standard_normal(300)
     est = cls(f=lambda s: s.copy(), h=lambda s: np.array([s[0] + 0.2 * s[0] ** 3]),
               Q=0.0025 * np.eye(1), R=0.0625 * np.eye(1), x0=np.array([1.5]), P0=np.eye(1)).fit(y)
     mse_f = np.mean((est.filtered_means_.ravel() - x) ** 2)
     sm = est.smooth()
-    assert sm.smoothed_means.shape == (300, 1) and mse_f < np.var(x)   # tracks the latent state
-    assert np.mean((sm.smoothed_means.ravel() - x) ** 2) < mse_f      # smoother beats filter
+    assert sm.smoothed_means.shape == (300, 1) and mse_f < np.var(x)
+    assert np.mean((sm.smoothed_means.ravel() - x) ** 2) < mse_f
 
 
 @exercise("ExtendedKalmanFilter")
@@ -220,7 +220,6 @@ def _pf():
                             transition_sampler=lambda p, r: p + 0.1 * r.standard_normal(p.shape),
                             observation_logpdf=lambda p, y: -0.5 * ((p.ravel() - y) ** 2),
                             initial_sampler=lambda r: r.standard_normal(1000), random_state=9).fit(obs)
-    # the filter must track better than the raw observations do
     assert np.mean((pf.filtered_means_[:, 0] - latent) ** 2) < np.mean((obs - latent) ** 2)
     assert np.isfinite(pf.loglik_) and pf.effective_sample_sizes_.min() > 0
 
@@ -392,7 +391,7 @@ def _stl():
 
 @exercise("X11Decomposition")
 def _x11():
-    _decomp_ok(mod.X11Decomposition(_seasonal() + 10.0, period=12))   # X11 needs positive data
+    _decomp_ok(mod.X11Decomposition(_seasonal() + 10.0, period=12))
 
 
 @exercise("TrendFilter")
@@ -439,7 +438,7 @@ def _arch_test():
 @exercise("granger_causality")
 def _granger():
     Y = _bivariate()
-    fwd = mod.granger_causality(Y[:, 1], Y[:, 0], max_lag=2)   # does y1 cause y0? (A[0,1]=0.1)
+    fwd = mod.granger_causality(Y[:, 1], Y[:, 0], max_lag=2)
     assert set(fwd) == {1, 2} and all(0 <= r.pvalue <= 1 for r in fwd.values())
 
 
@@ -450,7 +449,7 @@ def _johansen():
     Y = np.column_stack([c + 0.2 * rng.standard_normal(300), c + 0.2 * rng.standard_normal(300)])
     res = mod.johansen_test(Y, p=1)
     r0 = res["trace"][0]
-    assert r0.statistic > r0.critical_values["95%"]          # one cointegrating relation
+    assert r0.statistic > r0.critical_values["95%"]
 
 
 @exercise("forecast")

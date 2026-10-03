@@ -57,31 +57,21 @@ from stochpylib.timeseries.forecasting import (
 )
 
 __all__ = [
-    # linear models
     "AR", "MA", "ARMA", "ARIMA", "SARIMA", "ARFIMA", "VARMA", "VAR", "VECM",
-    # volatility
     "ARCH", "GARCH", "IGARCH", "TGARCH", "GJRGARCH", "EGARCH", "APARCH", "FIGARCH",
     "MGARCH", "DCC_GARCH",
-    # state space
     "StateSpaceModel", "KalmanFilter", "KalmanSmoother", "ExtendedKalmanFilter",
     "UnscentedKalmanFilter", "ParticleFilter", "RaoBlackwellFilter",
-    # latent
     "HiddenMarkovModel", "SwitchingRegression", "RegimeSwitching",
     "MixtureAutoregressive",
-    # changepoint
     "ChangePointDetection", "BayesianChangePoint", "BinarySegmentation", "BottomUp",
     "PELT",
-    # spectral
     "SpectralAnalysis", "Periodogram", "PowerSpectrum", "WaveletTransform",
     "CWTTransform", "DWTTransform", "STFT", "Hilbert",
-    # decomposition
     "SeasonalDecomposition", "STLDecomposition", "X11Decomposition", "TrendFilter",
     "HPFilter",
-    # tests submodule functions
     "adf_test", "kpss_test", "pp_test", "ljung_box", "durbin_watson", "arch_test",
     "granger_causality", "johansen_test",
-    # forecasting
     "forecast", "predict", "confidence_bands", "backtesting", "cross_validation_ts",
-    # result types
     "ForecastResult", "TestResult", "ChangePointResult", "BOCPDResult",
 ]

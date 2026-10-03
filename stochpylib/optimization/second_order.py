@@ -476,8 +476,8 @@ class LevenbergMarquardt(Optimizer):
                 converged, message = True, "gradient below gtol"
                 break
             JTJ = J.T @ J
-            # Marquardt's scaling: damp each coordinate by its own curvature, so the
-            # method is invariant to a rescaling of the parameters.
+            # Marquardt's scaling: damp each coordinate by its own curvature, making the method
+            # invariant to parameter rescaling.
             scale = np.diag(np.maximum(np.diag(JTJ), 1e-12))
             try:
                 step = np.linalg.solve(JTJ + lam * scale, -g)

@@ -38,8 +38,8 @@ class RobustEstimator:
     def confidence_interval(self, level=0.95):
         if not hasattr(self, "estimate_"):
             raise RuntimeError(f"{type(self).__name__} is not fitted")
-        # the cached CI (if any) was computed at fit time for level=0.95 only;
-        # any other level falls through to the normal/t approximation below.
+        # The cached CI was computed at fit time for level=0.95 only; other levels use the normal/t
+        # approximation.
         if level == 0.95 and "confidence_interval" in self.extras_:
             return self.extras_["confidence_interval"]
         alpha2 = (1.0 - level) / 2.0

@@ -133,7 +133,6 @@ class ReplicaExchange:
         if self.swap_scheme == "adjacent":
             a = int(rng.integers(0, k - 1))
             return [(a, a + 1)]
-        # even-odd: alternate all even-indexed pairs and all odd-indexed pairs
         if not hasattr(self, "_eo_toggle"):
             self._eo_toggle = 0
         start = 0 if self._eo_toggle == 0 else 1
@@ -622,7 +621,6 @@ class TransdimensionalMCMC:
         n_total = self.n_warmup + self.n_samples
 
         for i in range(n_total):
-            # update the current model's parameters with one RW-MH step
             dim = self.dims[k]
             step = np.exp(log_scales[k]) * rng.standard_normal(dim)
             theta_new = thetas[k] + step
@@ -640,13 +638,11 @@ class TransdimensionalMCMC:
                 n_total_within += 1
                 n_acc += float(accepted)
 
-            # draw pseudo-priors for every other model
             for m in self.models:
                 if m != k:
                     p = pseudo[m]
                     thetas[m] = p["mean"] + p["L"] @ rng.standard_normal(self.dims[m])
 
-            # resample the model indicator from the product-space conditional
             log_w = {}
             for m in self.models:
                 lw = self.log_posteriors[m](thetas[m]) + self.log_model_prior[m]

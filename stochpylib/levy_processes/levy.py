@@ -227,9 +227,8 @@ class LevyKhintchine:
         if self.jump_rate > 0 and self.jump_cf is not None:
             phi = phi + self.jump_rate * (self.jump_cf(u) - 1.0)
         if self.laplace_exponent is not None:
-            # psi(-i u) for a power-law Laplace exponent lam^alpha extends to
-            # |u|^alpha * exp(-i * sign(u) * alpha * pi / 2) via the principal
-            # complex power
+            # psi(-iu) for lam^alpha extends to |u|^alpha * exp(-i sign(u) alpha pi/2) via the
+            # principal complex power.
             lam = -1j * u
             phi = phi + self.laplace_exponent(lam)
         return phi

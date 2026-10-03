@@ -26,8 +26,6 @@ _RNG = np.random.default_rng(0)
 _COIN = _RNG.binomial(1, 0.6, 60)
 
 
-# --------------------------------------------------------------------------- core
-
 @exercise("Prior")
 def _prior_cls():
     p = mod.Prior(Beta(2, 2))
@@ -97,8 +95,6 @@ def _evidence_fn():
     assert np.isfinite(Z)
 
 
-# -------------------------------------------------------------------- computation
-
 @exercise("LaplacePosterior")
 def _laplace():
     lap = mod.LaplacePosterior(lambda t: -0.5 * t[0] ** 2, np.array([1.0]))
@@ -133,8 +129,6 @@ def _posterior_approx_cls():
     pa = mod.PosteriorApproximation("laplace", [0.0], [[1.0]])
     assert pa.sample(2, random_state=0).shape == (2, 1)
 
-
-# ---------------------------------------------------------------------- selection
 
 @exercise("AIC")
 def _aic():
@@ -185,8 +179,6 @@ def _ic_result():
     ic = mod.ICResult("AIC", 12.3)
     assert float(ic) == 12.3
 
-
-# ------------------------------------------------------------------------- models
 
 @exercise("BayesianLinear")
 def _bayeslin():
@@ -249,8 +241,6 @@ def _dp():
     labels = dp.crp(30, random_state=0)
     assert len(labels) == 30
 
-
-# -------------------------------------------------------------------------- results
 
 @exercise("EmpiricalPredictive")
 def _empirical_predictive():

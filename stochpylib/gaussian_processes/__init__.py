@@ -27,26 +27,18 @@ from stochpylib.gaussian_processes.hyperparams import (
 )
 
 __all__ = [
-    # kernels
     "BaseKernel", "StationaryKernel", "NonStationaryKernel",
     "RBFKernel", "MaternKernel", "PeriodicKernel", "LinearKernel",
     "PolynomialKernel", "RationalQuadraticKernel", "WhiteNoiseKernel",
     "SpectralMixtureKernel", "NeuralNetworkKernel", "ArcCosineKernel",
-    # kernel ops
     "KernelSum", "KernelProduct", "KernelPower", "KernelComposition",
     "StationaryKernelOp", "NonStationaryKernelOp",
     "kernel_matrix", "kernel_grad",
-    # models
     "GaussianProcess", "GPRegression", "ExactInference", "GPTimeSeriesModel",
     "GPClassification",
-    # inference engines
     "LaplacePropagation", "ExpectationPropagation", "VariationalInference",
-    # sparse
     "FITC", "VFE", "SparseVFE", "InducingPointGP", "SparseGaussianProcess",
-    # deep
     "DeepGP",
-    # hyperparams
     "ARD", "MarginalLikelihood", "optimize_hyperparams", "cross_validate_gp",
-    # utils
     "cholesky_with_jitter",
 ]

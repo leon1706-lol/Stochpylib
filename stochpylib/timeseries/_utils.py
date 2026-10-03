@@ -66,8 +66,7 @@ def integrate_levels(diff_path, last_values):
     levels = list(np.asarray(last_values, dtype=float).ravel()[-int(len(last_values)) :])
     out = np.asarray(diff_path, dtype=float)
     d = len(levels)
-    # iteratively accumulate from the most recent level backwards
-    history = levels[::-1]  # [y_T, y_{T-1}, ...]
+    history = levels[::-1]
     for _ in range(d):
         prev = history[0]
         acc = []
@@ -75,7 +74,7 @@ def integrate_levels(diff_path, last_values):
             prev = prev + step
             acc.append(prev)
         out = np.array(acc)
-        history = [history[0]] + history  # last integrated value becomes the new anchor
+        history = [history[0]] + history
     return out
 
 

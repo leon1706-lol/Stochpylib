@@ -24,11 +24,8 @@ STATS_RAW_URL = (
     "raw.githubusercontent.com%2Fleon1706-lol%2FStochpylib%2Fmain%2Fdevelopment%2Fstats.json"
 )
 
-# The two permanently-skipped tests are the VonMises and Kumaraswamy scipy
-# cross-checks in tests/distributions/tests.py — no direct scipy mapping
-# (circular/different conventions), covered by dedicated checks instead. If
-# this constant ever needs changing, the suite below fails first and forces
-# the one-line update.
+# The two permanently skipped tests are the VonMises and Kumaraswamy scipy cross-checks (no direct
+# scipy mapping), covered by dedicated checks. A change here fails the suite first.
 KNOWN_CONDITIONAL_SKIPS = 2
 
 IMPLEMENTED = (
@@ -146,7 +143,7 @@ def test_readme_status_table_covers_every_subpackage_with_true_counts():
         assert row, f"README Current Status table lacks a row for {name}"
         claimed = int(row.group(1))
         if name == "distributions":
-            expected = len(spec[name]) + 13  # 47 classes + 13 shared interface methods
+            expected = len(spec[name]) + 13
         else:
             expected = len(spec[name])
         assert claimed == expected, (

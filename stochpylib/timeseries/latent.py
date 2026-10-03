@@ -34,10 +34,6 @@ __all__ = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# helpers
-
-
 def _weighted_ols(X, y, w):
     sw = np.sqrt(np.clip(w, 1e-300, None))
     Xw = X * sw[:, None]
@@ -103,10 +99,6 @@ def _viterbi(log_emis, A, pi):
     return states
 
 
-# ---------------------------------------------------------------------------
-# HiddenMarkovModel
-
-
 class HiddenMarkovModel:
     """Gaussian-emission hidden Markov model fit by Baum-Welch EM.
 
@@ -156,7 +148,6 @@ class HiddenMarkovModel:
             prev_ll = ll
             gamma_last = gamma
 
-        # final pass so stored quantities match final parameters
         emis = self._emissions(y)
         gamma_final, _, ll_final = _forward_backward_markov(
             emis, self.transition_, self.startprob_
@@ -187,10 +178,6 @@ class HiddenMarkovModel:
         data = as_1d(self._y if y is None else y)
         emis = _norm_logpdf(data[:, None], self.means_[None, :], self.stds_[None, :])
         return _viterbi(emis, self.transition_, self.startprob_)
-
-
-# ---------------------------------------------------------------------------
-# switching core shared by the three regression-family models
 
 
 def _fit_switching_core(design, target, n_regimes, markov=True,
@@ -228,9 +215,9 @@ def _fit_switching_core(design, target, n_regimes, markov=True,
     n_iter = 0
     gamma = None
     for n_iter in range(1, max_iter + 1):
-        e = target[:, None] - design @ np.column_stack(coefs)   # (T, K)
+        e = target[:, None] - design @ np.column_stack(coefs)
         sig = np.asarray(sigmas)
-        lik = _norm_logpdf(e, scale=sig[None, :])          # (T, K)
+        lik = _norm_logpdf(e, scale=sig[None, :])
 
         if markov:
             gamma, xi_sum, ll = _forward_backward_markov(lik, A, pi)
@@ -242,7 +229,6 @@ def _fit_switching_core(design, target, n_regimes, markov=True,
             ll = float(norm.sum())
             weights = gamma.mean(axis=0)
 
-        # M-step: weighted least squares per regime
         for r in range(K):
             wr = np.clip(gamma[:, r], 1e-12, None)
             coef_r, resid_r = _weighted_ols(design, target, wr)
@@ -274,10 +260,6 @@ def _fit_switching_core(design, target, n_regimes, markov=True,
     }
 
 
-# ---------------------------------------------------------------------------
-# public classes
-
-
 class SwitchingRegression:
     """Markov-switching linear regression.
 
@@ -301,7 +283,7 @@ class SwitchingRegression:
         out = _fit_switching_core(design, y, self.n_regimes, markov=True,
                                   max_iter=self.max_iter, tol=self.tol,
                                   random_state=self.random_state)
-        self.coefficients_ = out["coefs"]          # list of (d+1,) arrays, intercept first
+        self.coefficients_ = out["coefs"]
         self.sigmas_ = out["sigmas"]
         self.transition_ = out["transition"]
         self.regime_probs_ = out["regime_probs"]
@@ -364,7 +346,7 @@ class MixtureAutoregressive(SwitchingRegression):
     def fit(self, y):
         y = as_1d(y)
         X_lags, target = lag_matrix(y, self.p)
-        design = X_lags                      # lag_matrix's design already has the intercept column
+        design = X_lags
         out = _fit_switching_core(design, target, self.n_regimes, markov=False,
                                   max_iter=self.max_iter, tol=self.tol,
                                   random_state=self.random_state)

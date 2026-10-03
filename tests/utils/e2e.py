@@ -26,8 +26,6 @@ def exercise(name):
 _RNG = np.random.default_rng(0)
 
 
-# --------------------------------------------------------------------------- random
-
 @exercise("set_seed")
 def _set_seed():
     mod.set_seed(7)
@@ -59,8 +57,6 @@ def _spawn_generator():
     kids = mod.spawn_generator(random_state=1, n=3)
     assert len(kids) == 3
 
-
-# ---------------------------------------------------------------------- performance
 
 @exercise("Benchmark")
 def _benchmark():
@@ -116,8 +112,6 @@ def _memory_pool():
     assert pool.hits_ + pool.misses_ >= 1
 
 
-# ------------------------------------------------------------------ reproducibility
-
 @exercise("Reproducibility")
 def _reproducibility():
     with mod.Reproducibility(seed=3):
@@ -149,8 +143,6 @@ def _experiment_logger():
         run.log(loss=0.1)
     assert len(logger.runs_) == 1
 
-
-# --------------------------------------------------------------------------- data
 
 @exercise("fit")
 def _fit():
@@ -200,8 +192,6 @@ def _missing_imputation():
     out = mod.missing_imputation(x, method="mean")
     assert not np.isnan(out).any()
 
-
-# ----------------------------------------------------------------------------- io
 
 @exercise("to_dict")
 def _to_dict():
@@ -285,8 +275,6 @@ def _outlier_result():
     out = mod.outlier_detection(data, method="iqr")
     assert isinstance(out, mod.OutlierResult)
 
-
-# ------------------------------------------------------------------------- compat
 
 @exercise("numpy_interface")
 def _numpy_interface():

@@ -40,10 +40,8 @@ class CovarianceEstimation:
             if self.method == "shrinkage" and self.shrinkage is not None:
                 delta = float(self.shrinkage)
             else:
-                # Ledoit-Wolf (2004) sec. 2: b_bar^2 = (1/n^2) sum_t ||x_t x_t' - S||_F^2
-                # (an average-of-n-terms estimator of an O(1/n) asymptotic
-                # variance, hence the *second* factor of n) — dividing by n
-                # only left the shrinkage saturated at 1.0 for any non-tiny n.
+                # Ledoit-Wolf (2004) sec. 2: b_bar^2 = (1/n^2) sum_t ||x_t x_t' - S||_F^2; dividing
+                # by n instead saturates shrinkage at 1.0.
                 X = R - R.mean(axis=0)
                 delta2 = np.sum((S - target) ** 2)
                 pi_hat = 0.0

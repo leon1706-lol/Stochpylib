@@ -45,9 +45,6 @@ from stochpylib.survival import (
 )
 from stochpylib.survival.tests import _weighted_logrank
 
-# ------------------------------------------------------------------ helpers
-
-
 def _censored_exponential(rate, n, censor_lo=0.2, censor_hi=8.0, seed=0):
     rng = np.random.default_rng(seed)
     tt = rng.exponential(1 / rate, n)
@@ -64,8 +61,6 @@ def _two_arm(rate_a, rate_b, n, seed=3):
     x = np.r_[np.zeros(n), np.ones(n)]
     return t, e, g, x
 
-
-# ---------------------------------------------------------------- KM / NA
 
 def test_km_matches_closed_form_exponential():
     t, e = _censored_exponential(.5, 20000, seed=0)
@@ -89,7 +84,6 @@ def test_km_confidence_interval_covers_truth():
 
 
 def test_km_hand_computed_tiny_case():
-    # events at t=1 (n=4), t=2 (n=3), censored at 3, event at t=4 (n=1)
     km = KaplanMeier().fit(np.array([1., 2., 3., 4.]),
                            np.array([1, 1, 0, 1]))
     assert np.allclose(km.survival_function_["time"], [1., 2., 4.])
@@ -109,7 +103,6 @@ def test_na_and_km_consistent_small_ties():
     e = np.array([1, 0, 1, 1])
     km = KaplanMeier().fit(t, e)
     na = NelsonAalen().fit(t, e)
-    # S(t) ≈ exp(-H(t)) up to tie correction; check loose consistency at end
     assert float(km.predict([3.])[0]) < float(np.exp(-float(
         na.predict([3.])[0])) + 0.02)
 
@@ -133,8 +126,6 @@ def test_breslow_estimator_positive_and_increasing():
     assert be.values_[0] > 0
     assert np.all(np.diff(be.values_) >= -1e-12)
 
-
-# ---------------------------------------------------------------- parametric
 
 def test_weibull_parametric_recovery_under_censoring():
     rng = np.random.default_rng(11)
@@ -166,11 +157,9 @@ def test_other_parametrics_fit_finitely(cls):
     assert np.all(np.isfinite(list(m.params_.values())))
 
 
-# ---------------------------------------------------------------- functions
-
 def test_every_fitter_exposes_predict_as_survival():
-    # regression: LifeTable and the five parametric fitters inherited the abstract
-    # predict() and raised NotImplementedError (development/Probleme.md #72)
+    # Regression: LifeTable and the five parametric fitters inherited the abstract predict() and
+    # raised NotImplementedError.
     t, e = _censored_exponential(0.5, 400, seed=7)
     times = np.array([0.5, 2.0, 5.0])
     for cls in (WeibullSurvival, ExponentialSurvival, LogNormalSurvival,
@@ -180,7 +169,7 @@ def test_every_fitter_exposes_predict_as_survival():
     lt = LifeTable().fit(t, e, width=1.0)
     s = lt.predict(times)
     assert s.shape == (3,) and np.all(np.diff(s) <= 0)
-    assert s[0] == 1.0                                   # before the first interval edge
+    assert s[0] == 1.0
     assert np.isclose(lt.predict([1.0])[0], lt.survival_[0])
     assert np.isclose(lt.predict([2.0])[0], lt.survival_[1])
 
@@ -212,8 +201,6 @@ def test_cumulative_hazard_and_hazard_function_from_data():
     assert float(hf.predict([2.0])[0]) > 0
 
 
-# ---------------------------------------------------------------- Cox
-
 def test_cox_recovers_known_coefficient_sign_and_size():
     t, e, g, x = _two_arm(.5, .25, 3000, seed=16)
     cph = CoxProportionalHazards().fit(t, e, x)
@@ -228,15 +215,15 @@ def test_cox_efron_vs_breslow_agree_without_ties_and_work_with_them():
     t, e, g, x = _two_arm(.5, .25, 1500, seed=17)
     ef = CoxProportionalHazards(ties="efron").fit(t, e, x).coefficients_[0]
     br = CoxProportionalHazards(ties="breslow").fit(t, e, x).coefficients_[0]
-    assert abs(ef - br) < .05          # no ties -> identical estimates
+    assert abs(ef - br) < .05
 
-    td = np.round(np.minimum(t, 8) * 4) / 4   # forced heavy ties
+    td = np.round(np.minimum(t, 8) * 4) / 4
     ef_t = CoxProportionalHazards(ties="efron").fit(td, e, x).coefficients_[0]
     br_t = CoxProportionalHazards(ties="breslow").fit(
         td, e, x).coefficients_[0]
     assert abs(ef_t - br_t) > 1e-6     # ties: methods genuinely differ
-    assert ef_t * np.log(.5) > 0       # same direction as truth
-    assert abs(ef_t) < 2.5             # both remain sane under heavy ties
+    assert ef_t * np.log(.5) > 0
+    assert abs(ef_t) < 2.5
 
 
 def test_cox_baseline_breslow_estimator_consistency():
@@ -254,12 +241,10 @@ def test_stratified_cox_runs_and_gives_finite_beta():
     assert set(sc.baseline_by_stratum_) == {"A", "B"}
 
 
-# ---------------------------------------------------------------- AFT / Aalen
-
 def test_aft_recovers_negative_effect():
     t, e, g, x = _two_arm(.5, .25, 2500, seed=21)
     aft = AcceleratedFailureTime().fit(t, e, x)
-    assert aft.coefficients_[0] < 0            # x=1 lives longer
+    assert aft.coefficients_[0] < 0
     assert aft.shape_ > 0.5
     med = aft.predict_median(np.array([[0.0], [1.0]]))
     assert med[1] > med[0]
@@ -271,11 +256,9 @@ def test_aalen_additive_directional_hazards():
         [np.ones(len(t)), x]))
     h0 = float(am.predict([1.0, 0.0], [2.0])[0])
     h1 = float(am.predict([1.0, 1.0], [2.0])[0])
-    assert h0 > h1                             # arm A has higher hazard
-    assert h0 > 0.5                            # ~ theoretical H_A(2)=1
+    assert h0 > h1
+    assert h0 > 0.5
 
-
-# ---------------------------------------------------------------- log-rank
 
 def test_logrank_family_separates_and_calibrates():
     t, e, g, _x = _two_arm(.5, .25, 1200, seed=23)
@@ -285,7 +268,6 @@ def test_logrank_family_separates_and_calibrates():
         res = cls(**kw).fit(t, e, g)
         assert res.p_value_ < 1e-10, cls.__name__
 
-    # calibration: identical arms -> uniform p across seeds
     ps = []
     for seed in range(12):
         rng = np.random.default_rng(500 + seed)
@@ -298,7 +280,7 @@ def test_logrank_family_separates_and_calibrates():
                               np.repeat(["A", "B"], n))
         ps.append(r.p_value_)
     frac_sig = np.mean(np.array(ps) < .05)
-    assert frac_sig <= 2 / 12          # nominal 5% level, small-sample slack
+    assert frac_sig <= 2 / 12
 
 
 def test_weighted_variants_span_reasonable_range_on_separated_data():
@@ -333,8 +315,6 @@ def test_weighted_logrank_multigroup_three_arms():
     assert res["degrees_of_freedom"] == 2
     assert res["p_value"] < 1e-20
 
-
-# ---------------------------------------------------------------- competing risks
 
 def _cr_dgp(n=2500, beta=-0.8, seed=99):
     rng = np.random.default_rng(seed)
@@ -372,14 +352,12 @@ def test_cause_specific_hazard_predicts():
     assert h3 > h1 >= 0
 
 
-# ---------------------------------------------------------------- FineGray
-
 def test_finegray_detects_subdistribution_effect():
     T, C, x = _cr_dgp(beta=-0.8, seed=26)
     fg = FineGrayModel().fit(T, C, np.column_stack([x]),
                              cause_of_interest=1)
-    assert fg.coefficients_[0] < -0.2      # correct direction, attenuated
-    assert fg.z_scores_[0] < -3            # strongly significant
+    assert fg.coefficients_[0] < -0.2
+    assert fg.z_scores_[0] < -3
     assert fg.standard_errors_[0] > 0
 
 
@@ -389,8 +367,6 @@ def test_finegray_null_effect_not_significant():
                              cause_of_interest=1)
     assert abs(fg.z_scores_[0]) < 3
 
-
-# ---------------------------------------------------------------- methods & wiring
 
 def test_top_level_wiring_and_conformance_counts():
     import stochpylib
@@ -419,8 +395,6 @@ def test_doctests_pass():
     assert doctest.testmod(_base).failed == 0
     assert doctest.testmod(_np_mod).failed == 0
 
-
-# ---------------------------------------------------------------- V0.5.1 audit additions
 
 def test_step_evaluate_cumulative_hazard_default_is_zero():
     """_step_evaluate default must be 0 for CH (not 1 like S(t))."""
@@ -456,7 +430,7 @@ def test_clayton_near_independence_limit():
     cl.dimension = 2
     v = float(cl.cdf(np.array([[.5, .5]]))[0])
     assert np.isfinite(v)
-    assert abs(v - .25) < .01   # independence limit: u*v
+    assert abs(v - .25) < .01
 
 
 def test_gp_training_interpolation_exact():
@@ -469,9 +443,8 @@ def test_gp_training_interpolation_exact():
     assert float(np.max(np.abs(mu_tr - y_tr[:5]))) < .01
 
 
-# ---------------------------------------------------------------- lifelines oracle
-# dev-only reference implementation; these cross-checks run when the optional
-# `lifelines` extra is installed (CI installs [dev]) and skip cleanly otherwise.
+# Dev-only oracle: these cross-checks run when `lifelines` is installed (CI installs [dev]) and skip
+# otherwise.
 
 
 def test_km_curve_matches_lifelines():
@@ -519,8 +492,6 @@ def test_cox_coefficients_match_lifelines():
     assert abs(ours.coefficients_[0] -
                lff.params_["x"]) < max(1e-6, 0.05 * abs(lff.params_["x"]))
 
-
-# ---------------------------------------------------------------- V0.4.1 audit additions
 
 def test_km_all_censored_median_is_inf():
     km = KaplanMeier().fit(np.array([1., 2., 3.]), np.zeros(3, dtype=int))
@@ -605,7 +576,7 @@ def test_mrl_exponential_memoryless():
     from stochpylib.distributions import Exponential as DExp
     rl = ResidualLifetime(source=DExp(0.5))
     assert abs(rl.value(0) - 2.0) < .05
-    assert abs(rl.value(3) - 2.0) < .05   # memoryless
+    assert abs(rl.value(3) - 2.0) < .05
 
 
 def test_cumulative_hazard_from_parametric_integration():

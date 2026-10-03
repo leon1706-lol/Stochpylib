@@ -33,8 +33,6 @@ from stochpylib.information_theory.coding import (
     AEP, HuffmanCode, ShannonLimit, TypicalSet,
 )
 
-# ---------------------------------------------------------------- entropy
-
 class TestEntropy:
     def test_shannon_bernoulli_half(self):
         assert abs(Entropy.compute([.5, .5]) - 1.0) < 1e-9
@@ -58,7 +56,7 @@ class TestEntropy:
     def test_conditional_entropy_nonneg(self):
         rng = np.random.default_rng(1)
         x = rng.choice([0, 1], 500)
-        y = x + rng.integers(-1, 2, 500)  # correlated
+        y = x + rng.integers(-1, 2, 500)
         ce = ConditionalEntropy().fit(y, x).result_
         assert ce >= 0
 
@@ -77,7 +75,6 @@ class TestCrossEntropy:
 
 class TestTsallis:
     def test_q_2_binary(self):
-        # Tsallis q=2 for [.5,.5]: (1-1)/(1) = 0? No: sum p^2 = .5, S=(1-.5)/1=.5
         assert abs(TsallisEntropy.compute([.5, .5], q=2) - .5) < 1e-12
 
     def test_q_1_recover_shannon(self):
@@ -89,7 +86,7 @@ class TestTsallis:
 class TestRenyi:
     def test_alpha_2(self):
         r = RenyiEntropy(alpha=2.0).fit([.25, .25, .25, .25]).result_
-        assert abs(r - 2.0) < 1e-9   # uniform over 4 symbols: H_2 = log2(4)=2
+        assert abs(r - 2.0) < 1e-9
 
     def test_alpha_near_1_converges_to_shannon(self):
         r = RenyiEntropy(alpha=.9999).fit([.3, .7]).result_
@@ -108,8 +105,6 @@ class TestDiffMax:
         me = MaxEntropy(support_size=8).fit()
         assert abs(me.result_ - np.log2(8)) < .01
 
-
-# ---------------------------------------------------------------- divergences
 
 class TestKLDivergence:
     def test_kl_self_is_zero(self):
@@ -160,29 +155,27 @@ class TestOtherDivergences:
         wd = WassersteinDistance.compute(
             np.random.default_rng(1).normal(0, 1, 200),
             np.random.default_rng(2).normal(3, 1, 200))
-        assert wd > 2.0     # means differ by 3
+        assert wd > 2.0
 
     def test_alpha_divergence_alpha_2_positive(self):
         a2 = AlphaDivergence(alpha=2.).compute([.3, .3, .4], [.33, .33, .34])
         assert a2 > 0
 
 
-# ---------------------------------------------------------------- mutual info
-
 class TestMutualInformation:
     def test_mi_independent_zero(self):
         rng = np.random.default_rng(3)
         x = rng.integers(0, 2, 10000)
-        y = rng.integers(0, 2, 10000)  # independent
+        y = rng.integers(0, 2, 10000)
         mi = MutualInformation().fit(x, y).result_
-        assert mi < 0.01               # close to zero
+        assert mi < 0.01
 
     def test_mi_dependent_positive(self):
         rng = np.random.default_rng(4)
         x = rng.integers(0, 2, 5000)
-        y = x.copy()                   # perfect dependence
+        y = x.copy()
         mi = MutualInformation().fit(x, y).result_
-        assert mi > .9                 # should equal H(X) ≈ 1 bit
+        assert mi > .9
 
     def test_nmi_perfectly_dependent_is_one(self):
         rng = np.random.default_rng(5)
@@ -220,10 +213,8 @@ class TestInteractionMulti:
         rng = np.random.default_rng(8)
         cols = [rng.integers(0, 2, 5000) for _ in range(3)]
         mi_all = MultiInformation().fit(*cols).result_
-        assert mi_all < 0.02           # independent -> ~0
+        assert mi_all < 0.02
 
-
-# ---------------------------------------------------------------- channels
 
 class TestChannelCapacity:
     def test_bsc_zero_noise_capacity_one(self):
@@ -265,8 +256,6 @@ class TestSymbolicTE:
         assert result >= 0
 
 
-# ---------------------------------------------------------------- coding
-
 class TestShannonLimit:
     def test_bsc_zero_noise_unlimited(self):
         cap = ShannonLimit.compute(crossover_prob=0.)
@@ -297,7 +286,6 @@ class TestTypicalSetAEP:
     def test_typical_set_membership_balanced_coin(self):
         probs = [.5, .5]
         ts = TypicalSet(epsilon=.1).fit(probs)
-        # balanced binary sequence IS typical for fair coin
         seq = [0, 1] * 10
         assert ts.is_typical(seq)
 
@@ -308,7 +296,6 @@ class TestTypicalSetAEP:
         # balanced sequence has H_emp≈1.0 but H(p)=0.469
         seq = [0, 1] * 10
         assert not ts.is_typical(seq)
-        # biased sequence IS typical
         biased_seq = [0] * 9 + [1]
         assert ts.is_typical(biased_seq)
 
@@ -318,8 +305,6 @@ class TestTypicalSetAEP:
         assert aep.typical_set_size_lower_ > 0
         assert aep.typical_set_probability_lower_ >= .85
 
-
-# ---------------------------------------------------------------- wiring
 
 def test_module_wiring():
     import stochpylib
@@ -342,12 +327,10 @@ def test_module_wiring():
     assert not missing, f"missing: {missing}"
 
 
-# ---------------------------------------------------------------- V0.6.1 additions
-
 def test_renyi_alpha_0_returns_log2_k_in_bits():
     """Renyi alpha=0 is Hartley entropy: log(K) must be in bits not nats."""
     r = RenyiEntropy(alpha=0).fit([.25] * 4).result_
-    assert abs(r - 2.0) < .01   # log2(4) = 2 bits
+    assert abs(r - 2.0) < .01
 
 
 def test_cmi_compute_returns_float_directly():
@@ -396,9 +379,7 @@ def test_information_gain_equals_mutual_info():
 
 def test_typical_set_biased_source():
     ts = TypicalSet(epsilon=.1).fit([.9, .1])
-    # balanced sequence NOT typical under biased source
     assert not ts.is_typical([0, 1] * 10)
-    # biased sequence IS typical
     assert ts.is_typical([0] * 18 + [1] * 2)
 
 

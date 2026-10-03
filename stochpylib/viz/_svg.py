@@ -16,7 +16,7 @@ from stochpylib.viz._figure import (
 )
 from stochpylib.viz._ticks import fmt, log_ticks, nice_ticks
 
-__all__ = []  # private module
+__all__ = []
 
 _MARGIN_L = 60
 _MARGIN_B = 45
@@ -80,7 +80,7 @@ def _step_path(x, y, where):
             ys.append(y[i - 1])
             xs.append(x[i])
             ys.append(y[i])
-    else:  # pre
+    else:
         for i in range(1, len(x)):
             xs.append(x[i - 1])
             ys.append(y[i])
@@ -135,16 +135,14 @@ def render_svg(fig):
 def _render_axes(axes, x0, y0, x1, y1, clip_id):
     xlim, ylim = axes.data_limits()
     sx = _Scale(xlim[0], xlim[1], x0, x1, log=(axes.xscale == "log"))
-    sy = _Scale(ylim[0], ylim[1], y1, y0, log=(axes.yscale == "log"))  # y flipped
+    sy = _Scale(ylim[0], ylim[1], y1, y0, log=(axes.yscale == "log"))
 
     out = [f'<clipPath id="{clip_id}"><rect x="{x0:.2f}" y="{y0:.2f}" '
            f'width="{x1 - x0:.2f}" height="{y1 - y0:.2f}"/></clipPath>']
 
-    # frame
     out.append(f'<rect x="{x0:.2f}" y="{y0:.2f}" width="{x1 - x0:.2f}" '
                f'height="{y1 - y0:.2f}" fill="none" stroke="#333333" stroke-width="1"/>')
 
-    # ticks + gridlines
     if axes.xticklabels is not None:
         xt_pos, xt_lab = axes.xticklabels
     else:
@@ -348,16 +346,15 @@ def _render_artist(a, sx, sy):
             cx = mx + nx_ / norm * a.curved * math.hypot(dx, dy)
             cy = my + ny_ / norm * a.curved * math.hypot(dx, dy)
             path = f'M {px0:.2f} {py0:.2f} Q {cx:.2f} {cy:.2f} {px1:.2f} {py1:.2f}'
-            # tangent of the quadratic bezier at t=1: 2*(P1 - C)
             tx, ty = px1 - cx, py1 - cy
         else:
             path = f'M {px0:.2f} {py0:.2f} L {px1:.2f} {py1:.2f}'
             tx, ty = px1 - px0, py1 - py0
         tnorm = math.hypot(tx, ty) or 1.0
         tx, ty = tx / tnorm, ty / tnorm
-        # manually drawn arrowhead triangle at the endpoint (no <marker>, so a single
-        # color/opacity always applies cleanly regardless of renderer support)
-        hx, hy = -ty, tx  # perpendicular
+        # Manually drawn arrowhead triangle (no <marker>), so one color/opacity applies cleanly in
+        # every renderer.
+        hx, hy = -ty, tx
         size = 6.0
         p_tip = (px1, py1)
         p_a = (px1 - tx * size + hx * size * 0.5, py1 - ty * size + hy * size * 0.5)

@@ -11,10 +11,9 @@ from scipy import special
 
 from stochpylib.experimental_design._common import _min_distance, _nearest_distance, _pairwise
 
-__all__ = []  # private module
+__all__ = []
 
 
-# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
 from stochpylib._rng import as_generator as _rng
 
 
@@ -71,6 +70,5 @@ def _lag_bins(h, bins, max_dist=None):
     return np.linspace(0.0, max_dist, int(bins) + 1)
 
 
-# ``_pairwise``/``_min_distance``/``_nearest_distance`` are imported above from
-# experimental_design._common and re-exported here so every file in this package imports
-# distance helpers from one place (`from stochpylib.spatial_statistics._common import ...`).
+# _pairwise/_min_distance/_nearest_distance come from experimental_design._common and are
+# re-exported so the package imports distance helpers from one place.

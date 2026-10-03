@@ -52,7 +52,7 @@ class SARModel:
         W = _W_matrix(self.weights)
         Xd = _design_matrix(X, n)
         eig = np.linalg.eigvals(W).real  # real part: exact for symmetric W, a practical
-        rho_lo, rho_hi = _rho_bounds(eig)  # approximation for a general asymmetric one
+        rho_lo, rho_hi = _rho_bounds(eig)
 
         def logdet(rho):
             return float(np.sum(np.log(np.abs(1.0 - rho * eig))))

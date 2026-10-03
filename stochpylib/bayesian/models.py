@@ -11,8 +11,6 @@ __all__ = ["BayesianLinear", "BayesianLogistic", "NaiveBayes", "HierarchicalMode
            "MixtureModel", "BayesianNetwork", "DirichletProcess"]
 
 
-# ============================================================================ BayesianLinear
-
 class BayesianLinear:
     """Conjugate Normal-Inverse-Gamma Bayesian linear regression:
     ``beta | sigma2 ~ N(m0, sigma2*V0)``, ``sigma2 ~ InvGamma(a0, b0)``."""
@@ -123,7 +121,7 @@ class BayesianLinear:
         else:
             beta = np.atleast_2d(samples)
             sigma2 = np.full(len(beta), self.sigma2_)
-        resid = self._y_[None, :] - beta @ self._Xd_.T  # (S, n)
+        resid = self._y_[None, :] - beta @ self._Xd_.T
         return -0.5 * np.log(2 * np.pi * sigma2)[:, None] - 0.5 * resid ** 2 / sigma2[:, None]
 
     def summary(self):
@@ -135,8 +133,6 @@ class BayesianLinear:
     def __repr__(self):
         return f"BayesianLinear(p={getattr(self, 'p_', '?')}, fit_intercept={self.fit_intercept})"
 
-
-# =========================================================================== BayesianLogistic
 
 def _sigmoid(z):
     return special.expit(z)
@@ -225,8 +221,8 @@ class BayesianLogistic:
             signed = np.where(y == 1, 1.0, -1.0)
 
             def log_site(f, i):
-                # true logistic site (not a probit stand-in): EP's Gauss-Hermite moment
-                # matching works against any analytic site, not only a Gaussian-conjugate one
+                # True logistic site (not a probit stand-in): EP's Gauss-Hermite moment matching
+                # works against any analytic site.
                 return -np.logaddexp(0.0, -signed[i] * f)
 
             ep = EP_Posterior(m0, np.eye(p) * self.prior_var, Xd, log_site)
@@ -309,8 +305,6 @@ class BayesianLogistic:
         return f"BayesianLogistic(method={self.method!r})"
 
 
-# =============================================================================== NaiveBayes
-
 class NaiveBayes:
     """Naive Bayes with a Bayesian (posterior-mean) point estimate of every parameter:
     Dirichlet(alpha) class prior, and per-feature conjugate posteriors --
@@ -352,7 +346,7 @@ class NaiveBayes:
             for ci, c in enumerate(self.classes_):
                 Xc = X[y == c]
                 self.theta_[ci] = (Xc.sum(axis=0) + self.alpha) / (len(Xc) + 2 * self.alpha)
-        else:  # multinomial
+        else:
             self.theta_ = np.zeros((n_classes, d))
             for ci, c in enumerate(self.classes_):
                 Xc = X[y == c]
@@ -403,8 +397,6 @@ class NaiveBayes:
     def __repr__(self):
         return f"NaiveBayes(distribution={self.distribution!r})"
 
-
-# ========================================================================= HierarchicalModel
 
 class HierarchicalModel:
     """Two-level normal-normal hierarchy: ``theta_j ~ N(mu, tau^2)``, ``mu ~ N(mu0,
@@ -483,11 +475,11 @@ class HierarchicalModel:
                 b_n = tau_b0 + 0.5 * np.sum((theta - mu) ** 2)
                 tau2 = b_n / rng.gamma(a_n, 1.0)
                 tau_val = float(np.sqrt(tau2))
-            else:  # half_cauchy on tau, slice sample log(tau)
+            else:
                 def log_tau_post(log_t):
                     t = np.exp(log_t)
                     ll = -J * log_t - 0.5 * np.sum((theta - mu) ** 2) / t ** 2
-                    lp = -np.log(self.tau_scale ** 2 + t ** 2) + log_t  # half-Cauchy + Jacobian
+                    lp = -np.log(self.tau_scale ** 2 + t ** 2) + log_t
                     return ll + lp
 
                 log_tau = _slice_step_1d(log_tau_post, np.log(max(tau_val, 1e-6)), w=1.0, rng=rng)
@@ -563,8 +555,6 @@ class HierarchicalModel:
     def __repr__(self):
         return f"HierarchicalModel(J={self.theta_samples_.shape[1] if hasattr(self, 'theta_samples_') else '?'})"
 
-
-# ============================================================================= MixtureModel
 
 class MixtureModel:
     """Bayesian finite mixture model fit by collapsed-conditional Gibbs sampling.
@@ -726,7 +716,7 @@ class MixtureModel:
         X = _as_2d(X, "X") if self.covariances_ is not None else _as_1d(X, "X")[:, None]
         n = X.shape[0]
         K = self.n_components
-        if self.covariances_ is None:  # poisson
+        if self.covariances_ is None:
             x = X[:, 0]
             log_p = np.log(np.clip(self.weights_, 1e-300, None))[None, :] + \
                 (x[:, None] * np.log(np.clip(self.means_, 1e-300, None))[None, :] - self.means_[None, :])
@@ -794,8 +784,6 @@ class MixtureModel:
     def __repr__(self):
         return f"MixtureModel(n_components={self.n_components}, family={self.family!r})"
 
-
-# =========================================================================== BayesianNetwork
 
 class BayesianNetwork:
     """A discrete Bayesian network with exact inference (variable elimination) and a
@@ -888,7 +876,6 @@ class BayesianNetwork:
     def query(self, variables, evidence=None):
         evidence = evidence or {}
         factors = [self._factor_for(n) for n in self.nodes]
-        # restrict factors to observed evidence values
         restricted = []
         for vars_, table in factors:
             for ev_var, ev_val in evidence.items():
@@ -1037,8 +1024,6 @@ class _CPTResult(np.ndarray):
         self.states = getattr(obj, "states", None)
 
 
-# ========================================================================== DirichletProcess
-
 class DirichletProcess:
     """A Dirichlet process ``DP(alpha, base)`` -- stick-breaking, the Chinese restaurant
     process, and (via ``fit``) a collapsed Gibbs (Neal 2000, Algorithm 3) Gaussian DP
@@ -1056,7 +1041,7 @@ class DirichletProcess:
         beta = rng.beta(1.0, self.alpha, size=K)
         remaining = np.cumprod(np.concatenate([[1.0], 1 - beta[:-1]]))
         weights = beta * remaining
-        weights[-1] += max(0.0, 1.0 - weights.sum())  # truncated stick gets the remainder
+        weights[-1] += max(0.0, 1.0 - weights.sum())
         atoms = np.atleast_1d(self.base.rvs(K, random_state=rng))
         return weights, atoms
 
@@ -1134,7 +1119,7 @@ class DirichletProcess:
 
         for it in range(n_warmup + n_samples):
             for i in range(n):
-                labels[i] = -1  # remove i
+                labels[i] = -1
                 uniq = np.unique(labels[labels >= 0])
                 probs, cand = [], []
                 for k in uniq:
@@ -1172,7 +1157,6 @@ class DirichletProcess:
 
             if it >= n_warmup:
                 k_idx = it - n_warmup
-                # relabel to consecutive ints 0..K-1 in order of first appearance
                 remap, next_id = {}, 0
                 relabeled = np.empty(n, dtype=int)
                 for i in range(n):

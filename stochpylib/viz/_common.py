@@ -10,10 +10,9 @@ import numpy as np
 
 from stochpylib.viz._figure import Figure
 
-__all__ = []  # private module
+__all__ = []
 
 
-# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
 from stochpylib._rng import as_generator as _rng
 
 
@@ -43,9 +42,6 @@ def _get_fig_ax(ax, nrows=1, ncols=1, **fig_kwargs):
         return ax.figure, ax
     fig = Figure(nrows=nrows, ncols=ncols, **fig_kwargs)
     return fig, fig.ax
-
-
-# --------------------------------------------------------------------- distributions
 
 
 def _dist_grid(dist, n_points=200, lo_q=0.001, hi_q=0.999):
@@ -93,9 +89,6 @@ def _filliben_pp(n):
     return v
 
 
-# --------------------------------------------------------------------- time series
-
-
 def _durbin_levinson(acf):
     """Partial autocorrelations from an autocorrelation sequence ``acf`` (``acf[0]==1``).
 
@@ -119,9 +112,6 @@ def _durbin_levinson(acf):
         phi_prev = phi_new
         pacf[k] = phi_kk
     return pacf
-
-
-# --------------------------------------------------------------------- MCMC samples
 
 
 def _extract_chains(obj):
@@ -160,9 +150,6 @@ def _extract_samples(obj):
     if not np.all(np.isfinite(arr)):
         raise ValueError("samples contains non-finite values")
     return arr
-
-
-# --------------------------------------------------------------------- regression diagnostics
 
 
 def _scatter_grid(arr, labels, diagonal="hist", title=None):

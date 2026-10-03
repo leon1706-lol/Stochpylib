@@ -36,8 +36,6 @@ def _grf_sample(coords, model="exponential", sill=1.0, rng=0, **kw):
     return GaussianRandomField(covariance=v).sample(coords, random_state=rng), v
 
 
-# ============================================================================ variogram
-
 class TestSemivariogramModels:
     MODELS = ["spherical", "exponential", "gaussian", "matern", "cubic"]
 
@@ -158,11 +156,10 @@ class TestExperimentalVariogram:
         h_all, dz_all = np.array(h_all), np.array(dz_all)
         edges = ev.bin_edges_
         for b in range(len(ev.lags_)):
-            lo = edges[b] if b > 0 else -np.inf  # first bin includes h == 0
+            lo = edges[b] if b > 0 else -np.inf
             mask = (h_all > lo) & (h_all <= edges[b + 1])
             assert ev.counts_[b] == np.sum(mask)
             assert ev.gamma_[b] == pytest.approx(0.5 * np.mean(dz_all[mask]))
-        # the raw cloud has one (h, gamma) entry per pair
         h_cloud, g_cloud = ev.cloud()
         assert len(h_cloud) == n * (n - 1) // 2
         assert np.isclose(0.5 * (values[0] - values[1]) ** 2,
@@ -179,7 +176,6 @@ class TestExperimentalVariogram:
         n = 200
         x = _RNG.uniform(0, 20, size=n)
         y = _RNG.uniform(0, 20, size=n)
-        # strong correlation along x, none along y: a simple additive anisotropic field
         values = np.sin(x / 2.0) + 0.05 * _RNG.normal(size=n)
         coords = np.column_stack([x, y])
         ev_x = ExperimentalVariogram(bins=10, direction=0, tolerance=15).fit(coords, values)
@@ -228,10 +224,8 @@ class TestNuggetSillRange:
         assert float(Sill().fit(ev)) == pytest.approx(1.2, abs=0.05)
 
     def test_range_on_synthetic_exponential_curve(self):
-        # Range()'s default fraction=0.95 crossing coincides with the model's own
-        # `range` parameter only for the asymptotic exponential/gaussian scaling (see
-        # test_practical_range_convention) -- spherical/cubic reach 100% *before* h=range,
-        # so their 95%-crossing point is smaller than `range` by construction, not a bug.
+        # Range()'s default fraction=0.95 crossing equals the model's `range` only for asymptotic
+        # exponential/gaussian scaling; spherical/cubic reach 100% before h=range.
         true = Semivariogram(model="exponential", nugget=0.1, sill=1.0, range=4.0)
         lags = np.linspace(0.1, 12, 30)
         ev = ExperimentalVariogram.__new__(ExperimentalVariogram)
@@ -245,8 +239,6 @@ class TestNuggetSillRange:
         s = Sill(method="variance").fit(ev, values=values)
         assert float(s) == pytest.approx(4.0, rel=0.15)
 
-
-# ============================================================================== kriging
 
 class TestKrigingCore:
     def _setup(self, n=50):
@@ -360,7 +352,7 @@ class TestCoKriging:
         coords1 = _RNG.uniform(0, 10, size=(30, 2))
         coords2 = _RNG.uniform(0, 10, size=(200, 2))
         z1, v = _grf_sample(coords1, rng=4)
-        z2 = _RNG.normal(size=200)  # independent of z1
+        z2 = _RNG.normal(size=200)
         ck = CoKriging(variogram=v).fit(coords1, z1, coords2, z2)
         ok = OrdinaryKriging(variogram=v).fit(coords1, z1)
         test_pts = _RNG.uniform(0, 10, size=(20, 2))
@@ -378,7 +370,7 @@ class TestIndicatorDisjunctiveKriging:
         assert np.all(np.diff(cdf, axis=1) >= -1e-9)
 
     def test_disjunctive_kriging_converges_to_simple_kriging(self):
-        coords = _RNG.uniform(0, 20, size=(400, 2))  # large domain: high effective sample size
+        coords = _RNG.uniform(0, 20, size=(400, 2))
         values, v = _grf_sample(coords, model="exponential", sill=1.0, range=1.0, rng=6)
         sk = SimpleKriging(variogram=v, mean=0.0).fit(coords, values)
         dk = DisjunctiveKriging(n_hermite=20, variogram=v).fit(coords, values)
@@ -394,8 +386,6 @@ class TestIndicatorDisjunctiveKriging:
         p = dk.predict_proba(_RNG.uniform(0, 10, size=(10, 2)), threshold=float(np.median(values)))
         assert np.all((p >= 0) & (p <= 1))
 
-
-# ------------------------------------------------------------------------ random fields
 
 class TestRandomFields:
     def test_cholesky_sample_covariance_matches_theory(self):
@@ -487,8 +477,6 @@ class TestRandomFields:
             grf.sample_grid((8, 8), spacing=1.0, random_state=0)
 
 
-# --------------------------------------------------------------------- point processes
-
 class TestPoissonProcesses:
     def test_csr_count_matches_scipy_poisson(self):
         W = ((0.0, 10.0), (0.0, 10.0))
@@ -497,7 +485,6 @@ class TestPoissonProcesses:
         counts = np.array([len(pp.sample(random_state=s)) for s in range(n_sims)])
         assert abs(counts.mean() - 50.0) < 3 * np.sqrt(50.0 / n_sims)
         assert abs(counts.var() - 50.0) < 3 * 50.0 * np.sqrt(2.0 / n_sims)
-        # a proper Poisson(50) reference from scipy for the same mean
         ref = stats.poisson(50.0)
         assert abs(counts.mean() - ref.mean()) < 3 * np.sqrt(ref.var() / n_sims)
 
@@ -523,7 +510,7 @@ class TestPoissonProcesses:
         true_ip = InhomogeneousPoisson(lambda X: np.exp(-2.0 + 0.1 * X[:, 0]), window=W)
         pts = true_ip.sample(random_state=8)
         fit_ip = InhomogeneousPoisson(lambda X: np.zeros(len(X)), window=W).fit(pts, degree=1)
-        assert fit_ip.beta_[1] > 0  # recovers the positive x-slope
+        assert fit_ip.beta_[1] > 0
 
 
 class TestClusterProcesses:
@@ -571,7 +558,6 @@ class TestRipleyKAndPCF:
         W = ((-2.0, 2.0), (-2.0, 2.0))
         k = RipleyK(pts, W, r=np.array([0.5, 1.5]), correction="none")
         lam = 3 / 16.0
-        # brute force: sum over ordered pairs i != j with d(i,j) <= r
         D = np.linalg.norm(pts[:, None, :] - pts[None, :, :], axis=-1)
         np.fill_diagonal(D, np.inf)
         expected = np.array([np.sum(D <= r) for r in [0.5, 1.5]]) / (3 * lam)
@@ -609,10 +595,8 @@ class TestRipleyKAndPCF:
         k = RipleyK(pp.sample(random_state=12), W)
         L = k.L()
         assert isinstance(L, SpatialFunction)
-        assert np.allclose(L.theoretical, k.r, atol=1e-6)  # L(r) = r under CSR
+        assert np.allclose(L.theoretical, k.r, atol=1e-6)
 
-
-# --------------------------------------------------------------- spatial autocorrelation
 
 def _brute_moran(z, W):
     n = len(z)
@@ -676,7 +660,6 @@ class TestSpatialAutocorrelation:
         assert r.extras["expected"] == pytest.approx(1.0)
 
     def test_strong_positive_autocorrelation_detected(self):
-        # a smooth spatial trend should give a strongly positive, significant Moran's I
         shape = (10, 10)
         W = SpatialWeights.lattice(shape, rule="queen")
         xs, ys = np.meshgrid(np.arange(10), np.arange(10), indexing="ij")
@@ -723,9 +706,8 @@ class TestNearestNeighbourDistance:
         assert r.statistic == pytest.approx(2.149, abs=0.1)
 
     def test_csr_clark_evans_near_one(self):
-        # R = r_obs / r_expected is the simple, universally-recognized ratio (not
-        # edge-bias-corrected -- see NNDistanceTest's docstring), so a finite window gives
-        # a small, well-documented positive bias; a loose sanity bound, not a tight SE one.
+        # R = r_obs / r_expected isn't edge-bias-corrected, so a finite window gives a small
+        # positive bias; a loose sanity bound, not a tight SE one.
         W = ((0.0, 30.0), (0.0, 30.0))
         pp = PoissonPointProcess(intensity=0.3, window=W)
         ratios = []
@@ -737,8 +719,8 @@ class TestNearestNeighbourDistance:
         assert abs(ratios.mean() - 1.0) < 0.1
 
     def test_csr_pvalues_are_calibrated(self):
-        # the Donnelly-corrected z-test (used for the p-value) should be well calibrated
-        # under CSR even though R itself carries the edge-truncation bias checked above.
+        # The Donnelly-corrected z-test (used for the p-value) should be well calibrated under CSR
+        # even though R carries the edge bias.
         W = ((0.0, 30.0), (0.0, 30.0))
         pp = PoissonPointProcess(intensity=0.3, window=W)
         pvals = []
@@ -770,10 +752,8 @@ class TestSpatialWeights:
     def test_lattice_rook_and_queen_neighbor_counts(self):
         rook = SpatialWeights.lattice((5, 5), rule="rook")
         queen = SpatialWeights.lattice((5, 5), rule="queen")
-        # interior cell (2,2) -> index 12
         assert rook.W[12].sum() == 4
         assert queen.W[12].sum() == 8
-        # corner cell (0,0) -> index 0
         assert rook.W[0].sum() == 2
         assert queen.W[0].sum() == 3
 
@@ -788,8 +768,6 @@ class TestSpatialWeights:
         W = SpatialWeights.knn(_RNG.uniform(0, 10, size=(10, 2)), k=3).row_standardize()
         assert np.allclose(W.W.sum(axis=1), 1.0)
 
-
-# ------------------------------------------------------------------------------- lattice
 
 class TestLatticeModels:
     def test_sar_recovers_rho_and_beta(self):
@@ -832,7 +810,7 @@ class TestLatticeModels:
         assert car.sigma2_ == pytest.approx(sigma2_true, rel=0.5)
 
     def test_car_requires_symmetric_weights(self):
-        W = SpatialWeights.knn(_RNG.uniform(0, 10, size=(10, 2)), k=3)  # generally asymmetric
+        W = SpatialWeights.knn(_RNG.uniform(0, 10, size=(10, 2)), k=3)
         with pytest.raises(ValueError):
             CARModel(W).fit(_RNG.normal(size=10))
 
@@ -850,8 +828,6 @@ class TestLatticeModels:
         theory_cov = np.linalg.inv(Q)
         assert np.max(np.abs(emp_cov - theory_cov)) < 0.3
 
-
-# -------------------------------------------------------------------------------- hygiene
 
 class TestHygiene:
     def test_public_surface_is_unique(self):

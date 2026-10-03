@@ -45,7 +45,6 @@ def _sorted_blocks(times, events):
     dmask = (es == 1).astype(float)
     d_counts = np.add.reduceat(dmask, starts).astype(int)
     d_counts = np.minimum(d_counts, ends - starts)
-    # tie-group member indices (only groups with actual ties matter)
     tie_groups = []
     for k in range(len(uniq)):
         if d_counts[k] > 1:
@@ -103,8 +102,8 @@ def _cox_grad_info(beta, ts, es, Xs, starts, d_counts, tie_groups,
     ll = float((eta * dmask).sum()) \
         - float((df * np.log(np.maximum(risk_w, _EPS))).sum())
 
-    # Efron correction: replace the tied blocks' Breslow contribution with the
-    # sum over conditional (l/m)-reduced denominators
+    # Efron: replace the tied blocks' Breslow contribution with the sum over conditional
+    # (l/m)-reduced denominators.
     if apply_efron:
         for k, idx in tie_groups:
             m = len(idx)
@@ -167,7 +166,6 @@ class CoxProportionalHazards:
                 delta = np.linalg.solve(info, grad)
             except np.linalg.LinAlgError:
                 break
-            # step halving on the negative log partial likelihood
             step = 1.0
             for _bt in range(30):
                 cand = beta - step * delta
@@ -424,7 +422,6 @@ class AalenAdditiveModel:
         for u in uniq:
             start = int(np.searchsorted(ts, u, side="left"))
             Xr = Xs[start:]
-            # response: dN_i(u) = 1 iff subject i fails AT u
             dr = ((ts[start:] >= u - 1e-12) &
                   (ts[start:] <= u + 1e-12) &
                   (es[start:] > 0)).astype(float)
@@ -524,7 +521,7 @@ class FineGrayModel:
             if not np.all(np.isfinite(I)):
                 break
             try:
-                delta = np.linalg.solve(I, U)      # Newton ascent on +ll
+                delta = np.linalg.solve(I, U)
             except np.linalg.LinAlgError:
                 break
             step = 1.0

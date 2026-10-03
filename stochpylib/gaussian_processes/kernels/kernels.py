@@ -84,8 +84,8 @@ class PeriodicKernel(StationaryKernel):
     def _matrix(self, X, Y):
         X = _as_2d(X)
         Y = X if Y is None else _as_2d(Y)
-        # per-dimension exponentiated sine — the Euclidean-distance variant is NOT
-        # positive semidefinite in more than one dimension
+        # Per-dimension exponentiated sine: the Euclidean-distance variant isn't PSD in more than
+        # one dimension.
         diff = (X[:, None, :] - Y[None, :, :]) / max(self.period, 1e-12)
         ls = np.atleast_1d(self.length_scale)
         if ls.size == 1:
@@ -166,7 +166,6 @@ class WhiteNoiseKernel(BaseKernel):
         if Y is None:
             return self.variance * np.eye(len(X))
         Y = _as_2d(Y)
-        # identical rows share noise; distinct inputs are uncorrelated
         same = np.all(X[:, None, :] == Y[None, :, :], axis=-1)
         return self.variance * same.astype(float)
 
@@ -194,8 +193,8 @@ class SpectralMixtureKernel(NonStationaryKernel):
         self.scales = np.asarray(
             scales if scales is not None else np.abs(rng_default_scales(q)), dtype=float
         )
-        # each of the q components is isotropic across input dimensions, so ``dimension``
-        # is informational only (it used to overwrite the q-vectors with d-vectors)
+        # Each of the q components is isotropic across input dimensions, so `dimension` is
+        # informational only.
         self.dimension = None if dimension is None else int(dimension)
         if not (len(self.weights) == len(self.means) == len(self.scales)):
             raise ValueError("weights, means and scales must have equal length")
@@ -206,7 +205,7 @@ class SpectralMixtureKernel(NonStationaryKernel):
     def _matrix(self, X, Y):
         X = _as_2d(X)
         Y = X if Y is None else _as_2d(Y)
-        tau = X[:, None, :] - Y[None, :, :]                      # (n, m, d)
+        tau = X[:, None, :] - Y[None, :, :]
         total = np.zeros((len(X), len(Y)))
         for w_q, m_q, s_q in zip(self.weights, self.means, self.scales):
             per_dim = np.exp(-2.0 * np.pi**2 * s_q**2 * tau**2) * \

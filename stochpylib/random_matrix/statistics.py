@@ -291,10 +291,9 @@ class LargestEigenvalue:
         if isinstance(e, BetaEnsemble) or (isinstance(e, MatrixEnsemble) and e.hermitian):
             if self.beta is None:
                 self.beta = int(e.beta) if e.beta in (1, 2, 4) else e.beta
-            # normalized eigenvalues have their bulk edge at 2: scaled = (norm - 2) * n^(2/3)
-            # (Ramirez-Rider-Virag). For beta=4 the RRV edge variable is 2^(-1/6) times the
-            # classical F4 variable (Tracy-Widom / Bornemann convention, mean -2.3069) that
-            # TracyWidomDistribution(4) tabulates -- verified to KS p=0.37 on 1500 draws.
+            # Bulk edge at 2: scaled = (norm - 2) n^(2/3) (Ramirez-Rider-Virag). For beta=4 the RRV
+            # variable is 2^(-1/6) times the classical F4 variable that TracyWidomDistribution(4)
+            # tabulates.
             self.center = 2.0 * e._scale()
             self.scale = e._scale() * e.n ** (-2.0 / 3.0)
             if self.beta == 4:
@@ -433,7 +432,6 @@ class SpectralEdge:
     @staticmethod
     def hard_edge_cdf(x):
         x = np.asarray(x, dtype=float)
-        # closed form: 1 - exp(-x/2 - sqrt(x))  (differentiate to recover Edelman's density)
         out = np.where(x > 0, 1.0 - np.exp(-x / 2.0 - np.sqrt(np.clip(x, 0.0, None))), 0.0)
         return out if out.ndim else float(out)
 

@@ -11,7 +11,7 @@ import functools
 import importlib
 import importlib.util
 
-__all__ = []  # private module
+__all__ = []
 
 _EXTRAS = {"pandas": "pandas", "torch": "torch", "jax": "jax", "numba": "numba",
            "cupy": "gpu"}
@@ -48,8 +48,6 @@ def available_backends():
             out[name] = False
     return out
 
-
-# --------------------------------------------------------------------- torch
 
 # name -> (torch class name, {torch kwarg: fn(dist) -> python float/int})
 _TORCH_DIST_MAP = {
@@ -110,8 +108,6 @@ class TorchAutodiffLogDensity:
         return t.grad.detach().cpu().numpy().astype(float)
 
 
-# --------------------------------------------------------------------- jax
-
 def jax_enable_x64():
     """Enable jax float64 globally (jax defaults to float32). Documented global
     side effect -- called once from every ``jax_interface``/``JIT_compile`` entry
@@ -164,8 +160,6 @@ class JaxAutodiffLogDensity:
 
         return np.asarray(self._grad_fn(self._jnp.asarray(x)), dtype=float)
 
-
-# --------------------------------------------------------------------- cupy
 
 def cupy_has_device():
     """Whether cupy is installed *and* sees a CUDA device."""

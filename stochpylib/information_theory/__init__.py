@@ -47,20 +47,15 @@ from stochpylib.information_theory.coding import (
 )
 
 __all__ = [
-    # entropy
     "Entropy", "JointEntropy", "ConditionalEntropy", "CrossEntropy",
     "TsallisEntropy", "RenyiEntropy", "DifferentialEntropy", "MaxEntropy",
-    # divergences
     "KLDivergence", "RelativeEntropy", "JensenShannonDivergence",
     "WassersteinDistance", "HellingerDistance", "TotalVariation",
     "ChiSquaredDivergence", "AlphaDivergence",
-    # mutual information
     "MutualInformation", "NormalizedMutualInformation",
     "VariationOfInformation", "ConditionalMutualInfo",
     "InteractionInformation", "MultiInformation",
-    # channels
     "ChannelCapacity", "InformationGain", "TransferEntropy",
     "DirectedInformation", "SymbolicTransferEntropy",
-    # coding
     "ShannonLimit", "HuffmanCode", "TypicalSet", "AEP",
 ]

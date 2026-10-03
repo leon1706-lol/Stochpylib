@@ -178,7 +178,6 @@ class BCMP(ProductFormNetwork):
             X_row = X_sys[nn]
             for k in range(K):
                 if self.types[k] == 3:
-                    # IS: X_k(n) = n_k * / D_k; use arrival-instant avg
                     L[nn, k] = X_row * R[nn, k]
                 else:
                     L[nn, k] = X_row * R[nn, k]

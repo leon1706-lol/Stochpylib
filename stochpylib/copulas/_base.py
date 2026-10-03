@@ -22,16 +22,13 @@ __all__ = ["BaseCopula"]
 class BaseCopula:
     """Abstract copula with the shared fit/sample/cdf surface."""
 
-    #: number of dimensions; subclasses fix it or set it in fit() for d-dim families
     dimension = None
 
-    #: parameter name(s) estimated from data; used by AIC bookkeeping
     _n_params = 1
 
     def __init__(self):
         self.n_obs_ = None
 
-    # ------------------------------------------------------------------ fitting
     def _check_dimension(self, data):
         data = np.asarray(data, dtype=float)
         if self.dimension is None:
@@ -58,11 +55,9 @@ class BaseCopula:
     def _estimate(self, u):
         raise NotImplementedError
 
-    # ------------------------------------------------------------------ sampling
     def sample(self, n, random_state=None):
         raise NotImplementedError
 
-    # ------------------------------------------------------------------ evaluation
     def cdf(self, u):
         raise NotImplementedError
 
@@ -70,7 +65,6 @@ class BaseCopula:
         raise NotImplementedError(
             f"{type(self).__name__} does not expose a closed-form copula density")
 
-    # ------------------------------------------------------------------ dependence
     def kendall_tau(self):
         """Analytic bivariate Kendall's tau, or None when no closed form exists."""
         return None
@@ -79,7 +73,6 @@ class BaseCopula:
         """Dict with ``upper`` / ``lower`` tail-dependence coefficients."""
         return {"upper": 0.0, "lower": 0.0}
 
-    # ------------------------------------------------------------------ selection
     def loglik(self, u):
         """Log-likelihood at pseudo-observations ``u`` (rows inside (0,1)^d)."""
         u = as_u_matrix(u)
@@ -93,7 +86,6 @@ class BaseCopula:
         return np.inf if not np.isfinite(ll) \
             else -2.0 * ll + 2.0 * self._n_params
 
-    # ------------------------------------------------------------------ helpers
     def _validate_sample_n(self, n):
         n = int(n)
         if n < 1:

@@ -77,7 +77,6 @@ class ConditionalEntropy:
         else:
             hist, _ = np.histogram(y, bins=self.bins)
             hy_val = _shannon_bits(_normalise(hist))
-        # H(X|Y) = H(X,Y) - H(Y)
         self.result_ = max(je.result_ - hy_val, 0.0)
         self.h_y_ = hy_val
         self.h_xy_ = je.result_
@@ -166,7 +165,6 @@ class DifferentialEntropy:
         hist, edges = np.histogram(samples, bins=self.n_bins)
         p = _normalise(hist)
         h_disc = _shannon_bits(p)
-        # correction term for continuous -> discrete conversion
         bin_width = edges[1] - edges[0]
         self.result_ = h_disc + np.log2(bin_width) \
             if bin_width > 0 else h_disc
@@ -194,12 +192,10 @@ class MaxEntropy:
 
     def fit(self, data=None):
         if self.mean_constraint is None and data is None:
-            # uniform over support
             k = self.support_size or 10
             self.distribution_ = np.full(k, 1.0 / k)
             self.result_ = np.log2(k)
             return self
-        # exponential family with Lagrange multiplier for mean
         from scipy import optimize
         k = self.support_size or 20
         support = np.linspace(self.lower, self.upper, k)

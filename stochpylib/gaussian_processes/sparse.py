@@ -34,22 +34,21 @@ class _SparseRegressionBase:
         Z = self.Z
         M = len(Z)
         Luu, jitter_u = cholesky_with_jitter(self.kernel(Z))
-        Kuf = self.kernel(Z, X)                                     # (M, T)
+        Kuf = self.kernel(Z, X)
 
-        # Whitened cross-covariance V = Luu^-1 Kuf; then diag(Kff) = colsums(V^2)
-        # and Qff = V^T V exactly.
+        # Whitened cross-covariance V = Luu^-1 Kuf; diag(Kff) = colsums(V^2) and Qff = V^T V
+        # exactly.
         V = np.linalg.solve(Luu, Kuf)
         Qff_diag = np.sum(V**2, axis=0)
 
-        # Per-point effective noise (FITC augments with the low-rank residual).
         if self.objective == "fitc":
             lam_diag = sigma2 + np.maximum(self.kernel.diag(X) - Qff_diag, 1e-10)
         else:
             lam_diag = np.full(len(X), sigma2)
 
-        # --- Posterior over the whitened inducing values u~ = Luu^-1 u ---
-        #   q(u~) = N(m~, S~),  S~ = (I + V Lam^-1 V^T)^-1,  m~ = S~ V Lam^-1 y
-        A = np.eye(M) + (V / lam_diag[None, :]) @ V.T               # eig >= 1
+        # Posterior over whitened inducing values u~ = Luu^-1 u: q(u~) = N(m~, S~), S~ = (I + V
+        # Lam^-1 V^T)^-1, m~ = S~ V Lam^-1 y.
+        A = np.eye(M) + (V / lam_diag[None, :]) @ V.T
         LA, _ = cholesky_with_jitter(A)
         b = V @ (y / lam_diag)
         self.m_tilde_ = np.linalg.solve(LA.T, np.linalg.solve(LA, b))
@@ -58,10 +57,9 @@ class _SparseRegressionBase:
         self.X_train = X
         self.y_train = y
 
-        # Log marginal: for VFE this is exactly Titsias' SGPR bound (the log evidence
-        # of q(y) = N(0, Qff + Lam)); for FITC the analogous pseudo-log-evidence under
-        # its own effective-noise Lambda. Both reduce to the same whitened formula:
-        #   L = -0.5 [ n log 2pi + sum(log lam) + y' Lam^-1 y - b' A^-1 b ]
+        # Log marginal: for VFE exactly Titsias' SGPR bound, for FITC the pseudo-log-evidence under
+        # its effective noise Lambda. Both are L = -0.5 [n log 2pi + sum(log lam) + y' Lam^-1 y - b'
+        # A^-1 b].
         quad = float((y / lam_diag) @ y) - float(b @ self.m_tilde_)
         self.log_marginal_likelihood_ = -0.5 * (
             len(y) * _LOG_2PI + float(np.sum(np.log(lam_diag))) + quad
@@ -70,8 +68,8 @@ class _SparseRegressionBase:
 
     def predict(self, X_test, return_std=True, full_cov=False):
         X_test = _as_2d(X_test)
-        k_zt = self.kernel(self.Z, X_test)                          # (M, t)
-        Vz = np.linalg.solve(self.Luu_, k_zt)                       # (M, t)
+        k_zt = self.kernel(self.Z, X_test)
+        Vz = np.linalg.solve(self.Luu_, k_zt)
         mean = Vz.T @ self.m_tilde_
         W = np.linalg.solve(self._LA_, Vz)
         var = self.kernel.diag(X_test) \

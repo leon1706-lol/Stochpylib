@@ -43,10 +43,6 @@ class ChangePointResult:
         return f"ChangePointResult(method={self.method!r}, points={self.points})"
 
 
-# ---------------------------------------------------------------------------
-# shared cost machinery
-
-
 def _prefix_sums(y):
     S = np.concatenate([[0.0], np.cumsum(y)])
     SS = np.concatenate([[0.0], np.cumsum(y**2)])
@@ -65,10 +61,6 @@ def _sse(S, SS, a, b):
 
 def _default_penalty(y):
     return float(2.0 * np.var(y) * np.log(max(len(y), 3)))
-
-
-# ---------------------------------------------------------------------------
-# classical detectors
 
 
 def BinarySegmentation(y, threshold=None, min_segment=5):
@@ -107,7 +99,6 @@ def BottomUp(y, threshold=None, initial_segment=10):
     initial_segment = max(int(initial_segment), 2)
     S, SS = _prefix_sums(y)
 
-    # initial boundaries every `initial_segment` points (excluding 0 and T)
     bounds = list(range(initial_segment, T - initial_segment // 2, initial_segment))
     seg_starts = [0] + bounds + [T]
 
@@ -168,14 +159,10 @@ def PELT(y, penalty=None):
     return ChangePointResult(points=points, method="pelt", extra={"penalty": beta})
 
 
-# ---------------------------------------------------------------------------
-# Bayesian (Adams & MacKay 2007)
-
-
 @dataclass
 class BOCPDResult:
-    probability_of_change: np.ndarray   # (T,) posterior prob of a change at each t
-    points: list                        # indices where that posterior exceeds `threshold`
+    probability_of_change: np.ndarray
+    points: list
     method: str = "bocpd"
     extra: dict = field(default_factory=dict)
 
@@ -244,7 +231,6 @@ class BayesianChangePoint:
             active = [r for r in range(max_run + 1) if log_R[r] > -np.inf]
 
             new_log_R = np.full(max_run + 1, -np.inf)
-            # changepoint hypothesis: reset to the prior, then observe x
             growth = np.log(hazard) + student_prior_pred(x) + logsumexp(log_R)
             for r in active:
                 lp = student_pred(r, x)
@@ -257,8 +243,6 @@ class BayesianChangePoint:
             log_R = new_log_R - norm
             prob_change[t] = float(np.exp(log_R[0]))
 
-            # advance sufficient statistics: surviving runs grow by one observation;
-            # the changepoint hypothesis resets to an empty run
             new_stats = {0: (0, mu0, 0.0)}
             for r in active:
                 if r + 1 <= max_run and log_R[r + 1] > -np.inf:
@@ -276,9 +260,6 @@ class BayesianChangePoint:
                              extra={"hazard": hazard, "max_run": max_run})
         self.result_ = result
         return self
-
-
-# --------------------------------------------------------------------------- facade
 
 
 def ChangePointDetection(y, method="pelt", penalty=None, threshold=None):

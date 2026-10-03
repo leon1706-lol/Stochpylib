@@ -53,7 +53,6 @@ class SpatialWeights:
     def __repr__(self):
         return f"SpatialWeights(n={self.n}, S0={self.S0:.4g})"
 
-    # ------------------------------------------------------------------- constructors
     @classmethod
     def knn(cls, coords, k):
         X = _as_coords(coords)

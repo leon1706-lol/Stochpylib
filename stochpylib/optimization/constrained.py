@@ -150,7 +150,6 @@ class AugmentedLagrangian(ConstrainedOptimizer):
             if violation <= self.ctol:
                 converged = True
                 break
-            # only tighten the penalty when the multipliers alone did not help
             if violation > 0.25 * prev_violation:
                 mu *= self.mu_factor
             prev_violation = violation
@@ -201,8 +200,8 @@ class LagrangianRelaxation(ConstrainedOptimizer):
         eq0, ineq0 = self._constraint_values(cons, x)
         lam_eq = np.zeros(eq0.size)
         lam_in = np.zeros(ineq0.size)
-        # x0 is never a candidate: it minimizes no Lagrangian, and a feasible-but-poor
-        # start would otherwise win outright
+        # x0 is never a candidate: it minimizes no Lagrangian, and a feasible-but-poor start would
+        # otherwise win.
         best_x, best_key = None, None
         dual_bound = -np.inf
         history = []
@@ -219,14 +218,13 @@ class LagrangianRelaxation(ConstrainedOptimizer):
             f_x = obj(x)
             history.append(f_x)
             violation = self._violation(cons, x)
-            # standard primal recovery: least-infeasible iterate, objective as tie-break
             key = (max(0.0, violation - self.ctol), f_x)
             if best_key is None or key < best_key:
                 best_x, best_key = x.copy(), key
             if violation <= self.ctol:
                 break
-            # dg/dlambda = -c(x*), so ascending the dual means stepping against the
-            # residual; the inequality multipliers stay non-negative by projection
+            # dg/dlambda = -c(x*): ascend the dual by stepping against the residual; inequality
+            # multipliers stay non-negative by projection.
             if eq.size:
                 lam_eq = lam_eq - step * eq
             if ineq.size:
@@ -296,7 +294,7 @@ class ActiveSet(ConstrainedOptimizer):
         c = obj.grad(x0) - G @ x0
         A_eq, b_eq, A_ub, b_ub = self._matrices(dim)
         x = np.asarray(x0, dtype=float).copy()
-        if A_eq.shape[0]:  # start from a point that already satisfies the equalities
+        if A_eq.shape[0]:
             x = x + np.linalg.lstsq(A_eq, b_eq - A_eq @ x, rcond=None)[0]
         working = [i for i in range(A_ub.shape[0]) if abs(A_ub[i] @ x - b_ub[i]) <= self.ctol]
         history = [obj(x)]
@@ -314,7 +312,6 @@ class ActiveSet(ConstrainedOptimizer):
                     break
                 working.pop(int(np.argmin(lam_ub)))
                 continue
-            # the largest feasible step along p, and the constraint that blocks it
             alpha, blocking = 1.0, None
             for i in range(A_ub.shape[0]):
                 if i in working:

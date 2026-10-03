@@ -68,7 +68,7 @@ def factor_analysis(X, n_factors, method="ml", rotation=None, standardize=True, 
     R = np.cov(Z, rowvar=False, ddof=1) if not standardize else np.corrcoef(Z, rowvar=False)
 
     if method == "pa":
-        psi = 1.0 - np.array([_smc(R, j) for j in range(p)])  # initial communality guess
+        psi = 1.0 - np.array([_smc(R, j) for j in range(p)])
         L = np.zeros((p, n_factors))
         for _ in range(max_iter):
             R_reduced = R - np.diag(psi) + np.diag(1.0 - psi)
@@ -86,10 +86,8 @@ def factor_analysis(X, n_factors, method="ml", rotation=None, standardize=True, 
         loglik = None
     elif method == "ml":
         def neg_obj(log_psi):
-            # Jöreskog's concentrated ML discrepancy: with L profiled out exactly (the
-            # top n_factors eigenvalues of Psi^-1/2 R Psi^-1/2 are absorbed with zero
-            # residual), only the p-n_factors smallest eigenvalues contribute:
-            # F(Psi) = sum_{i>k} (w_i - log(w_i) - 1) >= 0, minimized over Psi.
+            # Joreskog's concentrated ML discrepancy: with L profiled out, F(Psi) = sum_{i>k} (w_i -
+            # log w_i - 1) >= 0 over the p-k smallest eigenvalues w of Psi^-1/2 R Psi^-1/2.
             psi = np.exp(log_psi)
             Psi_inv_sqrt = np.diag(1.0 / np.sqrt(psi))
             M = Psi_inv_sqrt @ R @ Psi_inv_sqrt

@@ -114,8 +114,8 @@ class GSE(MatrixEnsemble):
         n = self.n
         X = rng.standard_normal((n, n)) + 1j * rng.standard_normal((n, n))
         Y = rng.standard_normal((n, n)) + 1j * rng.standard_normal((n, n))
-        A = (X + X.conj().T) / 2.0        # Hermitian
-        B = (Y - Y.T) / 2.0               # antisymmetric (complex)
+        A = (X + X.conj().T) / 2.0
+        B = (Y - Y.T) / 2.0
         H = np.block([[A, B], [-B.conj(), A.conj()]])
         return H / np.sqrt(2.0)
 

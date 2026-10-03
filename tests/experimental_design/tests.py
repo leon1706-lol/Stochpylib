@@ -39,8 +39,8 @@ from statsmodels.stats.anova import anova_lm  # noqa: E402
 
 _RNG = np.random.default_rng(0)
 
-# Montgomery, Design and Analysis of Experiments, Example 6.2 (pilot-plant filtration
-# rate, 2^4 unreplicated), in standard order
+# Montgomery, Design and Analysis of Experiments, Example 6.2 (pilot-plant filtration rate, 2^4
+# unreplicated), in standard order.
 MONTGOMERY_Y = np.array([45, 71, 48, 65, 68, 60, 80, 65, 43, 100, 45, 104, 75, 86, 70, 96],
                         dtype=float)
 MONTGOMERY_EFFECTS = {"A": 21.625, "B": 3.125, "C": 9.875, "D": 14.625, "AB": 0.125,
@@ -71,8 +71,6 @@ def _counts(design):
 def _signs(row):
     return "".join("+" if v > 0 else "-" for v in row)
 
-
-# ========================================================================== Design
 
 def test_design_array_protocol_and_unit_conversions():
     d = FullFactorial(2, 2, bounds=[(10, 20), (0, 1)]).generate()
@@ -121,8 +119,6 @@ def test_model_matrix_terms():
         _model_matrix(X, "sextic")
 
 
-# ================================================================ classical designs
-
 def test_full_factorial_yates_order_and_product_rows():
     d = FullFactorial(2, 3).generate()
     assert np.array_equal(d.points, [[-1, -1, -1], [1, -1, -1], [-1, 1, -1], [1, 1, -1],
@@ -156,7 +152,6 @@ def test_fractional_factorial_search_reaches_the_maximum_resolution(k, p, res):
     d = FractionalFactorial(k, p=p).generate()
     assert d.properties["resolution"] == res
     assert d.n_runs == 2 ** (k - p) and d.n_factors == k
-    # every column balanced, every pair of columns orthogonal
     assert np.allclose(d.points.sum(0), 0)
     assert np.allclose(d.points.T @ d.points, d.n_runs * np.eye(k))
     assert len(d.properties["defining_relation"]) == 2 ** p
@@ -271,11 +266,9 @@ def test_box_behnken_runs_levels_and_quadratic_estimability(k, n_edge):
     d = BoxBehnken(k, center=3).generate()
     assert d.properties["n_edge"] == n_edge and d.n_runs == n_edge + 3
     assert set(np.unique(d.points)) == {-1.0, 0.0, 1.0}
-    # no run at a corner of the cube
     assert np.all(np.sum(np.abs(d.points), axis=1) < k)
     F, _ = d.model_matrix("quadratic")
     assert np.linalg.matrix_rank(F) == F.shape[1]
-    # every factor is varied equally often
     nonzero = (d.points != 0).sum(0)
     assert np.all(nonzero == nonzero[0])
 
@@ -341,15 +334,12 @@ def test_galois_field_tables_are_fields():
     for q in (4, 8, 9, 27):
         add, mul = _gf_tables(q)
         nz = range(1, q)
-        # every nonzero element has a multiplicative inverse, addition is a group
         assert all(1 in mul[a, 1:] for a in nz)
         assert all(sorted(add[a]) == list(range(q)) for a in range(q))
         assert np.array_equal(mul, mul.T) and np.array_equal(add, add.T)
     with pytest.raises(ValueError):
         _gf_tables(6)
 
-
-# ================================================================== optimal designs
 
 def _brute_force(criterion, n, model="quadratic"):
     """Exact optimum over all multisets of {-1, 0, 1} of size n for a 1-factor model."""
@@ -419,7 +409,6 @@ def test_i_optimal_uses_the_exact_uniform_moment_matrix():
 
 def test_optimal_designs_on_a_two_factor_quadratic_and_custom_candidates():
     d = D_OptimalDesign(9, 2, model="quadratic", random_state=0).generate()
-    # the D-optimal 9-run quadratic design on the 3^2 grid is the full 3^2 factorial
     assert set(map(tuple, d.points)) == set(itertools.product([-1.0, 0.0, 1.0], repeat=2))
     cand = np.array([[-1.0], [-0.5], [0.5], [1.0]])
     c = D_OptimalDesign(2, candidates=cand, random_state=0).generate()
@@ -449,7 +438,6 @@ def test_bayesian_design_reduces_to_d_optimal_and_responds_to_the_prior():
     d = D_OptimalDesign(6, 1, model="quadratic", random_state=0).generate()
     b = BayesianDesign(6, model="quadratic", n_factors=1, random_state=0).generate()
     assert b.properties["criterion"] == pytest.approx(d.properties["criterion"])
-    # a very precise prior on the curvature makes the centre point useless
     tight = BayesianDesign(6, model="quadratic", n_factors=1, prior_precision=[0, 0, 1e4],
                            random_state=0).generate()
     assert _counts(tight)[1] == 0
@@ -460,7 +448,7 @@ def test_bayesian_design_recovers_box_lucas_for_exponential_decay():
     point = BayesianDesign(2, model=eta, prior=np.array([[1.0, 0.5]]), bounds=(0, 10),
                            levels=101, random_state=0).generate()
     assert point.space == "natural"
-    assert sorted(point.points[:, 0]) == pytest.approx([0.0, 2.0])  # t = 0 and 1/theta2
+    assert sorted(point.points[:, 0]) == pytest.approx([0.0, 2.0])
     tight = BayesianDesign(2, model=eta, prior=[Normal(1.0, 0.01), Normal(0.5, 0.005)],
                            bounds=(0, 10), levels=101, random_state=0).generate()
     assert sorted(tight.points[:, 0]) == pytest.approx([0.0, 2.0])
@@ -472,8 +460,6 @@ def test_bayesian_design_recovers_box_lucas_for_exponential_decay():
     with pytest.raises(ValueError):
         BayesianDesign(2, model=eta, n_factors=1).generate()
 
-
-# ============================================================= space-filling designs
 
 def test_latin_hypercube_design_delegates_to_montecarlo():
     from stochpylib.montecarlo import LatinHypercubeSampling
@@ -589,8 +575,6 @@ def test_space_filling_designs_are_reproducible():
         assert np.array_equal(a, b), cls.__name__
 
 
-# ================================================================ response surface
-
 _CCD2 = CCD(2, center=5).generate().points
 
 
@@ -644,12 +628,11 @@ def test_response_surface_natural_units_optimize_and_steepest_ascent():
     assert np.allclose(rs.stationary_point(), xs_nat)
     best = rs.optimize(maximize=True, random_state=0)
     assert np.allclose(best["x"], xs_nat, atol=1e-6)
-    # a boundary optimum: minimize the same (concave) surface over the box
     low = rs.optimize(maximize=False, random_state=0)
     g1, g2 = np.meshgrid(np.linspace(100, 200, 201), np.linspace(1, 3, 201))
     grid = np.column_stack([g1.ravel(), g2.ravel()])
     assert low["value"] == pytest.approx(float(np.min(rs.predict(grid))), abs=1e-3)
-    path = rs.steepest_ascent(n_steps=3, step=0.25)  # 3 steps stay short of the maximum
+    path = rs.steepest_ascent(n_steps=3, step=0.25)
     assert path["path"].shape == (4, 2)
     assert np.all(np.diff(path["predicted"]) > 0)
 
@@ -676,14 +659,12 @@ def test_rsm_anova_matches_statsmodels_and_hand_lack_of_fit():
     assert got["quadratic"]["ss"] == pytest.approx(
         ref.loc[["I(a ** 2)", "I(b ** 2)"], "sum_sq"].sum())
     assert got["residual"]["ss"] == pytest.approx(ref.loc["Residual", "sum_sq"])
-    # lack of fit vs pure error from the 5 centre replicates, by hand
     centre = np.all(X == 0, axis=1)
     ss_pe = float(np.sum((y[centre] - y[centre].mean()) ** 2))
     assert got["pure error"]["ss"] == pytest.approx(ss_pe) and got["pure error"]["df"] == 4
     assert got["lack of fit"]["df"] == got["residual"]["df"] - 4
     ms_lof = got["lack of fit"]["ss"] / got["lack of fit"]["df"]
     assert ra.lack_of_fit_.statistic == pytest.approx(ms_lof / (ss_pe / 4))
-    # predicted R^2 from PRESS equals brute-force leave-one-out refits
     F, _ = _model_matrix(X, "quadratic")
     press = 0.0
     for i in range(len(y)):
@@ -742,8 +723,8 @@ def test_polynomial_chaos_on_ishigami_matches_analytic_sobol_indices():
 def test_polynomial_chaos_hermite_basis_and_transforms():
     ph = PolynomialChaos(2, distributions=[Normal(1.0, 2.0)]).fit_function(
         lambda X: X[:, 0] ** 2)
-    assert ph.mean_ == pytest.approx(5.0)          # E[X^2] = mu^2 + sigma^2
-    assert ph.var_ == pytest.approx(48.0)          # 2 sigma^4 + 4 mu^2 sigma^2
+    assert ph.mean_ == pytest.approx(5.0)
+    assert ph.var_ == pytest.approx(48.0)
     pe = PolynomialChaos(4, distributions=[Exponential(1.0)]).fit_function(
         lambda X: X[:, 0], method="regression", n_samples=400, random_state=0)
     assert pe.mean_ == pytest.approx(1.0, abs=0.01) and pe.var_ == pytest.approx(1.0, abs=0.02)
@@ -795,7 +776,7 @@ def test_kriging_interpolates_and_predicts_branin():
     assert np.max(np.abs(mu - _YK)) < 1e-4
     assert np.max(sd) < 1e-2 * np.std(_YK)
     assert kr.score(_XT, branin01(_XT)) > 0.9
-    assert not np.allclose(kr.kernel_.length_scale, 0.5)  # hyperparameters were fitted
+    assert not np.allclose(kr.kernel_.length_scale, 0.5)
     x = np.linspace(0, 1, 8)[:, None]
     sine = KrigingSurrogate().fit(x, np.sin(2 * np.pi * x[:, 0]))
     xs = np.linspace(0, 1, 101)[:, None]
@@ -869,18 +850,14 @@ def test_metamodel_selects_by_cross_validation():
     cv = ResponseSurface(2).cross_validate(_CCD2, _quad2(_CCD2), k=4, random_state=0)
     assert set(cv) == {"rmse", "q2", "fold_rmse"} and len(cv["fold_rmse"]) == 4
     assert cv["q2"] == pytest.approx(1.0)
-    # cv=13 (leave-one-out): a 3-fold split can by chance remove all 4 factorial runs from
-    # a training fold, leaving A*B inestimable on a 13-point CCD and letting the linear
-    # model win that fold by luck (CI caught this at ~1/40 odds); LOO never drops more than
-    # one point, so it can't break A*B's estimability, and random_state pins the outcome.
+    # cv=13 (leave-one-out): a 3-fold split can remove all 4 factorial runs from a training fold,
+    # making A*B inestimable on a 13-point CCD; LOO can't, and random_state pins the outcome.
     custom = MetaModel(candidates=[ResponseSurface(1), ResponseSurface(2)], cv=13,
                        random_state=0).fit(_CCD2, _quad2(_CCD2))
     assert custom.best_name_ == "ResponseSurface_1"
     assert issubclass(ResponseSurface, MetaModel) and issubclass(KrigingSurrogate, MetaModel)
     assert issubclass(PolynomialChaos, MetaModel)
 
-
-# ========================================================================= analysis
 
 _M4 = FullFactorial(2, 4).generate()
 
@@ -890,7 +867,6 @@ def test_main_effects_reproduce_montgomery():
     for f in "ABCD":
         assert me.effects_[f] == pytest.approx(MONTGOMERY_EFFECTS[f])
     assert me.ranking_ == ["A", "D", "C", "B"] and me.std_errors_ is None
-    # an effect is twice the +/-1-coded OLS coefficient
     beta, *_ = np.linalg.lstsq(np.column_stack([np.ones(16), _M4.points]), MONTGOMERY_Y,
                                rcond=None)
     assert np.allclose([me.effects_[f] for f in "ABCD"], 2 * beta[1:])
@@ -1107,8 +1083,6 @@ def test_sobol_indices_with_distributions_random_sampler_and_reproducibility():
         SobolIndex(n_samples=64).analyze(lambda X: np.ones(len(X)), bounds=[(0, 1)])
 
 
-# ========================================================================== hygiene
-
 def test_base_classes_and_public_surface():
     assert len(ed.__all__) == len(set(ed.__all__)) == 32
     for cls in (FullFactorial, CCD, D_OptimalDesign, MaximinLHD, LatinSquare):
@@ -1144,7 +1118,6 @@ def test_quickstart_example_runs():
     from stochpylib.experimental_design import (CCD, FractionalFactorial, ResponseSurface,
                                                 SobolIndex)
 
-    # the exact snippet advertised in the module README and the vault quickstart
     ff = FractionalFactorial(5, p=1).generate()
     assert ff.properties["resolution"] == 5 and ff.properties["aliases"]["AB"] == ["CDE"]
 

@@ -65,10 +65,8 @@ from stochpylib.distributions.heavy_tail import (
 )
 
 __all__ = [
-    # base
     "Distribution",
     "MultivariateDistribution",
-    # discrete
     "Bernoulli",
     "BetaBinomial",
     "Binomial",
@@ -80,7 +78,6 @@ __all__ = [
     "NegBinomial",
     "Poisson",
     "ZipfDistribution",
-    # continuous
     "Beta",
     "Cauchy",
     "Chi2",
@@ -106,14 +103,12 @@ __all__ = [
     "Uniform",
     "VonMises",
     "Weibull",
-    # multivariate
     "Dirichlet",
     "InverseWishart",
     "MultivariateNormal",
     "MultivariatePareto",
     "MultivariateT",
     "Wishart",
-    # heavy tail
     "AlphaStable",
     "LevyDistribution",
     "StableDistribution",

@@ -51,7 +51,7 @@ def _weighted_logrank(durations, events, groups, weight_fn):
     exp_vec = np.zeros(G)
     V_full = np.zeros((G, G))
 
-    s_prev = 1.0                 # pooled KM just before current event time
+    s_prev = 1.0
     ptr = 0
 
     for _k, u in enumerate(uniq):
@@ -85,7 +85,6 @@ def _weighted_logrank(durations, events, groups, weight_fn):
                 vij = -d_total * pg[i] * pg[j] * corr
                 V_full[i, j] += w ** 2 * vij
                 V_full[j, i] += w ** 2 * vij
-        # update pooled KM through the deaths AT u
         s_prev *= 1.0 - d_total / max(n_risk, 1e-12)
 
     stat = float(O_minus_E @ np.linalg.pinv(V_full) @ O_minus_E)

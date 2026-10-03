@@ -38,9 +38,7 @@ def _finalize_ols(X, y, beta, cov, method, fit_intercept, weights=None):
 
     sigma2 = ss_res / n
     loglik = -0.5 * n * (math.log(2 * math.pi * sigma2) + 1.0) if sigma2 > 0 else float("-inf")
-    # matches statsmodels.OLS: aic/bic count only the p_full mean-function parameters,
-    # not sigma^2 as an extra parameter (a documented statsmodels convention, not the
-    # textbook -2*llf + 2*(k+1) form some other packages use).
+    # Matches statsmodels.OLS: aic/bic count only the p_full mean-function parameters, not sigma^2.
     aic = -2.0 * loglik + 2.0 * p_full
     bic = -2.0 * loglik + math.log(n) * p_full
 
@@ -104,8 +102,6 @@ def linear_regression(X, y, weights=None, cov_type="nonrobust", fit_intercept=Tr
     return _finalize_ols(Xd, y, beta, cov, f"OLS ({cov_type})", fit_intercept, weights=w)
 
 
-# --------------------------------------------------------------------------- GLM
-
 _LINKS = {
     "identity": (lambda mu: mu, lambda eta: eta, lambda mu: np.ones_like(mu)),
     "log": (lambda mu: np.log(mu), lambda eta: np.exp(eta), lambda mu: 1.0 / mu),
@@ -126,11 +122,8 @@ _DEFAULT_LINK = {
     "gamma": "inverse", "inverse_gaussian": "inverse_squared", "negative_binomial": "log",
 }
 
-# eta = X @ beta is an unconstrained IRLS iterate; most inv_link functions are total on
-# R, but "inverse" (1/eta) and "inverse_squared" (1/sqrt(eta)) are undefined at/near 0
-# and negative respectively -- an IRLS step landing there poisons mu with NaN/Inf, which
-# then propagates into the weighted design matrix and makes lstsq's SVD fail to converge
-# (see development/Probleme.md). Clip eta into each link's domain before inv_link.
+# eta = X @ beta is unconstrained; "inverse" and "inverse_squared" links are undefined at/below 0
+# and an IRLS step there poisons mu with NaN/Inf, so clip eta into each link's domain.
 _ETA_BOUNDS = {
     "identity": (-np.inf, np.inf), "log": (-np.inf, np.inf), "logit": (-np.inf, np.inf),
     "probit": (-np.inf, np.inf), "cloglog": (-np.inf, np.inf), "sqrt": (-np.inf, np.inf),
@@ -224,7 +217,7 @@ def glm(X, y, family="gaussian", link=None, weights=None, offset=None, alpha=1.0
     """
     family = family.lower()
     link = link or _DEFAULT_LINK[family]
-    link_fn, inv_link, deta_dmu_fn = _LINKS[link]  # deta_dmu_fn(mu) = d(eta)/d(mu)
+    link_fn, inv_link, deta_dmu_fn = _LINKS[link]
     var_fn = _variance_fn(family, alpha)
     lo, hi = _mu_bounds(family, link)
     eta_lo, eta_hi = _ETA_BOUNDS[link]
@@ -279,13 +272,11 @@ def glm(X, y, family="gaussian", link=None, weights=None, offset=None, alpha=1.0
     deviance = _deviance(family, y, mu, alpha)
     mu_null = np.clip(np.average(y, weights=w_prior) * np.ones(n), lo, hi)
     null_deviance = _deviance(family, y, mu_null, alpha)
-    # statsmodels quirk: for Gaussian+identity specifically, llf uses the concentrated
-    # (profile, n-denominator) variance SSR/n, not the SE-purpose Pearson dispersion
-    # SSR/df_resid used everywhere else (including Gaussian with any other link).
+    # statsmodels quirk: Gaussian+identity llf uses the concentrated variance SSR/n, not the Pearson
+    # dispersion SSR/df_resid used elsewhere.
     llf_scale = (np.sum(w_prior * (y - mu) ** 2) / n) if (family == "gaussian" and link == "identity") else dispersion
     loglik = _loglik(family, y, mu, llf_scale, alpha)
-    # matches statsmodels.GLM: aic/bic count only the p mean-function parameters, even
-    # when dispersion is separately estimated (gaussian/gamma/inverse_gaussian).
+    # Matches statsmodels.GLM: aic/bic count only the p mean-function parameters.
     aic = -2.0 * loglik + 2.0 * p
     bic_llf = -2.0 * loglik + math.log(n) * p
     pseudo_r2 = 1.0 - deviance / null_deviance if null_deviance > 0 else float("nan")
@@ -319,8 +310,6 @@ def poisson_regression(X, y, offset=None, exposure=None, fit_intercept=True, max
     return glm(X, y, family="poisson", link="log", offset=offset, fit_intercept=fit_intercept,
                max_iter=max_iter, tol=tol)
 
-
-# --------------------------------------------------------------------------- penalized
 
 def ridge(X, y, alpha, fit_intercept=True):
     """Ridge regression (L2), closed form via SVD; the intercept (if any) is left
@@ -471,8 +460,6 @@ def elastic_net(X, y, alpha, l1_ratio=0.5, fit_intercept=True, max_iter=1000, to
                            max_iter=max_iter, tol=tol, method="elastic net")
 
 
-# --------------------------------------------------------------------------- quantile
-
 def quantile_regression(X, y, q=0.5, fit_intercept=True):
     """Quantile regression at quantile ``q`` via linear programming (exact check-loss
     minimum). Standard errors use the Koenker-Bassett kernel sandwich with a
@@ -499,7 +486,7 @@ def quantile_regression(X, y, q=0.5, fit_intercept=True):
     iqr_e = q3 - q1
     h = min(sd_y, iqr_e / 1.34) * (special.ndtri(min(q + h_hs, 1 - 1e-6)) - special.ndtri(max(q - h_hs, 1e-6)))
     u = resid / h
-    kernel = np.where(np.abs(u) < 1.0, 0.75 * (1.0 - u ** 2), 0.0)  # Epanechnikov
+    kernel = np.where(np.abs(u) < 1.0, 0.75 * (1.0 - u ** 2), 0.0)
     f0 = float(np.sum(kernel) / (n * h))
     f0 = max(f0, 1e-8)
     d = np.where(resid > 0, (q / f0) ** 2, ((1 - q) / f0) ** 2)

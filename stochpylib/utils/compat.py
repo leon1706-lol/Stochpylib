@@ -139,7 +139,7 @@ def pandas_interface(obj, index=None, name=None):
             return pd.Series(obj, index=index, name=name)
         if obj.ndim == 2:
             return pd.DataFrame(obj, index=index)
-        if obj.ndim == 3:  # (n_chains, n_samples, dim) MCMC chains -> long DataFrame
+        if obj.ndim == 3:
             c, s, dim = obj.shape
             chain_idx, draw_idx = np.meshgrid(np.arange(c), np.arange(s), indexing="ij")
             data = {"chain": chain_idx.ravel(), "draw": draw_idx.ravel()}

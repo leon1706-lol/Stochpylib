@@ -57,7 +57,6 @@ class Design:
         if self.bounds is not None:
             self.bounds = _normalize_bounds(self.bounds, self.points.shape[1])
 
-    # ------------------------------------------------------------------ array protocol
     def __array__(self, dtype=None, copy=None):
         out = self.points if dtype is None else self.points.astype(dtype)
         return out.copy() if copy else out
@@ -77,7 +76,6 @@ class Design:
     def shape(self):
         return self.points.shape
 
-    # ---------------------------------------------------------------- unit conversion
     def _bounds_or(self, bounds):
         b = self.bounds if bounds is None else _normalize_bounds(bounds, self.n_factors)
         if b is None:
@@ -107,7 +105,6 @@ class Design:
         frac = (_as_2d(X_natural) - b[:, 0]) / (b[:, 1] - b[:, 0])
         return frac if self.space == "unit" else 2.0 * frac - 1.0
 
-    # ------------------------------------------------------------------ manipulation
     def randomized(self, random_state=None):
         """A copy with the runs in random order; ``run_order`` holds the permutation."""
         perm = _rng(random_state).permutation(self.n_runs)
@@ -123,7 +120,6 @@ class Design:
         props["n_center"] = props.get("n_center", 0) + int(n)
         return replace(self, points=pts, properties=props, run_order=None)
 
-    # ------------------------------------------------------------------------ metrics
     def model_matrix(self, model="linear"):
         """``(F, term_names)`` for a polynomial model over this design."""
         return _model_matrix(self.points, model, self.factor_names)

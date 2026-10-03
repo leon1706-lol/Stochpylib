@@ -62,9 +62,6 @@ def _sm():
     return statsmodels
 
 
-# ================================================================ export surface
-
-
 def test_spec_names_present():
     spec = {
         "AR", "MA", "ARMA", "ARIMA", "SARIMA", "ARFIMA", "VARMA", "VAR", "VECM",
@@ -89,9 +86,6 @@ def test_spec_names_present():
     assert not missing, f"missing exports: {missing}"
     import stochpylib
     assert stochpylib.timeseries is ts
-
-
-# ================================================================ linear models
 
 
 def test_ar_recovery_and_statsmodels_exact():
@@ -225,9 +219,6 @@ def test_vecm_cointegration_recovery():
     assert abs(beta_dir[1] - (-0.8)) < 0.1
 
 
-# ================================================================ tests submodule
-
-
 def test_adf_stat_matches_statsmodels_fixed_lag():
     sm = _sm()
     rng = np.random.default_rng(52)
@@ -313,9 +304,6 @@ def test_johansen_rank_decisions_on_cointegrated_pair():
     assert r1.statistic <= r1.critical_values["95%"] * 1.3
 
 
-# ================================================================ volatility
-
-
 def test_garch_recovery_forecast_convergence_and_simulation():
     rng = np.random.default_rng(61)
     omega_t, alpha_t, beta_t = 0.05e-4, 0.12, 0.82
@@ -395,9 +383,6 @@ def test_mgarch_and_dcc_shapes_and_bounds():
     assert fc_covs.shape == (5, 2, 2)
 
 
-# ================================================================ state space
-
-
 def test_kalman_single_step_loglik_exact_identity():
     kf1 = KalmanFilter(F=[[1.0]], H=[[1.0]], Q=[[0.01]], R=[[1.0]],
                        x0=[0.0], P0=[[1.0]])
@@ -422,7 +407,7 @@ def test_kalman_tracks_local_level_and_smooth_improves():
     fc = kf.forecast(5)
     assert np.allclose(fc.mean[1:], fc.mean[:-1])
 
-    # statsmodels sanity: their MLE refits variances -> allow a few loglik units
+    # Statsmodels sanity: their MLE refits variances, so allow a few loglik units.
     sm = _sm()
     ll_ref = sm.tsa.statespace.structural.UnobservedComponents(
         obs, level="local level"
@@ -487,7 +472,7 @@ def test_switching_ar_models_have_a_single_intercept():
     for t in range(1, 400):
         y[t] = 0.6 * y[t - 1] + rng.standard_normal()
     rs = RegimeSwitching(p=2, n_states=2, random_state=0).fit(y)
-    assert all(c.shape == (3,) for c in rs.coefficients_)          # intercept + 2 AR terms
+    assert all(c.shape == (3,) for c in rs.coefficients_)
     assert all(a.shape == (2,) for a in rs.ar_coefficients_)
     assert np.asarray(rs.predict(np.column_stack([y[-5:], y[-6:-1]]))).shape == (5,)
     mix = MixtureAutoregressive(k=2, p=1, random_state=0).fit(y)
@@ -532,9 +517,6 @@ def test_rao_blackwell_weights_are_valid_probabilities():
     assert w.shape == (600, 2)
     assert np.all((w >= 0) & (w <= 1))
     assert np.allclose(w.sum(axis=1), 1.0)
-
-
-# ================================================================ latent
 
 
 def test_hmm_decode_agreement_and_means():
@@ -585,9 +567,6 @@ def test_regime_switching_ar_and_mixture_ar_run():
     assert abs(mix.weights_.sum() - 1.0) < 1e-6
 
 
-# ================================================================ changepoint
-
-
 def test_planted_change_points_found_by_all_detectors():
     rng = np.random.default_rng(73)
     truth = [200, 400]
@@ -619,9 +598,6 @@ def test_bocpd_detects_at_least_one_change():
     assert len(b_pts) >= 1 and any(
         abs(p - 200) <= 15 or abs(p - 400) <= 15 for p in b_pts
     )
-
-
-# ================================================================ spectral
 
 
 def test_periodogram_finds_both_tones():
@@ -687,9 +663,6 @@ def test_hilbert_quadrature_exact_on_integer_cycles():
     assert np.allclose(np.abs(z), 1.0, atol=1e-6)
 
 
-# ================================================================ forecasting
-
-
 def test_forecast_dispatch_alias_and_bands():
     rng = np.random.default_rng(78)
     data = rng.standard_normal(600)
@@ -707,7 +680,7 @@ def test_backtesting_rmse_matches_sigma_and_grows_with_horizon():
     for t in range(1, 1500):
         y[t] = 0.6 * y[t - 1] + rng.standard_normal()
     bt = backtesting(y, lambda: ts.AR(1), horizon=3, min_train=800, step=4)
-    assert abs(bt.rmse[0] - 1.0) < 0.2  # innovation sigma = 1
+    assert abs(bt.rmse[0] - 1.0) < 0.2
     assert bt.rmse[-1] > bt.rmse[0]
 
 
@@ -717,9 +690,6 @@ def test_cross_validation_ts_fold_structure():
     folds = cross_validation_ts(y, lambda: ts.AR(1), n_splits=4, horizon=1, min_train=700)
     assert len(folds) == 4
     assert all(f["test_points"] > 0 for f in folds)
-
-
-# ================================================================ misc
 
 
 def test_determinism_same_seed_bitwise():

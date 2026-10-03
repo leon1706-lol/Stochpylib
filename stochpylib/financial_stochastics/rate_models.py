@@ -33,8 +33,6 @@ def _jamshidian_bond_option(zcb_price_fn, sigma_p_fn, T, S, K, kind="call"):
     return K * P_T * _norm_cdf(sigma_p - h) - P_S * _norm_cdf(-h)
 
 
-# --------------------------------------------------------------------------- Vasicek
-
 class VasicekModel:
     """``dr = kappa (theta - r) dt + sigma dW``."""
 
@@ -100,8 +98,6 @@ class VasicekModel:
     def bond_option_price(self, T, S, K, kind="call"):
         return _jamshidian_bond_option(self.zcb_price, self._sigma_p, T, S, K, kind)
 
-
-# --------------------------------------------------------------------------- CIR
 
 class CIRProcess:
     """``dr = kappa (theta - r) dt + sigma sqrt(r) dW``."""
@@ -183,8 +179,6 @@ class CIRProcess:
         return self
 
 
-# --------------------------------------------------------------------------- Hull-White
-
 class HullWhiteModel:
     """``dr = (theta(t) - kappa r) dt + sigma dW`` (extended Vasicek).
 
@@ -264,8 +258,8 @@ class HullWhiteModel:
             A_term = math.log(P0T / P0t) + B * f0t \
                 - sigma**2 / (4.0 * kappa) * (1.0 - math.exp(-2.0 * kappa * t)) * B**2
             return math.exp(A_term - B * r)
-        # HW's constant-theta convention is dr=(theta-kappa r)dt+sigma dW, so
-        # Vasicek's mean-reversion LEVEL is theta/kappa, not theta itself.
+        # HW's constant-theta convention is dr=(theta-kappa r)dt+sigma dW, so Vasicek's
+        # mean-reversion level is theta/kappa.
         v = VasicekModel(self.r0, kappa, self._const_theta / kappa, sigma)
         return v.zcb_price(T, t, r)
 
@@ -297,8 +291,6 @@ class HullWhiteModel:
                 * (1.0 - math.exp(-self.kappa * (s - t))) / self.kappa
         return _jamshidian_bond_option(self.zcb_price, sigma_p, T, S, K, kind)
 
-
-# --------------------------------------------------------------------------- Ho-Lee
 
 class HoLeeModel:
     """``dr = theta(t) dt + sigma dW``."""
@@ -394,8 +386,6 @@ class HoLeeModel:
         return _jamshidian_bond_option(self.zcb_price, sigma_p, T, S, K, kind)
 
 
-# --------------------------------------------------------------------------- G2++
-
 class G2ppModel:
     """Brigo-Mercurio two-factor Gaussian model: ``r_t = x_t + y_t + phi(t)``,
     ``dx = -a x dt + sigma dW1``, ``dy = -b y dt + eta dW2``, ``corr = rho``."""
@@ -482,8 +472,6 @@ class G2ppModel:
         return K * P_T * _norm_cdf(Sigma - h) - P_S * _norm_cdf(-h)
 
 
-# --------------------------------------------------------------------------- Black-Karasinski
-
 class BlackKarasinski:
     """``d ln r = kappa (ln theta - ln r) dt + sigma dW`` — no closed-form ZCB;
     priced by Monte Carlo (log-space exact OU simulation)."""
@@ -525,8 +513,6 @@ class BlackKarasinski:
         discount = np.exp(-integral)
         return _mc_result(discount, "bk-mc-discount")
 
-
-# --------------------------------------------------------------------------- LMM
 
 class LMM:
     """LIBOR Market Model: log-Euler simulation of forward rates under the
@@ -606,8 +592,6 @@ class LMM:
         disc_payoff = payoff / numeraire
         return _mc_result(disc_payoff, "lmm-caplet-mc")
 
-
-# --------------------------------------------------------------------------- HJM
 
 class HJM:
     """Gaussian one-factor Heath-Jarrow-Morton in the Musiela parametrization

@@ -74,7 +74,6 @@ class SplineInterpolation:
             rhs[i - 1] = 6.0 * ((y[i + 1] - y[i]) / h[i] - (y[i] - y[i - 1]) / h[i - 1])
         if self.bc == "clamped":
             fp0, fpn = self.bc_values
-            # augment as full (n+1) system instead for clamped
             return self._solve_clamped(x, y, h, fp0, fpn)
         inner = _thomas(lower, diag, upper, rhs)
         M[1:n] = inner
@@ -156,7 +155,6 @@ class SplineInterpolation:
             dx = t - self.x_[idx]
             c = self.coefficients_[idx]
             local = c[0] * dx + c[1] * dx ** 2 / 2 + c[2] * dx ** 3 / 3 + c[3] * dx ** 4 / 4
-            # sum full segments before idx
             total = 0.0
             for j in range(idx):
                 hj = self.x_[j + 1] - self.x_[j]
@@ -182,7 +180,6 @@ def _pchip_slopes(x, y):
             w1 = 2 * h[k] + h[k - 1]
             w2 = h[k] + 2 * h[k - 1]
             d[k] = (w1 + w2) / (w1 / delta[k - 1] + w2 / delta[k])
-    # shape-preserving one-sided endpoint estimates (Fritsch-Carlson / de Boor)
     def edge(h0, h1, d0, d1):
         d_ = ((2 * h0 + h1) * d0 - h0 * d1) / (h0 + h1)
         if np.sign(d_) != np.sign(d0):
@@ -273,7 +270,6 @@ class CubicHermite:
         y0, y1 = self.y_[j], self.y_[j + 1]
         m0, m1 = self.slopes_[j], self.slopes_[j + 1]
         h = x1 - x0
-        # integral of Hermite basis over s in [0,1] at s=1
         H00, H10, H01, H11 = 0.5, 1.0 / 12.0, 0.5, -1.0 / 12.0
         return h * (H00 * y0 + H10 * h * m0 + H01 * y1 + H11 * h * m1)
 
@@ -415,7 +411,7 @@ class Chebyshev:
         n = len(c) - 1
         if n == 0:
             return Chebyshev(np.array([0.0]), domain=self.domain)
-        b = np.zeros(n + 2)  # b[n+1] unused sentinel, b[n] = 0
+        b = np.zeros(n + 2)
         for k in range(n, 0, -1):
             b[k - 1] = b[k + 1] + 2 * k * c[k]
         cp = b[:n].copy()
@@ -582,7 +578,6 @@ class NURBS:
         deriv_w_curve = NURBS(w_deriv_ctrl[:, None], p - 1, knots=deriv_knots, weights=np.ones(n - 1))
         A = self.basis(u_arr) @ Qw
         w = self.basis(u_arr) @ self.weights
-        # A'(u), w'(u) via plain (non-rational) B-spline evaluation of the derivative ctrl pts
         Ap = _bspline_eval(Q_deriv_ctrl, p - 1, deriv_knots, u_arr) if p > 0 else np.zeros((len(u_arr), Qw.shape[1]))
         wp = _bspline_eval(w_deriv_ctrl[:, None], p - 1, deriv_knots, u_arr)[:, 0] if p > 0 else np.zeros(len(u_arr))
         Cu = A / w[:, None]
@@ -683,7 +678,7 @@ class Interpolation:
         elif method == "polynomial":
             self.interpolator_ = BarycentricLagrange(self.x_, self.y_)
         else:
-            self.interpolator_ = None  # linear / nearest use np.interp directly
+            self.interpolator_ = None
 
     def __call__(self, xq):
         if self.method == "linear":

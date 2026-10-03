@@ -41,10 +41,8 @@ class MMCQueue(BaseQueue):
         lam, mu = float(arrival_rate), float(service_rate)
         a = lam / mu
         rho = a / c
-        # Erlang C via birth-death module (verified implementation)
         from stochpylib.queueing.birth_death import erlang_c_formula as _ec
         erlang_c = _ec(c, a)
-        # Mean queue length via Erlang C formula
         Lq = erlang_c * a / max(c - a, 1e-15) if c > a else float('inf')
         L = a + Lq
         W = L / lam
@@ -71,7 +69,7 @@ class MD1Queue(BaseQueue):
         _validate_rates(arrival_rate, service_rate)
         lam, mu = float(arrival_rate), float(service_rate)
         rho = lam / mu
-        es2 = 1.0 / mu ** 2                    # deterministic: E[S^2]=1/mu^2
+        es2 = 1.0 / mu ** 2
         Lq = lam ** 2 * es2 / (2.0 * (1.0 - rho))
         L = rho + Lq
         Wq = Lq / lam
@@ -91,9 +89,9 @@ class MG1Queue(BaseQueue):
         lam, mu = float(arrival_rate), float(service_rate)
         rho = lam / mu
         if second_moment is None:
-            second_moment = 2.0 / mu ** 2     # exponential default
+            second_moment = 2.0 / mu ** 2
         es2 = float(second_moment)
-        cv_squared = es2 * mu * mu - 1.0       # coefficient of variation²
+        cv_squared = es2 * mu * mu - 1.0
         Lq = rho ** 2 * (1.0 + cv_squared) / (2.0 * (1.0 - rho))
         L = rho + Lq
         Wq = Lq / lam
@@ -117,12 +115,10 @@ class GIGQueue(BaseQueue):
         rho = lam / mu
         ca = float(arrival_cv)
         cs = float(service_cv)
-        # Kingman's approximation for mean waiting time
         wq_kingman = rho / (1 - rho) * \
             (ca ** 2 + cs ** 2) / 2.0 / mu
-        # Allen-Cunneen correction factor
         ac_factor = 0.5 * (ca ** 2 + cs ** 2)
-        wq = wq_kingman * ac_factor / max(ac_factor, 1e-12)  # already same
+        wq = wq_kingman * ac_factor / max(ac_factor, 1e-12)
         wq = rho / (1.0 - rho) * (ca ** 2 + cs ** 2) / (2.0 * mu)
         lq = lam * wq
         w = wq + 1.0 / mu
@@ -175,13 +171,11 @@ class MG1PriorityQueue(BaseQueue):
         es2_2 = float(second_moment_2) if second_moment_2 else \
             2.0 / mu2 ** 2
 
-        R = lam1 * es2_1 / 2.0 + lam2 * es2_2 / 2.0   # residual work
+        R = lam1 * es2_1 / 2.0 + lam2 * es2_2 / 2.0
         rho1 = lam1 / mu1
         rho2 = lam2 / mu2
 
-        # class-1 waiting time (non-preemptive priority)
         Wq1 = R / (1.0 - rho1)
-        # class-2 waiting time
         Wq2 = R / ((1.0 - rho1) * (1.0 - rho1 - rho2))
 
         W1 = Wq1 + 1.0 / mu1

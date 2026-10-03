@@ -57,7 +57,7 @@ class RungeKutta4:
     """Classic 4th-order Runge-Kutta (fixed step)."""
 
     def __init__(self, tableau=None):
-        self.tableau = tableau  # optional (A, b, c) explicit Butcher tableau
+        self.tableau = tableau
 
     def solve(self, f, t_span, y0, h=None, n_steps=None, t_eval=None, args=()):
         t0, tf = float(t_span[0]), float(t_span[1])
@@ -267,7 +267,7 @@ class Adams_Bashforth:
         coeffs = _AB_COEFFS[p]
         for i in range(start, n):
             dt = t[i + 1] - t[i]
-            recent = f_hist[-p:][::-1]  # most recent first, matches coeffs order
+            recent = f_hist[-p:][::-1]
             pred = y[i] + dt * sum(c * fk for c, fk in zip(coeffs, recent))
             if self.corrector:
                 f_pred = g(t[i + 1], pred)
@@ -323,7 +323,7 @@ class BDF:
             dt = t[i + 1] - t[i]
             cur_order = min(self.order, i + 1)
             spec = _BDF_COEFFS[cur_order]
-            hist = y[max(0, i - cur_order + 1):i + 1][::-1]  # most recent first
+            hist = y[max(0, i - cur_order + 1):i + 1][::-1]
             rhs_const = sum(a * hk for a, hk in zip(spec["alpha"], hist))
             beta = spec["beta"]
             t_new = t[i + 1]

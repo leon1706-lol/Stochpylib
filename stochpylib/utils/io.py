@@ -125,10 +125,8 @@ def from_dict(d):
                 return np.random.SeedSequence(d["entropy"], spawn_key=tuple(d["spawn_key"]),
                                               pool_size=d["pool_size"])
             if kind == "custom":
-                # a custom type is whatever the caller explicitly registered (an
-                # opt-in), so it is looked up directly rather than through the
-                # module-allowlist import in _resolve_type -- it need not even live
-                # under stochpylib/numpy.
+                # A custom type is whatever the caller registered (opt-in), so it is looked up
+                # directly, not through the module-allowlist import in _resolve_type.
                 for reg_cls, (_to_fn, from_fn) in _CUSTOM_REGISTRY.items():
                     if _qualname(reg_cls) == qualname:
                         return from_fn(d["data"])

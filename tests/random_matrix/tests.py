@@ -30,14 +30,12 @@ from stochpylib.statistics import TestResult
 TW_REF = {1: (-1.2065336, 1.6077811), 2: (-1.7710868, 0.8131948), 4: (-2.3068848, 0.5177237)}
 
 
-# ================================================================== ensembles
-
 def test_goe_is_symmetric_with_documented_variances():
     H = rm.GOE(300).sample(random_state=0)
     assert H.dtype == float and np.allclose(H, H.T)
     off = H[np.triu_indices(300, 1)]
-    assert abs(off.var() - 1.0) < 0.05          # SE ~ sqrt(2/44850) ~ 0.007
-    assert abs(np.diag(H).var() - 2.0) < 0.35   # SE ~ 2*sqrt(2/300) ~ 0.16
+    assert abs(off.var() - 1.0) < 0.05
+    assert abs(np.diag(H).var() - 2.0) < 0.35
 
 
 def test_gue_is_hermitian_with_unit_offdiagonal_second_moment():
@@ -66,7 +64,7 @@ def test_normalized_spectrum_follows_the_semicircle(ensemble):
     law = ensemble.limit_law()
     assert isinstance(law, rm.WignerSemicircle) and law.radius == 2.0
     d = sps.kstest(e, law.cdf).statistic
-    assert d < 0.03, d                           # finite-n edge effects only
+    assert d < 0.03, d
     assert law.compare(e).pvalue > 0.05
 
 
@@ -79,7 +77,6 @@ def test_wishart_matches_library_distribution_and_marchenko_pastur():
     W = rm.WishartMatrix(p=200, n=1000)
     S = W.sample(random_state=0)
     assert S.shape == (200, 200) and np.allclose(S, S.T)
-    # E[W] = n * Sigma, checked on the trace: Var(tr W)/n^2 small
     assert abs(np.trace(S) / 200 - 1000) < 30
     e = W.normalized_eigenvalues(random_state=0)
     mp = W.limit_law()
@@ -97,7 +94,7 @@ def test_wishart_with_covariance_reproduces_distribution_mean():
 
 def test_inverse_wishart_reciprocal_spectrum_and_mean():
     IW = rm.InverseWishart(p=40, n=300)
-    e = IW.normalized_eigenvalues(random_state=0)   # = n * eig(W^-1)
+    e = IW.normalized_eigenvalues(random_state=0)
     assert np.all(e > 0)
     assert IW.limit_law().compare(1.0 / e).pvalue > 0.05
     mean_diag = np.mean([np.trace(IW.sample(rng)) / 40
@@ -113,7 +110,6 @@ def test_cue_eigenvalues_lie_on_the_circle_with_uniform_angles():
     assert np.allclose(np.abs(ev), 1.0, atol=1e-10)
     ang = c.eigenangles(random_state=0)
     assert sps.kstest(ang, sps.uniform(-np.pi, 2 * np.pi).cdf).pvalue > 0.01
-    # angles scaled to unit mean spacing behave like GUE spacings
     r = rm.EigenvalueSpacing(c.normalized_eigenvalues(random_state=1)).mean_ratio()
     assert abs(r - 0.5996) < 0.03
 
@@ -126,7 +122,7 @@ def test_muresan_ginibre_matrix_obeys_the_circular_law(entries):
     assert np.iscomplexobj(z) and z.shape == (500,)
     law = M.limit_law()
     assert isinstance(law, rm.CircularLaw)
-    assert law.compare(z).pvalue > 0.05           # |z|^2 ~ Uniform(0, 1)
+    assert law.compare(z).pvalue > 0.05
     assert np.abs(z).max() < 1.1
     assert abs(z.mean()) < 0.05
 
@@ -147,8 +143,6 @@ def test_matrix_ensemble_batch_and_repr():
         rm.GOE(0)
 
 
-# ========================================================= empirical_spectra
-
 def test_semicircle_closed_forms_match_quadrature():
     w = rm.WignerSemicircle(2.0)
     assert integrate.quad(w.pdf, -2, 2)[0] == pytest.approx(1.0, abs=1e-9)
@@ -168,7 +162,6 @@ def test_semicircle_closed_forms_match_quadrature():
 def test_semicircle_sampler_and_fit():
     w = rm.WignerSemicircle(3.0)
     r = np.asarray(w.rvs(20000, random_state=5))
-    # semicircle(R) = R (2 Beta(3/2, 3/2) - 1): compare against scipy's beta as oracle
     assert sps.kstest((r / 3.0 + 1) / 2, sps.beta(1.5, 1.5).cdf).pvalue > 0.01
     assert abs(rm.WignerSemicircle.fit(r).radius - 3.0) < 0.05
     stat, p = w.ks_test(r)
@@ -183,13 +176,11 @@ def test_marchenko_pastur_mass_moments_and_inverse(gamma):
     assert mp.atom == pytest.approx(max(0.0, 1.0 - 1.0 / gamma))
     assert mp.cdf(mp.lam_plus + 1.0) == pytest.approx(1.0, abs=1e-9)
     assert mp.mean() == pytest.approx(1.5 ** 2) and mp.var() == pytest.approx(gamma * 1.5 ** 4)
-    # Narayana-number raw moments agree with quadrature (+ atom contributes nothing)
     for k in (1, 2, 3):
         quad_k = integrate.quad(lambda t: t ** k * mp.pdf(t), mp.lam_minus, mp.lam_plus, limit=200)[0]
         assert mp.moment(k) == pytest.approx(quad_k, rel=1e-5)
     q = np.array([0.1, 0.5, 0.9])
     x = mp.ppf(q)
-    # generalized inverse: equality above the atom, cdf(ppf(q)) >= q (= atom) inside it
     above = q > mp.atom
     assert np.allclose(mp.cdf(x[above]), q[above], atol=2e-4)
     assert np.all(mp.cdf(x) >= q - 2e-4) and np.all(x[~above] == 0.0)
@@ -198,7 +189,7 @@ def test_marchenko_pastur_mass_moments_and_inverse(gamma):
 def test_marchenko_pastur_sampler_fit_and_tie_aware_ks():
     mp = rm.MarchenkoPastur(2.0)
     r = np.asarray(mp.rvs(20000, random_state=1))
-    assert abs(np.mean(r == 0.0) - 0.5) < 0.02          # atom mass
+    assert abs(np.mean(r == 0.0) - 0.5) < 0.02
     assert abs(r.mean() - 1.0) < 0.04 and abs(r.var() - 2.0) < 0.15
     f = rm.MarchenkoPastur.fit(r)
     assert abs(f.gamma - 2.0) < 0.1 and abs(f.sigma - 1.0) < 0.03
@@ -222,12 +213,12 @@ def test_tracy_widom_moments_match_published_values(beta):
 
 def test_tracy_widom_2_cdf_reference_points_and_contract():
     tw = rm.TracyWidomDistribution(2)
-    assert tw.cdf(-3.0) == pytest.approx(0.0803, abs=2e-4)   # Tracy-Widom (1994) table
+    assert tw.cdf(-3.0) == pytest.approx(0.0803, abs=2e-4)
     assert tw.cdf(0.0) == pytest.approx(0.9694, abs=2e-4)
-    assert tw.skewness() == pytest.approx(0.224, abs=0.01)   # Bornemann 2010
+    assert tw.skewness() == pytest.approx(0.224, abs=0.01)
     assert tw.kurtosis() == pytest.approx(0.093, abs=0.01)
     assert math.isfinite(tw.entropy()) and tw.mgf(0.0) == pytest.approx(1.0, abs=1e-4)
-    assert abs(tw.cf(0.0) - 1.0) < 1e-4   # trapezoid over the cached grid
+    assert abs(tw.cf(0.0) - 1.0) < 1e-4
     assert rm.TracyWidomDistribution.fit([1.0, 2.0], beta=1).beta == 1
     with pytest.raises(ValueError):
         rm.TracyWidomDistribution(3)
@@ -237,7 +228,6 @@ def test_tracy_widom_2_cdf_reference_points_and_contract():
 def test_beta_ensemble_reproduces_gaussian_ensemble_spacing_statistics(beta):
     e = rm.BetaEnsemble(3000, beta).eigenvalues(random_state=7)
     r = rm.EigenvalueSpacing(e).mean_ratio()
-    # SE of <r> ~ 0.28 / sqrt(3000) ~ 0.005
     assert abs(r - rm.EigenvalueSpacing.mean_ratio_reference(beta)) < 0.02
     assert rm.BetaEnsemble(10, beta).mean_ratio_reference() == pytest.approx(
         rm.EigenvalueSpacing.mean_ratio_reference(beta))
@@ -271,8 +261,6 @@ def test_jacobi_ensemble_support_mean_and_wachter_law(beta):
         rm.JacobiEnsemble(10, 5, 20)
 
 
-# ========================================================== random_rotations
-
 @pytest.mark.parametrize("group,n,dim", [("O", 7, 7), ("U", 7, 7), ("Sp", 4, 8)])
 def test_haar_samples_are_in_the_group(group, n, dim):
     Q = rm.HaarMeasure(group, n).sample(random_state=0)
@@ -290,7 +278,6 @@ def test_haar_second_moments_and_invariance(group):
     h = rm.HaarMeasure(group, 5)
     S = h.samples(3000, random_state=1)
     m = S.shape[-1]
-    # E|Q_ij|^2 = 1/m exactly under Haar; SE ~ sqrt(Var)/sqrt(3000) with Var < 1/m^2
     assert abs(np.mean(np.abs(S[:, 0, 0]) ** 2) - 1.0 / m) < 3 / (m * math.sqrt(3000)) + 0.005
     assert abs(S[:, 1, 2].mean()) < 0.03
 
@@ -328,14 +315,12 @@ def test_special_orthogonal_and_facades():
         rm.RandomOrthogonalMatrix(3, det=2)
 
 
-# ================================================================ statistics
-
 @pytest.mark.parametrize("ensemble,beta", [(rm.GOE(2000), 1), (rm.GUE(2000), 2),
                                            (rm.GSE(1000), 4)])
 def test_mean_gap_ratio_matches_large_n_reference(ensemble, beta):
     sp = rm.EigenvalueSpacing(ensemble.eigenvalues(random_state=11))
     ref = rm.EigenvalueSpacing.mean_ratio_reference(beta)
-    assert abs(sp.mean_ratio() - ref) < 0.02          # SE ~ 0.28/sqrt(n) <= 0.009
+    assert abs(sp.mean_ratio() - ref) < 0.02
     assert sp.classify() == {1: "GOE", 2: "GUE", 4: "GSE"}[beta]
     res = sp.compare(beta)
     assert isinstance(res, TestResult) and res.pvalue > 0.01
@@ -348,7 +333,7 @@ def test_poisson_spectrum_has_uncorrelated_spacings():
     sp = rm.EigenvalueSpacing(e)
     assert abs(sp.mean_ratio() - (2 * np.log(2) - 1)) < 0.02
     assert sp.classify() == "poisson" and sp.compare("poisson").pvalue > 0.01
-    assert sp.compare(1).pvalue < 1e-6                 # GOE surmise rejected
+    assert sp.compare(1).pvalue < 1e-6
     assert rm.EigenvalueSpacing(e, unfold="none").spacings().mean() == pytest.approx(1.0)
 
 
@@ -394,7 +379,7 @@ def test_eigenvalue_distribution_cdf_kde_moments_and_compare():
     assert ed.moments(1) == pytest.approx(ed.mean_)
     assert ed.compare(rm.WignerSemicircle(2.0)).pvalue > 0.05
     assert ed.compare(rm.WignerSemicircle(1.5)).pvalue < 1e-4
-    assert ed.compare(sps.norm(0, 2)).pvalue < 1e-4      # any object with .cdf works
+    assert ed.compare(sps.norm(0, 2)).pvalue < 1e-4
     lo, hi = ed.support()
     assert lo == e.min() and hi == e.max()
     with pytest.raises(ValueError):
@@ -455,7 +440,6 @@ def test_spectral_edge_extremes_soft_edge_and_edelman_hard_edge():
     se = rm.SpectralEdge(rm.WishartMatrix(60, 60), random_state=0)
     lo, hi = se.edges()
     assert lo == se.smallest() and hi == se.largest() and lo < hi
-    # Edelman's density integrates to one and its cdf is the stated closed form
     assert integrate.quad(rm.SpectralEdge.hard_edge_pdf, 0, np.inf)[0] == pytest.approx(1.0, abs=1e-8)
     assert rm.SpectralEdge.hard_edge_cdf(5.0) == pytest.approx(
         integrate.quad(rm.SpectralEdge.hard_edge_pdf, 0, 5)[0], abs=1e-8)
@@ -468,8 +452,6 @@ def test_spectral_edge_extremes_soft_edge_and_edelman_hard_edge():
     with pytest.raises(ValueError):
         rm.SpectralEdge(np.arange(10.0)).soft_edge()
 
-
-# ==================================================================== wiring
 
 _SPEC_NAMES = {
     "GOE", "GUE", "GSE", "WishartMatrix", "InverseWishart", "WignerMatrix", "CUE",
@@ -524,7 +506,7 @@ def test_reproducibility_with_random_state():
     rng = np.random.default_rng(9)
     a = rm.HaarMeasure("U", 4).sample(rng)
     b = rm.HaarMeasure("U", 4).sample(rng)
-    assert not np.allclose(a, b)                      # a live Generator streams
+    assert not np.allclose(a, b)
     assert np.array_equal(rm.TracyWidomDistribution(1).rvs(5, random_state=0),
                           rm.TracyWidomDistribution(1).rvs(5, random_state=0))
 

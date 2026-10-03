@@ -21,8 +21,6 @@ from stochpylib.numerical_methods._common import (  # noqa: F401  (re-exported f
 __all__ = []
 
 
-# ------------------------------------------------------------------------ bounds
-
 def _normalize_bounds(bounds, dim):
     """``None``, ``(lo, hi)`` or a per-coordinate sequence -> ``(lo, hi)`` arrays of length ``dim``."""
     if bounds is None:
@@ -57,8 +55,6 @@ def _bounds_or_box(bounds, x0, width=10.0):
     return x0 - half, x0 + half
 
 
-# ------------------------------------------------------------------ initial designs
-
 def _latin_hypercube(n, bounds, rng):
     """Latin-hypercube design over a box, via ``montecarlo.LatinHypercubeSampling``."""
     from stochpylib.montecarlo import LatinHypercubeSampling
@@ -73,8 +69,6 @@ def _uniform_population(n, bounds, rng):
     return lo + rng.random((int(n), len(lo))) * (hi - lo)
 
 
-# --------------------------------------------------------------------- convergence
-
 def _converged(x_new, x_old, f_new, f_old, g, xtol, ftol, gtol):
     """The single stopping predicate: flat gradient, small step, or small objective change."""
     if g is not None and gtol is not None and np.max(np.abs(g)) <= gtol:
@@ -88,8 +82,6 @@ def _converged(x_new, x_old, f_new, f_old, g, xtol, ftol, gtol):
             return True, "objective change below ftol"
     return False, ""
 
-
-# -------------------------------------------------------------------- line searches
 
 def _backtracking_armijo(obj, x, d, f0, g0, alpha0=1.0, c1=1e-4, rho=0.5, max_ls=60,
                          bounds=None):
@@ -171,8 +163,6 @@ def _wolfe_zoom(obj, x, d, phi0, dphi0, a_lo, a_hi, c1, c2, max_ls):
     x_j = x + a_j * d
     return a_j, x_j, obj(x_j), obj.grad(x_j)
 
-
-# -------------------------------------------------------------------- linear algebra
 
 def _modified_cholesky_solve(H, g, beta=1e-3):
     """Solve ``H p = -g`` with ``H`` made positive definite by ridge inflation.

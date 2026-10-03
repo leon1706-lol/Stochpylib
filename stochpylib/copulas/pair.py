@@ -124,7 +124,6 @@ class PairCopulaConstruction:
         _, family, rotation, copula = best
         return cls(copula, rotation, family=family)
 
-    # -- rotated-scale conditionals ---------------------------------------------
     def h(self, u, given_v):
         """``P(U <= u | V = v)`` on the rotated scale.
 
@@ -145,7 +144,6 @@ class PairCopulaConstruction:
             return 1.0 - q._h_u(1.0 - u, 1.0 - v)
         if r == 90:
             return 1.0 - q._h_u(1.0 - u, v)
-        # r == 270
         return q._h_u(u, 1.0 - v)
 
     def h_inv(self, p, given_v):

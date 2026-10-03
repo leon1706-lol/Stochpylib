@@ -118,7 +118,6 @@ class MaximinLHD(DesignGenerator):
         phi = self._phi(D2)
         phi0 = phi
         best, best_phi = U.copy(), phi
-        # a starting temperature on the scale of a typical move's change in phi_p
         T = float(self.t0) if self.t0 is not None else 0.1 * phi
         steps_per_temp = max(10, self.n_iter // 50)
         for it in range(self.n_iter):
@@ -185,7 +184,7 @@ class MinimaxDesign(DesignGenerator):
     def _generate(self, rng):
         ref = _sobol_reference(self.dim, self.n_ref, rng)
         X = ref[rng.choice(len(ref), self.n, replace=False)].copy()
-        for _ in range(20):  # Lloyd warm start
+        for _ in range(20):
             lab, _ = self._assign(ref, X)
             for c in range(self.n):
                 if np.any(lab == c):
@@ -328,11 +327,11 @@ class OrthogonalArrayDesign(DesignGenerator):
             row = []
             for x in range(s):
                 v, xp = 0, 1
-                for c in coeffs:           # c_0 + c_1 x + ... + c_{t-1} x^{t-1}
+                for c in coeffs:
                     v = add[v, mul[c, xp]]
                     xp = mul[xp, x]
                 row.append(int(v))
-            row.append(int(coeffs[-1]))    # the "point at infinity" column
+            row.append(int(coeffs[-1]))
             rows.append(row)
         return np.array(rows, dtype=int)[:, :self.n_factors]
 

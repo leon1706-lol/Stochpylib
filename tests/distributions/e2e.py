@@ -81,8 +81,8 @@ MULTIVARIATE = {
 # fixed size parameters that these fits cannot infer from data
 FIT_KW = {"Binomial": {"n": 10}, "NegBinomial": {"r": 3.0}, "Hypergeometric": {"N": 50, "n": 10},
           "BetaBinomial": {"n": 10}}
-# numerically inverted characteristic functions: entropy is a nested quadrature that
-# takes minutes, so the sweep leaves it to the dedicated checks in tests.py
+# Numerically inverted characteristic functions: entropy is a minutes-long nested quadrature, so the
+# sweep leaves it to tests.py.
 SLOW_NUMERIC = {"AlphaStable", "StableDistribution"}
 
 
@@ -96,25 +96,21 @@ def _univariate_workflow(name):
     x = np.asarray(x, dtype=float)
     assert x.shape == (n_draw,) and np.all(np.isfinite(x))
     assert np.all(x >= lo - 1e-9) and np.all(x <= hi + 1e-9)
-    # density / mass and cdf on the sample
     dens = np.asarray(d.pmf(x) if discrete else d.pdf(x), dtype=float)
     assert np.all(dens >= 0) and np.all(np.isfinite(dens))
     c = np.asarray(d.cdf(x), dtype=float)
     assert np.all((c >= -1e-12) & (c <= 1 + 1e-12))
-    # quantile round trip (discrete: cdf(ppf(q)) >= q)
     q = float(d.ppf(0.6))
     if discrete:
         assert float(d.cdf(q)) >= 0.6 - 1e-9
     else:
         assert abs(float(d.cdf(q)) - 0.6) < 1e-5
-    # moments and shape statistics
     m, v = d.mean(), d.var()
     if finite_moments:
         assert np.isfinite(m) and np.isfinite(v) and v >= 0
         assert abs(x.mean() - m) < 6 * math.sqrt(v / n_draw) + 0.05 * abs(m) + 1e-9
         assert np.isfinite(d.std())
         assert np.isfinite(d.skewness()) and np.isfinite(d.kurtosis())
-    # entropy / transforms
     if name not in SLOW_NUMERIC:
         assert np.isfinite(d.entropy())
     assert abs(complex(d.cf(0.0)) - 1.0) < 1e-6
@@ -122,7 +118,6 @@ def _univariate_workflow(name):
                     "Pareto", "Frechet", "InvGamma", "GEV", "GPareto", "Student_t", "F",
                     "ZipfDistribution", "SubExponential", "SubGaussian", "InvGaussian"):
         assert abs(float(d.mgf(0.0)) - 1.0) < 1e-6
-    # goodness of fit against its own draws, and fit round trip
     stat, p = d.ks_test(x)
     assert 0 <= stat <= 1 and 0 <= p <= 1
     if name not in SLOW_NUMERIC:

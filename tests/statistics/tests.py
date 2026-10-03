@@ -39,8 +39,6 @@ from stochpylib.statistics import regression as st_reg
 from stochpylib.distributions import Beta, Exponential, Gamma, LogNormal, Normal, Poisson, Uniform, Weibull
 
 
-# =============================================================== descriptive
-
 def test_trimmed_mean_matches_scipy():
     rng = np.random.default_rng(0)
     x = rng.normal(size=200)
@@ -122,7 +120,6 @@ def test_correlation_pearson_spearman_kendall():
     assert r.estimate == pytest.approx(ref.statistic)
     assert r.extras["pvalue"] == pytest.approx(ref.pvalue, rel=1e-6)
 
-    # with ties
     xt = rng.integers(0, 5, 100).astype(float)
     yt = rng.integers(0, 5, 100).astype(float)
     r = st.correlation(xt, yt, method="kendall")
@@ -159,8 +156,6 @@ def test_describe_2d_columns():
     for j in range(3):
         assert d.mean[j] == pytest.approx(np.mean(X[:, j]))
 
-
-# =============================================================== estimation
 
 def test_mle_normal_matches_closed_form():
     rng = np.random.default_rng(11)
@@ -210,8 +205,6 @@ def test_mom_recovers_generating_parameters(cls, sampler):
     rng = np.random.default_rng(14)
     data = sampler(rng)
     fitted = st.MOM(cls, data)
-    # every distribution's MOM fit must itself be a valid instance whose theoretical
-    # mean/var track the sample moments (definition of the method of moments)
     m1, var = np.mean(data), np.var(data, ddof=0)
     assert fitted.mean() == pytest.approx(m1, rel=5e-2)
     assert fitted.var() == pytest.approx(var, rel=1e-1)
@@ -258,7 +251,7 @@ def test_bayesian_grid_posterior_generic():
         return float(np.sum(sps.norm.logpdf(d, theta, 1.0)))
 
     def logprior(theta):
-        return 0.0  # flat prior over the grid
+        return 0.0
 
     r = st.bayesian_estimator(loglik, data, logprior, grid=grid)
     assert r.estimate == pytest.approx(np.mean(data), abs=3 * (1.0 / math.sqrt(40)))
@@ -379,8 +372,6 @@ def test_profile_likelihood_normal_mean_matches_closed_form():
     assert lo == pytest.approx(ref_lo, abs=1e-2)
     assert hi == pytest.approx(ref_hi, abs=1e-2)
 
-
-# =============================================================== hypothesis
 
 def test_z_test_one_and_two_sample_vs_statsmodels():
     rng = np.random.default_rng(26)
@@ -592,9 +583,8 @@ def test_ks_test_one_sample_vs_scipy():
 
 
 def test_ks_test_two_sample_statistic_matches_and_pvalue_reasonable():
-    # our p-value uses the classical asymptotic (N->inf) Kolmogorov formula, matching
-    # scipy's one-sample "asymp" exactly but not scipy's ks_2samp finite-sample
-    # refinement (kstwo) -- see the ks_test docstring. The statistic always matches.
+    # Our p-value uses the classical asymptotic Kolmogorov formula, matching scipy's one-sample
+    # "asymp" but not ks_2samp's finite-sample refinement; the statistic always matches.
     rng = np.random.default_rng(39)
     x = rng.normal(0, 1, 300)
     y = rng.normal(0.2, 1.1, 250)
@@ -670,8 +660,6 @@ def test_bonferroni_vs_statsmodels(method, sm_method):
     mine_reject = np.array([row["reject"] for row in r.table])
     assert np.array_equal(mine_reject, reject_ref)
 
-
-# =============================================================== regression
 
 def test_linear_regression_ols_vs_statsmodels():
     rng = np.random.default_rng(44)
@@ -757,10 +745,8 @@ _GLM_FAMILY_LINK = [
 
 @pytest.mark.parametrize("fam,link", _GLM_FAMILY_LINK)
 def test_glm_family_link_vs_statsmodels(fam, link):
-    # a stable hash, not the builtin hash() -- str/tuple hashing is salted per process
-    # (PYTHONHASHSEED) unless explicitly disabled, so hash() here was not actually a
-    # fixed seed across runs, occasionally landing on IRLS-pathological data that even
-    # statsmodels' own GLM can't fit either (see development/Probleme.md).
+    # A stable hash, not builtin hash(): str/tuple hashing is salted per process, so the seed wasn't
+    # fixed and occasionally hit IRLS-pathological data.
     seed = zlib.crc32(f"{fam}|{link}".encode()) % (2 ** 31)
     rng = np.random.default_rng(seed)
     n = 300
@@ -887,14 +873,11 @@ def test_quantile_regression_vs_statsmodels(q):
     y = 2.0 + X @ np.array([1.5, -2.0, 0.5]) + rng.normal(0, 1.5, n)
     r = st.quantile_regression(X, y, q=q)
     m = QuantReg(y, sm.add_constant(X)).fit(q=q)
-    # exact LP solution vs statsmodels' IRLS: the LP has a basic-solution degeneracy
-    # (a small set of residuals sit exactly at zero) that IRLS smooths over, giving a
-    # persistent few-times-1e-3 gap even away from the median (documented).
+    # Exact LP solution vs statsmodels' IRLS: the LP's basic-solution degeneracy (some residuals
+    # exactly zero) leaves a persistent few-times-1e-3 gap even away from the median.
     assert np.allclose(r.coef_, m.params, atol=5e-3)
     assert np.allclose(r.std_errors_, m.bse, rtol=0.2)
 
-
-# =============================================================== multivariate
 
 def test_pca_matches_eigh_and_orthonormal():
     rng = np.random.default_rng(57)
@@ -932,14 +915,9 @@ def test_factor_analysis_ml_matches_statsmodels_covariance():
     fa_ref = Factor(endog=X, n_factor=2, method="ml", smc=True).fit()
     Sigma_ref = np.real(fa_ref.fitted_cov)
 
-    # This particular draw is a near-Heywood case (one communality ~1, statsmodels'
-    # own BFGS warns "did not converge"), so the exact optimum is on a flat/near-
-    # singular ridge: two runs can land on visibly different Psi/loadings while
-    # achieving essentially the same minimized discrepancy F(Psi) -- that objective
-    # value, not the raw parameters, is what's actually pinned down at the optimum,
-    # and comparing it directly is robust to platform-dependent BLAS/optimizer paths
-    # (this raw-covariance comparison alone was observed to fail by ~1.1e-3 on
-    # Windows CI while passing on Linux, for exactly this reason).
+    # A near-Heywood draw (one communality ~1) puts the optimum on a flat ridge where runs land on
+    # different Psi/loadings with the same minimized F(Psi); compare that objective, which is robust
+    # to BLAS/optimizer paths (the raw comparison failed by ~1.1e-3 on Windows CI).
     R = np.corrcoef(X, rowvar=False)
     F_mine = _ml_discrepancy(r.uniquenesses_, R, 2)
     F_ref = _ml_discrepancy(fa_ref.uniqueness, R, 2)
@@ -996,7 +974,7 @@ def test_lda_matches_bayes_optimal_on_known_gaussians():
         return np.argmax(ll, axis=1)
 
     bp = bayes_predict(X)
-    assert np.mean(pred == bp) > 0.95  # near-total agreement with the true Bayes rule
+    assert np.mean(pred == bp) > 0.95
 
 
 def test_qda_separates_blobs_perfectly():
@@ -1053,8 +1031,6 @@ def test_mds_smacof_runs_and_low_stress_on_euclidean_data():
     assert r.stress_ < 0.05
     assert r.embedding_.shape == (30, 2)
 
-
-# =============================================================== wiring
 
 _SPEC_NAMES = {
     "mean", "median", "mode", "variance", "std", "quantile", "iqr", "skewness",

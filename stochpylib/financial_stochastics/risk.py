@@ -173,8 +173,7 @@ class ParametricVaR:
                         - (2.0 * zp**3 - 5.0 * zp) * skew**2 / 36.0)
                 return -(mu - zp_cf * sigma)
 
-            # ES(alpha) = (1/(1-alpha)) * integral_alpha^1 VaR_u du (average
-            # VaR over the tail confidence levels above alpha, not below).
+            # ES(alpha) = average of VaR_u over the confidence levels u above alpha.
             es, _ = integrate.quad(var_at_level, alpha, 1.0 - 1e-8, limit=200)
             es = es / (1.0 - alpha)
 
@@ -273,7 +272,7 @@ class ConditionalVaR(ExpectedShortfall):
         n_obs, n_assets = R.shape
         alpha = self.confidence
 
-        n_vars = n_assets + 1 + n_obs  # w, zeta, u
+        n_vars = n_assets + 1 + n_obs
         c = np.zeros(n_vars)
         c[n_assets] = 1.0
         c[n_assets + 1:] = 1.0 / ((1.0 - alpha) * n_obs)

@@ -102,9 +102,9 @@ def _kou():
 @exercise("BatesModel")
 def _bates():
     b = mod.BatesModel(S0=100, jump_rate=0.5)
-    S, V = b.simulate(1.0, 20, n_paths=50, random_state=8)   # (prices, variances)
+    S, V = b.simulate(1.0, 20, n_paths=50, random_state=8)
     _paths_ok(S, 50, 20)
-    assert np.all(S > 0) and np.all(np.isfinite(V))   # full-truncation scheme: raw v may dip < 0
+    assert np.all(S > 0) and np.all(np.isfinite(V))
     mc = b.call_price_mc(100.0, 1.0, n_paths=2000, n_steps=20, random_state=9)
     assert mc.estimate > 0
 
@@ -165,7 +165,7 @@ def _stable_sub():
 def _tempering_sub():
     ts = mod.TemperingSubordinator(C=1.0, lam=5.0, alpha=0.5)
     _subordinator_workflow(ts, mean_rate=ts.mean_rate())
-    assert ts.truncation_mass() > 0    # retained jump intensity above the floor
+    assert ts.truncation_mass() > 0
 
 
 @exercise("SemiMarkovProcess")

@@ -32,8 +32,6 @@ _METHOD_NAMES = ("pdf", "cdf", "ppf", "rvs", "mean", "var", "skewness", "kurtosi
                   "entropy", "mgf", "cf", "fit", "ks_test")
 
 
-# =============================================================================== core
-
 @pytest.mark.parametrize("family,hyper,gen", [
     ("bernoulli", dict(a=2.0, b=3.0), lambda rng: rng.binomial(1, 0.4, 200)),
     ("poisson", dict(alpha=2.0, beta=1.0), lambda rng: rng.poisson(4.0, 200)),
@@ -92,7 +90,6 @@ def test_normal_unknown_var_niw_posterior_and_evidence():
     assert post.dist.mean()[1] == pytest.approx(1.2 ** 2, abs=0.3)
     pred = posterior_predictive(post)
     assert isinstance(pred, type(post.dist.marginal_mu()))
-    # 2-D fine-grid cross check of the log-evidence
     mu_g = np.linspace(1.5, 2.5, 300)
     s2_g = np.linspace(0.8, 2.2, 300)
     MU, S2 = np.meshgrid(mu_g, s2_g)
@@ -250,8 +247,7 @@ def test_posterior_predictive_empirical_matches_conjugate_mean():
     x = rng.binomial(1, 0.4, 300)
     lik = likelihood("bernoulli", data=x)
     post = posterior(prior(Beta(1, 1)), lik, method="conjugate")
-    # strip the stored conjugate family (and change method) so the Monte Carlo
-    # (non-closed-form) branch runs instead of the closed-form conjugate one
+    # Strip the stored conjugate family so the Monte Carlo (non-closed-form) branch runs.
     post2 = Posterior("laplace", 1, dist=post.dist, mean_=post.mean_, cov_=post.cov_,
                        log_evidence_=post.log_evidence_, extras={})
     emp2 = posterior_predictive(post2, likelihood=lik, n_samples=3000, random_state=1)
@@ -329,8 +325,6 @@ def test_conjugate_method_rejects_non_conjugate_pair():
                   method="conjugate")
 
 
-# ----------------------------------------------------------------------- computation
-
 def test_laplace_posterior_exact_on_gaussian_target():
     mu, sigma = np.array([1.0, -2.0]), np.array([[2.0, 0.3], [0.3, 1.0]])
     inv = np.linalg.inv(sigma)
@@ -404,7 +398,7 @@ def test_ep_posterior_logistic_matches_nuts():
     nuts = NoUTurnSampler(log_post, grad_log_post, n_samples=3000, n_warmup=1000, target_accept=0.9)
     nuts.sample(np.zeros(d), random_state=0)
     samples = nuts.get_samples()
-    se = samples.std(axis=0) / 10  # loose MCSE proxy given long chain
+    se = samples.std(axis=0) / 10
     assert np.all(np.abs(ep.mean_ - samples.mean(axis=0)) < 5 * se)
 
 
@@ -446,8 +440,6 @@ def test_importance_sampling_posterior_gaussian_exact():
     p_true = posterior(prior(Beta(2, 2)), likelihood("bernoulli", data=x), method="conjugate")
     assert isp2.log_evidence_ == pytest.approx(p_true.log_evidence_, abs=0.05)
 
-
-# ------------------------------------------------------------------------- selection
 
 def test_waic_matches_hand_formula():
     rng = np.random.default_rng(21)
@@ -573,8 +565,6 @@ def test_bayes_factor_closed_form_and_jeffreys_labels():
     assert bf_bic.extras["log_bf"] == pytest.approx(-0.5 * (r1.bic - r2.bic), abs=1e-6)
 
 
-# --------------------------------------------------------------------------- models
-
 def test_bayesian_linear_matches_ols_and_predictive_coverage():
     sm = pytest.importorskip("statsmodels.api")
     rng = np.random.default_rng(29)
@@ -695,11 +685,11 @@ def test_hierarchical_model_pooling_limits_and_eight_schools():
 
     m_pool = HierarchicalModel(tau_prior="fixed", n_samples=2000, n_warmup=500,
                                 random_state=0).fit(y8, sigma=s8, tau=1e-8)
-    assert np.std(m_pool.theta_mean_) < 0.5  # complete pooling: all groups collapse together
+    assert np.std(m_pool.theta_mean_) < 0.5
 
     m_nopool = HierarchicalModel(tau_prior="fixed", n_samples=2000, n_warmup=500,
                                   random_state=1).fit(y8, sigma=s8, tau=1e4)
-    assert np.allclose(m_nopool.theta_mean_, y8, atol=1.0)  # no pooling: theta_j ~ y_j
+    assert np.allclose(m_nopool.theta_mean_, y8, atol=1.0)
 
     tau0 = 8.0
     m_fixed = HierarchicalModel(mu0=0.0, tau_mu=1e6, tau_prior="fixed", n_samples=6000,
@@ -844,8 +834,6 @@ def test_dirichlet_process_crp_and_stick_breaking_and_dpmm():
                                            learn_alpha=True, random_state=2)
     assert np.all(np.isfinite(dpa.alpha_samples_)) and np.all(dpa.alpha_samples_ > 0)
 
-
-# ------------------------------------------------------------------- cross-module / library
 
 def test_bayesian_conjugate_agrees_with_statistics_bayesian_estimator():
     from stochpylib.statistics import bayesian_estimator

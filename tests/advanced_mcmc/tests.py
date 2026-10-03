@@ -65,8 +65,6 @@ def _within(value, target, se, k=3.0):
     return abs(value - target) < k * se
 
 
-# ================================================================== standard
-
 def test_rwmh_matches_correlated_gaussian_moments():
     mh = am.MetropolisHastings(_log_prob3, n_samples=4000, n_warmup=1000, proposal_scale=1.0)
     mh.sample(np.zeros(3), random_state=0)
@@ -95,7 +93,6 @@ def test_mh_custom_asymmetric_proposal_needs_correction():
         return theta * np.exp(0.5 * rng.standard_normal())
 
     def proposal_log_density(to, from_):
-        # log-normal multiplicative step: log q(to | from) for to = from * exp(z), z~N(0,0.25)
         if to[0] <= 0 or from_[0] <= 0:
             return -np.inf
         z = np.log(to[0] / from_[0])
@@ -185,8 +182,6 @@ def test_robust_adaptive_metropolis_hits_target_acceptance():
     assert abs(ram.acceptance_rate_ - 0.234) < 0.1
 
 
-# ============================================================== gradient_based
-
 def test_hmc_ill_conditioned_gaussian_with_mass_adaptation():
     sds = np.array([0.2, 1.0, 5.0])
 
@@ -204,8 +199,8 @@ def test_hmc_ill_conditioned_gaussian_with_mass_adaptation():
         se = _mcse(s[:, j])
         assert _within(s[:, j].mean(), 0.0, se + 0.05, k=4)
         assert abs(s[:, j].var() - sds[j] ** 2) / sds[j] ** 2 < 0.3
-    # mass_matrix_ is the physical mass (~precision for a Gaussian target), the inverse
-    # of what the adapter directly tunes (inv_mass, which tracks the target's variance)
+    # mass_matrix_ is the physical mass (~precision for a Gaussian), the inverse of what the adapter
+    # tunes (inv_mass).
     assert np.all(hmc.mass_matrix_ * sds ** 2 > 0.3) and np.all(hmc.mass_matrix_ * sds ** 2 < 3.0)
     assert 0.4 < hmc.acceptance_rate_ < 0.99
 
@@ -254,7 +249,7 @@ def test_nuts_accept_stat_tracks_target():
 def test_nuts_finite_difference_gradient_matches_analytic():
     n_a = am.NoUTurnSampler(_log_prob2, _grad2, n_samples=1500, n_warmup=800)
     n_a.sample(np.zeros(2), random_state=12)
-    n_b = am.NoUTurnSampler(_log_prob2, n_samples=1500, n_warmup=800)  # no analytic grad -> FD
+    n_b = am.NoUTurnSampler(_log_prob2, n_samples=1500, n_warmup=800)
     n_b.sample(np.zeros(2), random_state=13)
     assert n_b.target.n_grad_evals > 0
     sa, sb = n_a.get_samples(), n_b.get_samples()
@@ -304,7 +299,7 @@ def test_mmala_with_constant_and_auto_metric():
         se = _mcse(s1[:, j])
         assert _within(s1[:, j].mean(), _MU2[j], se, k=4)
 
-    m2 = am.MMALA(_log_prob2, _grad2, n_samples=3000, n_warmup=1200)  # auto SoftAbs metric
+    m2 = am.MMALA(_log_prob2, _grad2, n_samples=3000, n_warmup=1200)
     m2.sample(np.zeros(2), random_state=17)
     s2 = m2.get_samples()
     for j in range(2):
@@ -368,8 +363,6 @@ def test_neutra_hmc_recovers_correlated_gaussian():
     cov = np.cov(s.T)
     assert np.max(np.abs(cov - _COV2)) < 0.3
 
-
-# =============================================================== slice_sampling
 
 def test_slice_sampling_stepping_and_doubling_on_gamma():
     shape, scale = 3.0, 2.0
@@ -447,7 +440,7 @@ def test_polar_slice_radius_is_chi_distributed():
 
 def test_doubling_accept_matches_neal_criterion():
     def f(x):
-        return -0.5 * min(abs(x - 3), abs(x + 3)) ** 2  # bimodal-ish, peaked at +-3
+        return -0.5 * min(abs(x - 3), abs(x + 3)) ** 2
 
     d = am_sl.Doubling(width=1.0, max_doublings=10)
     rng = np.random.default_rng(27)
@@ -455,8 +448,6 @@ def test_doubling_accept_matches_neal_criterion():
     assert L <= 3.0 <= R
     assert d.accept(f, 3.0, 3.2, f(3.0) - 5.0, L, R) in (True, False)
 
-
-# ==================================================================== advanced
 
 def test_parallel_tempering_mixes_bimodal_where_rwmh_fails():
     def log_prob(theta):
@@ -657,16 +648,12 @@ def test_reversible_jump_custom_jump_and_model_prior():
     assert set(rj2.model_probabilities_) == {"A", "B"}
 
 
-# ================================================================== diagnostics
-
 def test_ess_of_iid_and_ar1_chains():
     rng = np.random.default_rng(39)
     iid = rng.standard_normal((4, 3000, 1))
     ess_iid = am.ESS(iid, method="mean")
-    # a Geyer-paired ESS estimator can, for genuinely iid draws, land anywhere up to its
-    # own documented cap (n * log10(n), shared by Stan/ArviZ) due to sampling noise in the
-    # lag-1/2 autocorrelation; only the lower bound (no worse than the raw draw count) is
-    # a real invariant here.
+    # A Geyer-paired ESS for iid draws can land anywhere up to its documented cap (n * log10(n));
+    # only the lower bound (no worse than the raw count) is a real invariant.
     assert 0.5 * 12000 < ess_iid <= 12000 * np.log10(12000) + 1e-6
 
     phi = 0.6
@@ -706,8 +693,7 @@ def test_gelman_rubin_and_psrf_hand_computed():
     chain_means = x[:, :, 0].mean(axis=1)
     chain_vars = x[:, :, 0].var(axis=1, ddof=1)
     W = chain_vars.mean()
-    B_n = chain_means.var(ddof=1)  # PSRF (Brooks & Gelman multivariate form) uses the
-    # *unscaled* between-chain variance B_n = B/n, not the classic B itself.
+    B_n = chain_means.var(ddof=1)  # PSRF (Brooks & Gelman multivariate) uses the unscaled between-chain variance B/n, not the classic B.
     lam = B_n / W if W > 0 else 0.0
     expected_psrf_ratio = (n - 1) / n + (m + 1) / m * lam
     p = am.PSRF(x)
@@ -787,8 +773,6 @@ def test_trace_analysis_summary_and_mcse():
     assert ta.thin(2).chains_.shape[1] == 500
 
 
-# ================================================================= variational
-
 def test_mean_field_vi_diagonal_and_correlated_gaussian():
     mu = np.array([1.0, -2.0])
     sd = np.array([0.5, 2.0])
@@ -834,7 +818,7 @@ def test_advi_full_rank_and_bounded_support():
 
     def log_prob_gamma(theta):
         x = theta[0]
-        return -np.inf if x <= 0 else 2.0 * np.log(x) - x / 2.0  # Gamma(3, scale=2)
+        return -np.inf if x <= 0 else 2.0 * np.log(x) - x / 2.0
 
     advi_g = am.ADVI(log_prob_gamma, 1, n_iter=1500, n_mc=16, lower=[0.0])
     advi_g.fit(random_state=48)
@@ -914,7 +898,6 @@ def test_normalizing_flow_gradients_match_finite_differences():
         max_err = max(max_err, abs(fd - grads_accum[i]["b"]))
     assert max_err < 1e-4
 
-    # pullback_grad vs finite differences of logp(f(z)) + logdet(z) wrt z
     z = rng.standard_normal(dim)
     theta, logdet = flow.forward(z)
     analytic = flow.pullback_grad(z, grad(theta))
@@ -975,7 +958,6 @@ def test_normalizing_flow_fits_correlated_gaussian_reasonably():
     assert np.all(np.isfinite(flow.elbo_history_))
     draws, logqs = flow.sample(3000, random_state=0, return_log_prob=True)
     assert np.all(np.isfinite(draws)) and np.all(np.isfinite(logqs))
-    # trained flow should beat a naive N(0, I) approximation on average log target density
     trained_logp = np.mean([log_prob(d) for d in draws])
     naive_draws = np.random.default_rng(1).standard_normal((3000, 2))
     naive_logp = np.mean([log_prob(d) for d in naive_draws])
@@ -993,11 +975,9 @@ def test_stein_vi_particles_approximate_gaussian():
 
     stein = am.SteinVI(log_prob, 2, grad_log_prob=grad, n_particles=300, n_iter=800, step_size=0.1)
     stein.fit(random_state=53)
-    assert np.max(np.abs(stein.mean())) < 0.3  # target is centered at 0
+    assert np.max(np.abs(stein.mean())) < 0.3
     assert np.linalg.norm(stein.cov() - _COV2) / np.linalg.norm(_COV2) < 0.6
 
-
-# ====================================================================== wiring
 
 _SPEC_NAMES = {
     "ADVI", "AdaptiveMetropolis", "BlackBoxVI", "Doubling", "ESS", "EllipticalSliceSampling",
@@ -1076,9 +1056,6 @@ def test_sampler_errors():
         am.MetropolisHastings(_log_prob2, n_samples=0)
 
 
-# --------------------------------------------------- V0.20.0 n_jobs= retrofit (utils)
-
-
 _BASE_SAMPLE_SAMPLERS = [
     name for name in am.__all__
     if isinstance(getattr(am, name), type)
@@ -1088,9 +1065,8 @@ _BASE_SAMPLE_SAMPLERS = [
 
 
 def test_base_sample_subclasses_cover_the_expected_set():
-    # samplers that override sample() themselves (HMC/NUTS/MALA-with-divergence-
-    # tracking) are out of scope for the n_jobs= retrofit -- this pins the exact set
-    # that IS in scope so a future sampler silently landing outside it is caught.
+    # Samplers that override sample() themselves (HMC/NUTS/MALA) are out of scope; this pins the
+    # exact in-scope set so a new sampler can't land outside it silently.
     assert set(_BASE_SAMPLE_SAMPLERS) == {
         "AdaptiveMetropolis", "EllipticalSliceSampling", "GibbsSampler",
         "IndependenceSampler", "MALA", "MMALA", "MetropolisHastings",

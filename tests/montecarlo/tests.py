@@ -19,8 +19,6 @@ import stochpylib
 from stochpylib import montecarlo as M
 from stochpylib.distributions import Beta, Exponential, LogNormal, Normal
 
-# ---------------------------------------------------------------- export surface
-
 SPEC_NAMES = {
     "simulate", "importance_sampling", "rejection_sampling", "stratified_sampling",
     "quasi_montecarlo", "crude_mc",
@@ -38,8 +36,6 @@ def test_module_exports_match_spec():
     assert not missing, f"missing exports: {missing}"
     assert stochpylib.montecarlo is M
 
-
-# ---------------------------------------------------------------- sequences
 
 VDC16 = np.array([sum(((i >> k) & 1) / 2 ** (k + 1) for k in range(20)) for i in range(1, 17)])
 
@@ -69,7 +65,6 @@ def test_sobol_uses_standard_direction_number_table():
 
 
 def test_generate_block_exact_net_balance():
-    # aligned blocks including the origin are exactly balanced in every dimension
     for m, dim in [(8, 4), (10, 6)]:
         p = M.SobolSequence(dim).generate_block(m)
         n = 1 << m
@@ -86,7 +81,7 @@ def test_block_matches_scipy_set_and_gray_order():
     ref = qmc_mod.Sobol(d=4, scramble=False, bits=30).random(1 << m)
     assert np.array_equal(np.sort(ours, axis=0), np.sort(ref, axis=0))
     g = np.arange(1 << m) ^ (np.arange(1 << m) >> 1)
-    assert np.array_equal(ours[g], ref)  # scipy enumerates along the Gray-code walk
+    assert np.array_equal(ours[g], ref)
 
 
 @pytest.mark.parametrize("name", ["sobol", "halton", "faure", "niederreiter"])
@@ -138,9 +133,6 @@ def test_halton_exact_values():
     pts = M.HaltonSequence(2).generate(2)
     assert np.isclose(pts[0, 0], 0.5) and np.isclose(pts[0, 1], 1 / 3)
     assert np.isclose(pts[1, 1], radical_inverse(2, 3))
-
-
-# ---------------------------------------------------------------- estimators
 
 
 def test_crude_mc_known_integral():
@@ -202,9 +194,7 @@ def test_simulate_driver_dice():
     assert abs(res.estimate - 3.5) < 4 * res.std_error
 
 
-# ---------------------------------------------------------------- variance reduction
-
-BS_CALL = None  # filled lazily via helper
+BS_CALL = None
 
 
 def _bs_call(S, K, T, r, sigma):
@@ -244,7 +234,6 @@ def test_lhs_one_draw_per_stratum():
 
 
 def test_conditioned_mc_partial_normal_expectation():
-    # E[(Y+Z)+] with Y,Z ~ N(0,1): m(y) = phi(y) + y*Phi(y); oracle 1/sqrt(pi)
     cm = M.ConditionedMC(n_simulations=50_000, random_state=17)
     res = cm.estimate(
         cond_expectation=lambda y: spt.norm.pdf(y) + y * spt.norm.cdf(y),
@@ -275,9 +264,6 @@ def test_stratified_grid_class_xy():
     sg = M.StratifiedSampling(n_strata=16, dim=2, n_per_stratum=32, random_state=20)
     res = sg.estimate(lambda p: p[:, 0] * p[:, 1])
     assert abs(res.estimate - 0.25) < 4 * res.std_error
-
-
-# ---------------------------------------------------------------- applications
 
 
 def test_monte_carlo_integration_class_qmc_and_crude():
@@ -339,9 +325,6 @@ def test_sensitivity_analysis_identifies_dominant_input():
     assert all(v["spearman"] >= v["pearson"] - 0.15 for v in out.values())
 
 
-# ---------------------------------------------------------------- determinism
-
-
 def test_determinism_same_seed_bitwise():
     f = lambda p: np.sin(3 * p[:, 0]) * np.exp(-p[:, 1])
     r1 = M.crude_mc(f, n=50_000, dim=2, random_state=99)
@@ -359,8 +342,8 @@ def test_result_object_contract():
 
 @pytest.mark.parametrize("level", [0.5, 0.8, 0.9, 0.95, 0.99, 0.999])
 def test_confidence_interval_half_width_is_the_normal_quantile(level):
-    # regression: every level other than 0.95 used to solve 2*Phi(z)-1 = 1-level, giving
-    # a 99% interval of +/-0.0125 standard errors instead of +/-2.576
+    # Regression: every level but 0.95 solved 2*Phi(z)-1 = 1-level, giving a 99% interval of
+    # +/-0.0125 SE instead of +/-2.576.
     from scipy import stats
 
     lo, hi = M.MCResult(estimate=1.0, std_error=2.0).confidence_interval(level)
@@ -368,9 +351,6 @@ def test_confidence_interval_half_width_is_the_normal_quantile(level):
     assert lo == pytest.approx(1.0 - 2.0 * z) and hi == pytest.approx(1.0 + 2.0 * z)
     with pytest.raises(ValueError):
         M.MCResult(1.0, 1.0).confidence_interval(1.0)
-
-
-# --------------------------------------------------- V0.20.0 n_jobs= retrofit (utils)
 
 
 class TestParallelRetrofit:
@@ -390,7 +370,6 @@ class TestParallelRetrofit:
         assert r1.estimate == r4.estimate and r1.std_error == r4.std_error
 
     def test_crude_mc_pooled_estimate_close_to_closed_form(self):
-        # integral of x over [0,1] is 0.5
         res = M.crude_mc(lambda p: p[:, 0], n=200_000, random_state=8, n_jobs=4)
         assert abs(res.estimate - 0.5) < 4 * res.std_error
 

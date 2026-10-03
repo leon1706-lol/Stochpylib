@@ -37,7 +37,6 @@ from stochpylib.optimization.constrained import _relaxed_log
 
 _RNG = np.random.default_rng(0)
 
-# a well-conditioned quadratic with a closed-form minimizer, used throughout
 _A = np.array([[3.0, 1.0], [1.0, 2.0]])
 _B = np.array([1.0, -1.0])
 _STAR = np.linalg.solve(_A, _B)
@@ -72,13 +71,10 @@ def sphere(x):
 
 
 def beale(x):
-    # global minimum f(3, 0.5) = 0
     a, b = float(x[0]), float(x[1])
     return ((1.5 - a + a * b) ** 2 + (2.25 - a + a * b ** 2) ** 2
             + (2.625 - a + a * b ** 3) ** 2)
 
-
-# ========================================================================= objective
 
 def test_objective_finite_difference_gradient_matches_analytic():
     fd = Objective(sopt.rosen)
@@ -93,8 +89,8 @@ def test_objective_finite_difference_hessian_matches_analytic():
     from_grad = Objective(sopt.rosen, sopt.rosen_der)
     from_fun = Objective(sopt.rosen)
     x = np.array([0.7, 1.3])
-    # differencing an analytic gradient is an order of magnitude tighter than
-    # differencing the objective twice -- that is why hess() prefers it
+    # Differencing an analytic gradient is an order of magnitude tighter than differencing the
+    # objective twice, hence hess() prefers it.
     assert np.max(np.abs(from_grad.hess(x) - exact.hess(x))) < 1e-6
     assert np.max(np.abs(from_fun.hess(x) - exact.hess(x))) < 1e-4
 
@@ -119,7 +115,7 @@ def test_objective_counts_evaluations_and_rewraps_idempotently():
     assert (obj.n_evals, obj.n_grad_evals) == (2, 1)
     rewrapped = Objective(obj)
     assert rewrapped.has_gradient and rewrapped.fun is obj.fun
-    assert rewrapped.n_evals == 0  # counters are per wrapper, not shared
+    assert rewrapped.n_evals == 0
 
 
 def test_objective_negated_flips_value_gradient_and_hessian():
@@ -163,10 +159,8 @@ def test_minimize_without_x0_is_a_usage_error():
     with pytest.raises(ValueError):
         BFGS().minimize(_quad)
     with pytest.raises(ValueError):
-        CMA_ES().minimize(sphere)  # population methods need x0 or per-coordinate bounds
+        CMA_ES().minimize(sphere)
 
-
-# ========================================================================== gradient
 
 _GRADIENT_CLASSES = [GradientDescent, StochasticGD, AdaGrad, RMSProp, Adadelta,
                      AdamOptimizer, NADAM, AMSGrad]
@@ -178,8 +172,8 @@ def test_every_gradient_method_solves_the_closed_form_quadratic(cls):
     if cls is Adadelta:
         kw["learning_rate"] = 5.0  # the paper's 1.0 has a very slow start (see its docstring)
     opt = cls(**kw).minimize(_quad, [5.0, 5.0], grad=_quad_grad)
-    # RMSProp normalizes the step to ~learning_rate regardless of gradient size, so it
-    # settles in an O(learning_rate) neighbourhood rather than at the minimum
+    # RMSProp normalizes the step to ~learning_rate, so it settles in an O(learning_rate)
+    # neighbourhood of the minimum.
     tol = 1e-2 if cls is RMSProp else 1e-4
     assert np.max(np.abs(opt.x_ - _STAR)) < tol
 
@@ -188,8 +182,8 @@ def test_gradient_descent_line_search_matches_scipy_on_rosenbrock_objective():
     opt = GradientDescent(max_iter=20000).minimize(sopt.rosen, [-1.2, 1.0],
                                                    grad=sopt.rosen_der)
     ref = sopt.minimize(sopt.rosen, [-1.2, 1.0], jac=sopt.rosen_der, method="BFGS")
-    # steepest descent crawls along Rosenbrock's valley: it gets the objective to ~1e-8
-    # but needs thousands of iterations to match a quasi-Newton method's x
+    # Steepest descent crawls along Rosenbrock's valley: the objective reaches ~1e-8 but x needs
+    # thousands of iterations.
     assert np.allclose(opt.x_, [1.0, 1.0], atol=1e-3)
     assert np.allclose(opt.x_, ref.x, atol=1e-3)
     assert opt.fun_ < 1e-6
@@ -211,8 +205,8 @@ def test_amsgrad_equals_adam_with_amsgrad_flag():
 
 
 def test_adam_bias_correction_makes_the_first_step_full_sized():
-    # without bias correction m1/sqrt(v1) would be ~beta-scaled; with it the first step
-    # is almost exactly the learning rate in magnitude, coordinate-wise
+    # Without bias correction m1/sqrt(v1) would be ~beta-scaled; with it the first step is almost
+    # exactly the learning rate.
     lr = 0.05
     opt = AdamOptimizer(learning_rate=lr, max_iter=1, track_trajectory=True).minimize(
         _quad, [5.0, 5.0], grad=_quad_grad)
@@ -266,12 +260,9 @@ def test_history_and_trajectory_lengths_agree_with_iteration_count():
                         track_trajectory=True).minimize(_quad, [5.0, 5.0], grad=_quad_grad)
     assert len(opt.result_.history) == opt.result_.nit + 1
     assert len(opt.result_.trajectory) == opt.result_.nit + 1
-    # trajectory is opt-in: it is O(nit * dim)
     assert AdamOptimizer(max_iter=10).minimize(_quad, [5.0, 5.0],
                                                grad=_quad_grad).result_.trajectory == []
 
-
-# ====================================================================== second order
 
 @pytest.mark.parametrize("cls", [NewtonMethod, BFGS, LBFGS, ConjugateGradient, TrustRegion])
 def test_second_order_methods_match_scipy_minimize_on_rosenbrock(cls):
@@ -286,8 +277,8 @@ def test_second_order_methods_match_scipy_minimize_on_rosenbrock(cls):
 @pytest.mark.parametrize("cls", [NewtonMethod, BFGS, LBFGS, ConjugateGradient, TrustRegion])
 def test_second_order_methods_solve_the_quadratic_exactly(cls):
     opt = cls().minimize(_quad, [7.0, -4.0], grad=_quad_grad, hess=_quad_hess)
-    # ConjugateGradient stops on the shared ftol rather than on an exact-arithmetic
-    # termination, so it lands a few ulps looser than the Hessian-based methods
+    # ConjugateGradient stops on the shared ftol, not exact-arithmetic termination, so it lands a
+    # few ulps looser than Hessian-based methods.
     tol = 1e-7 if cls is ConjugateGradient else 1e-9
     assert np.max(np.abs(opt.x_ - _STAR)) < tol
 
@@ -301,8 +292,8 @@ def test_second_order_methods_work_without_analytic_derivatives(cls):
 def test_bfgs_inverse_hessian_estimates_the_true_inverse_hessian():
     opt = BFGS().minimize(_quad, [7.0, -4.0], grad=_quad_grad)
     exact = np.linalg.inv(_A)
-    # the secant updates approximate the inverse Hessian; they equal it only in exact
-    # arithmetic after dim independent curvature pairs, so this is a relative claim
+    # Secant updates approximate the inverse Hessian and equal it only in exact arithmetic after dim
+    # independent curvature pairs.
     assert np.max(np.abs(opt.result_.hess_inv - exact)) / np.max(np.abs(exact)) < 0.01
 
 
@@ -338,7 +329,6 @@ def test_conjugate_gradient_terminates_within_dim_steps_on_a_quadratic():
     g = lambda x: G @ x + c
     opt = ConjugateGradient(max_iter=200).minimize(f, np.zeros(dim), grad=g)
     assert np.max(np.abs(opt.x_ + np.linalg.solve(G, c))) < 1e-7
-    # with restarts every dim steps, a quadratic is solved in a small multiple of dim
     assert opt.result_.nit <= 3 * dim
 
 
@@ -364,14 +354,14 @@ def test_trust_region_both_subproblem_solvers_match_scipy_trust_ncg(subproblem):
 
 
 def test_newton_method_escapes_negative_curvature_at_a_saddle():
-    # f = x^2 - y^2 has a saddle at the origin; the raw Newton step stays there forever,
-    # the modified-Cholesky safeguard must move downhill in y
+    # f = x^2 - y^2 has a saddle at the origin; the raw Newton step stays there, the
+    # modified-Cholesky safeguard must move downhill in y.
     f = lambda x: float(x[0] ** 2 - x[1] ** 2 + 0.25 * x[1] ** 4)
     g = lambda x: np.array([2 * x[0], -2 * x[1] + x[1] ** 3])
     h = lambda x: np.array([[2.0, 0.0], [0.0, -2.0 + 3 * x[1] ** 2]])
     opt = NewtonMethod(max_iter=50).minimize(f, [0.0, 1e-3], grad=g, hess=h)
     assert opt.result_.converged
-    assert abs(abs(float(opt.x_[1])) - np.sqrt(2.0)) < 1e-6   # the true minima at y = +-sqrt2
+    assert abs(abs(float(opt.x_[1])) - np.sqrt(2.0)) < 1e-6
     assert opt.fun_ == pytest.approx(-1.0, abs=1e-9)
 
 
@@ -416,8 +406,6 @@ def test_levenberg_marquardt_recovers_noisy_regression_coefficients():
     assert np.max(np.abs(opt.x_ - truth)) < 0.05
 
 
-# ===================================================================== metaheuristic
-
 _STOCHASTIC_CONTINUOUS = [
     (SimulatedAnnealing, {"n_iter": 400}),
     (GeneticAlgorithm, {"n_generations": 20, "population_size": 20}),
@@ -449,7 +437,7 @@ def test_same_random_state_reproduces_a_run_exactly(cls, kw):
 ], ids=["ga", "pso", "de", "cma", "sa"])
 def test_metaheuristics_find_the_published_ackley_global_minimum(cls, kw):
     opt = cls(bounds=(-32.0, 32.0), random_state=0, **kw).minimize(ackley, np.full(5, 3.0))
-    assert opt.fun_ < 0.05  # Ackley's global minimum is exactly 0 at the origin
+    assert opt.fun_ < 0.05
     assert np.max(np.abs(opt.x_)) < 0.05
 
 
@@ -462,8 +450,8 @@ def test_metaheuristics_find_the_published_ackley_global_minimum(cls, kw):
 def test_metaheuristics_improve_massively_over_the_start_on_rastrigin(cls, kw):
     start = np.full(5, 3.0)
     opt = cls(bounds=(-5.12, 5.12), random_state=0, **kw).minimize(rastrigin, start)
-    # Rastrigin-5 has ~10^5 local minima; a single run is not expected to hit the global
-    # one, but must beat the start by orders of magnitude
+    # Rastrigin-5 has ~10^5 local minima; one run needn't hit the global one but must beat the start
+    # by orders of magnitude.
     assert opt.fun_ < 0.1 * rastrigin(start)
 
 
@@ -519,8 +507,8 @@ def test_simulated_annealing_rejects_an_unknown_cooling_schedule():
 
 
 def test_simulated_annealing_calibrates_its_temperature_to_the_objective_scale():
-    # the same landscape scaled by 1000 must produce a ~1000x larger T0, otherwise a
-    # fixed T0 would make one of the two runs greedy and the other a random walk
+    # The same landscape scaled by 1000 must give a ~1000x larger T0, else a fixed T0 makes one run
+    # greedy and the other a random walk.
     small = SimulatedAnnealing(n_iter=500, bounds=(-5.0, 5.0),
                                random_state=9).minimize(sphere, np.full(3, 3.0))
     big = SimulatedAnnealing(n_iter=500, bounds=(-5.0, 5.0),
@@ -539,7 +527,7 @@ def test_particle_swarm_clamps_velocity_and_stays_inside_the_box():
 
 
 def test_cma_es_learns_an_anisotropic_covariance_on_an_ill_conditioned_problem():
-    # a 1000:1 axis ratio: the learned C must reflect it, which is the whole point of CMA
+    # A 1000:1 axis ratio: the learned C must reflect it, which is the point of CMA.
     scale = np.array([1.0, 1000.0])
     f = lambda x: float(np.sum((x * scale) ** 2))
     opt = CMA_ES(sigma0=1.0, n_iter=400, random_state=0).minimize(f, np.array([1.0, 1.0]))
@@ -566,8 +554,8 @@ def test_bayesian_optimization_finds_branin_with_few_evaluations(acquisition):
     opt = BayesianOptimization(n_init=10, n_iter=30, acquisition=acquisition,
                                bounds=[(-5.0, 10.0), (0.0, 15.0)],
                                random_state=0).minimize(branin, [0.0, 5.0])
-    assert opt.fun_ < 0.7  # Branin's global minimum is 0.397887
-    assert opt.result_.nfev <= 45  # the point of BO is a small evaluation budget
+    assert opt.fun_ < 0.7
+    assert opt.result_.nfev <= 45
     assert opt.result_.extras["X_observed"].shape == (40, 2)
 
 
@@ -607,8 +595,6 @@ def test_ant_colony_pheromone_concentrates_on_the_best_tour():
     assert np.mean(on_tour) > 3 * np.mean(tau)
 
 
-# =================================================================== stochastic optim
-
 def test_stochastic_approx_step_sequence_satisfies_the_convergence_conditions():
     sa = StochasticApprox(a=1.0, A=0.0, alpha=0.7, n_iter=10)
     partial = {N: float(np.sum([sa._step_size(n) for n in range(1, N + 1)]))
@@ -632,7 +618,6 @@ def test_stochastic_approx_with_a_custom_direction_solves_the_quadratic():
 def test_robbins_monro_finds_the_root_of_a_noisy_regression_function():
     rm = RobbinsMonro(a=1.0, alpha=1.0, n_iter=20000, random_state=0).solve(
         lambda x, rng: (x - 3.0) + rng.normal(0.0, 1.0, size=x.shape), [0.0])
-    # at alpha=1 the iterate is asymptotically normal with sd ~ sigma / sqrt(n)
     se = 1.0 / np.sqrt(20000)
     assert abs(float(rm.root_[0]) - 3.0) < 4 * se
     assert rm.result_.extras["target"] == 0.0
@@ -645,7 +630,6 @@ def test_robbins_monro_error_shrinks_at_the_root_n_rate():
             lambda x, rng: (x - 3.0) + rng.normal(0.0, 1.0, size=x.shape),
             [0.0]).root_[0]) - 3.0) for s in range(12)]
         errs.append(float(np.mean(reps)))
-    # a 4x longer run should roughly halve the error; allow a generous factor
     assert errs[1] < 0.8 * errs[0]
     assert errs[2] < 0.8 * errs[1]
 
@@ -724,7 +708,6 @@ def test_saa_reports_an_optimality_gap_with_standard_error_and_interval():
 
 
 def test_saa_solves_a_stochastic_quadratic_to_the_analytic_optimum():
-    # min E[(x - xi)^2] with xi ~ N(4, 1) has minimizer 4 regardless of the variance
     cost = lambda x, xi: float((x[0] - xi) ** 2)
     sampler = lambda size, rng: rng.normal(4.0, 1.0, size=size)
     saa = SAA(n_samples=4000, n_batches=4, batch_size=400, random_state=2).minimize(
@@ -737,8 +720,6 @@ def test_saa_without_a_sampler_is_a_usage_error():
     with pytest.raises(ValueError):
         SAA().minimize(lambda x, xi: 0.0, [0.0])
 
-
-# ======================================================================== constrained
 
 _EQ = [{"type": "eq", "fun": lambda x: np.array([x[0] + x[1] - 1.0])}]
 _INEQ = [{"type": "ineq", "fun": lambda x: np.array([x[0] + x[1] - 1.0])}]
@@ -774,7 +755,6 @@ def test_augmented_lagrangian_is_feasible_at_a_far_smaller_penalty_than_the_pena
 
 
 def test_augmented_lagrangian_recovers_the_analytic_multiplier():
-    # stationarity of L = f - lambda.c gives 2x = lambda, so lambda = 2 * 0.5 = 1
     opt = AugmentedLagrangian(constraints=_EQ).minimize(_CIRCLE, [2.0, -1.0])
     assert float(opt.result_.extras["lambda_eq"][0]) == pytest.approx(1.0, abs=1e-3)
 
@@ -783,7 +763,6 @@ def test_lagrangian_relaxation_dual_bound_is_a_valid_lower_bound():
     opt = LagrangianRelaxation(constraints=_EQ).minimize(_CIRCLE, [2.0, -1.0])
     # weak duality: the dual value never exceeds the constrained optimum (0.5)
     assert opt.result_.extras["dual_bound"] <= 0.5 + 1e-8
-    # and for this convex problem the gap closes
     assert abs(opt.result_.extras["duality_gap"]) < 1e-3
 
 
@@ -810,10 +789,8 @@ def test_relaxed_log_barrier_is_finite_continuous_and_agrees_with_minus_log():
     assert np.allclose(_relaxed_log(inside, delta), -np.log(inside))
     outside = np.array([-1.0, -0.5, 0.0])
     assert np.all(np.isfinite(_relaxed_log(outside, delta)))
-    # continuity at the switch point
     assert _relaxed_log(np.array([delta * (1 + 1e-12)]), delta)[0] == pytest.approx(
         _relaxed_log(np.array([delta]), delta)[0], abs=1e-6)
-    # and monotone decreasing, so an infeasible point is pushed back
     assert _relaxed_log(np.array([-1.0]), delta)[0] > _relaxed_log(np.array([0.0]), delta)[0]
 
 
@@ -847,7 +824,6 @@ def test_active_set_handles_equality_constraints_and_reports_its_working_set():
 def test_active_set_unconstrained_reduces_to_the_newton_step():
     opt = ActiveSet().minimize(_quad, [4.0, 4.0], grad=_quad_grad, hess=_quad_hess)
     assert np.max(np.abs(opt.x_ - _STAR)) < 1e-12
-    # with finite-difference derivatives the same step is accurate to FD precision
     assert np.max(np.abs(ActiveSet().minimize(_quad, [4.0, 4.0]).x_ - _STAR)) < 1e-6
 
 
@@ -863,15 +839,12 @@ def test_constrained_methods_accept_a_bare_constraint_dict():
 
 
 def test_constrained_solvers_handle_a_nonlinear_constraint():
-    # min x+y on the unit circle x^2+y^2 = 1 -> (-1/sqrt2, -1/sqrt2), f = -sqrt 2
     cons = [{"type": "eq", "fun": lambda x: np.array([x[0] ** 2 + x[1] ** 2 - 1.0])}]
     opt = AugmentedLagrangian(constraints=cons).minimize(
         lambda x: float(x[0] + x[1]), [-0.3, -0.9])
     assert opt.fun_ == pytest.approx(-np.sqrt(2.0), abs=1e-5)
     assert np.allclose(opt.x_, [-1 / np.sqrt(2)] * 2, atol=1e-5)
 
-
-# ============================================================================ helpers
 
 def test_normalize_bounds_accepts_scalar_and_per_coordinate_forms():
     lo, hi = _normalize_bounds((-1.0, 2.0), 3)
@@ -904,7 +877,6 @@ def test_armijo_and_wolfe_line_searches_produce_a_decrease():
     assert alpha > 0 and f_new < f0
     alpha, x_new, f_new, g_new = _strong_wolfe(obj, x, -g0, f0, g0)
     assert alpha > 0 and f_new < f0
-    # the strong-Wolfe curvature condition, which Armijo alone does not guarantee
     assert abs(float(np.dot(g_new, -g0))) <= 0.9 * abs(float(np.dot(g0, -g0))) + 1e-9
 
 
@@ -933,15 +905,13 @@ def test_latin_hypercube_initial_design_comes_from_the_montecarlo_module():
         assert sorted(np.clip(strata, 0, 15).tolist()) == list(range(16))
 
 
-# ======================================================================= cross module
-
 def test_optimization_reproduces_the_distributions_module_gamma_mle():
     from scipy import special
 
     data = np.asarray(distributions.Gamma(3.0, 2.0).rvs(2000, random_state=11), dtype=float)
 
     def nll(theta):
-        k, s = np.exp(theta)  # log-parameterized, so the optimizer sees no constraints
+        k, s = np.exp(theta)
         return float(-np.sum((k - 1) * np.log(data) - data / s
                              - special.gammaln(k) - k * np.log(s)))
 
@@ -974,7 +944,6 @@ def test_bayesian_optimization_surrogate_is_the_gaussian_processes_module():
         sphere, [1.5, 1.5])
     X, y = opt.result_.extras["X_observed"], opt.result_.extras["y_observed"]
     assert len(X) == len(y) == 12
-    # the recorded observations must be exactly the objective evaluated at those points
     assert np.allclose(y, [sphere(xi) for xi in X])
     assert GPRegression is not None
 
@@ -995,12 +964,9 @@ def test_library_code_never_imports_scipy_stats_or_scipy_optimize():
     assert seen >= 9
 
 
-# ========================================================================= quickstart
-
 def test_quickstart_example_runs():
     from stochpylib import optimization as opt
 
-    # the exact snippet advertised in the module README and the root quickstart
     rosen = lambda x: float(100 * (x[1] - x[0] ** 2) ** 2 + (1 - x[0]) ** 2)
     fit = opt.BFGS().minimize(rosen, [-1.2, 1.0])
     assert np.allclose(fit.x_, [1.0, 1.0], atol=1e-4)

@@ -153,8 +153,6 @@ class MCMCSampler:
         if self.thin < 1:
             raise ValueError("thin must be >= 1")
 
-    # ---- subclass hooks ----
-
     def _init_state(self, theta, rng):
         return {"theta": theta, "logp": self.target(theta)}
 
@@ -166,8 +164,6 @@ class MCMCSampler:
 
     def _step(self, state, rng, adapt):
         raise NotImplementedError
-
-    # ---- public API ----
 
     def _run_chain(self, init, rng, dim):
         """Run one full chain (warmup + kept draws) and return
@@ -217,10 +213,8 @@ class MCMCSampler:
             tasks = [(copy.deepcopy(self), inits[c], rngs[c], dim) for c in range(self.n_chains)]
             raw = execute(_run_chain_worker, tasks, n_jobs=n_jobs, backend=backend)
             results = [(d, l, a) for d, l, a, _ in raw]
-            # match the serial path's post-sample adaptation state: the last
-            # chain processed is the one whose per-chain state `self` ends with.
-            # Reads the sampler each worker actually mutated (not the pre-dispatch
-            # copy), so this is correct for both thread and process backends.
+            # Match the serial path: `self` ends with the last chain's adaptation state, read from
+            # the sampler each worker mutated.
             last_sampler = raw[-1][3]
             for key, value in last_sampler.__dict__.items():
                 if key != "target":

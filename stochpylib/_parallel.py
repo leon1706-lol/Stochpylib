@@ -97,7 +97,7 @@ def pool_mc_results(results):
     ss = 0.0
     for r, n_i, m_i in zip(results, ns, means):
         se_i = r.std_error
-        if n_i > 1 and se_i == se_i and se_i is not None:  # not NaN
+        if n_i > 1 and se_i == se_i and se_i is not None:
             s2_i = (se_i ** 2) * n_i
             ss += (n_i - 1) * s2_i
         ss += n_i * (m_i - pooled_mean) ** 2

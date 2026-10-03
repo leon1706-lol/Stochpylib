@@ -14,7 +14,7 @@ from stochpylib.viz._figure import (
 )
 from stochpylib.viz._svg import _step_path
 
-__all__ = []  # private module
+__all__ = []
 
 _MISSING_MPL_MSG = (
     "stochpylib.viz: matplotlib is optional and not installed; use Figure.to_svg() / "

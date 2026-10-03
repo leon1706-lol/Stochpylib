@@ -125,12 +125,9 @@ class StableSubordinator(Subordinator):
             return 0.0
         from stochpylib.distributions import StableDistribution
 
-        # The library's stable sampler uses the S1 (Nolan) parameterization,
-        # whose beta=1 Laplace transform carries an extra constant:
-        # E[exp(-lam*X)] = exp(-lam**alpha / cos(pi*alpha/2)) for scale=1.
-        # Rescaling by cos(pi*alpha/2)**(1/alpha) cancels that constant so
-        # the subordinator matches its documented E[exp(-lam*T_t)] =
-        # exp(-t*lam**alpha) exactly.
+        # The S1 (Nolan) stable sampler's beta=1 Laplace transform carries an extra constant;
+        # rescaling by cos(pi*alpha/2)**(1/alpha) cancels it so E[exp(-lam*T_t)] =
+        # exp(-t*lam**alpha).
         norm = np.cos(np.pi * self.alpha / 2.0) ** (1.0 / self.alpha)
         s = StableDistribution(alpha=self.alpha, beta=1.0, loc=0.0,
                                scale=norm * dt ** (1.0 / self.alpha))
@@ -204,19 +201,14 @@ class TemperingSubordinator(Subordinator):
             * special.gamma(1.0 - self.alpha)
 
     def _shortfall_rate(self):
-        # mean carried by the truncated-out small jumps (lower inc. gamma)
         return self.mean_rate() - self._retained_mean_rate()
 
     def _jump_quantile_grid(self):
         if self._grid is not None:
             return self._grid
         x_max = max(self.jump_floor * 4000.0, 10.0 / self.lam)
-        # log-spaced grid: the density ~ x**(-1-alpha) is singular at the
-        # left endpoint, so a linear grid under-resolves it near jump_floor
-        # and (via a naive Riemann sum) grossly overweights that region,
-        # biasing the sampled jump-size distribution toward small jumps.
-        # Log spacing plus cumulative-trapezoid quadrature tracks the true
-        # density to within a fraction of a percent at 8192 points.
+        # Log-spaced grid + cumulative trapezoid: the density ~ x**(-1-alpha) is singular at the
+        # left endpoint, so a linear grid overweights it and biases jump sizes small.
         x = np.logspace(np.log10(self.jump_floor), np.log10(x_max), 8192)
         logd = -self.lam * x + (-1.0 - self.alpha) * np.log(x)
         d = np.exp(logd - logd.max())

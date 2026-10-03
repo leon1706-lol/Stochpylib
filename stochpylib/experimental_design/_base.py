@@ -90,7 +90,6 @@ class OptimalDesign(DesignGenerator):
         self.tol = float(tol)
         self.random_state = random_state
 
-    # ------------------------------------------------------------------ candidate set
     def _natural_space(self):
         return False
 
@@ -125,7 +124,6 @@ class OptimalDesign(DesignGenerator):
             return None
         return [_term_name(t, _factor_names(k)) for t in _model_terms(k, self.model)]
 
-    # --------------------------------------------------------------------- criterion
     def _score(self, M):
         raise NotImplementedError
 
@@ -136,14 +134,13 @@ class OptimalDesign(DesignGenerator):
     def _swap_scores(self, G, idx, i, M):
         gi = G[:, idx[i], :]
         base = M - gi[:, :, None] * gi[:, None, :]
-        Gc = np.swapaxes(G, 0, 1)                      # (m, S, p)
+        Gc = np.swapaxes(G, 0, 1)
         stack = base[None] + Gc[:, :, :, None] * Gc[:, :, None, :]
         return self._score(stack)
 
     def _design_score(self, G, idx):
         return float(self._score(self._info(G, idx)[None])[0])
 
-    # ---------------------------------------------------------------------- exchange
     def _generate(self, rng):
         C = self._candidate_points()
         G = self._features(C)

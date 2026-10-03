@@ -20,7 +20,7 @@ def _resolve_loglik_k_n(loglik, k, n):
         if n is None:
             n = getattr(loglik, "n_obs_", None)
         return ll, k, n
-    if hasattr(loglik, "llf"):  # statsmodels-style results wrapper
+    if hasattr(loglik, "llf"):
         ll = float(loglik.llf)
         if k is None and hasattr(loglik, "params"):
             k = int(len(np.atleast_1d(loglik.params)))

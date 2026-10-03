@@ -312,7 +312,7 @@ class ExperimentalVariogram:
                 g = 0.5 * float(np.mean(dzb ** 2))
             elif self.estimator == "cressie":
                 g = 0.5 * float(np.mean(np.abs(dzb) ** 0.5) ** 4) / (0.457 + 0.494 / cnt)
-            else:  # dowd
+            else:
                 g = 0.5 * (1.4826 * float(np.median(np.abs(dzb)))) ** 2
             lags.append(float(hb.mean()))
             gamma.append(g)
@@ -441,10 +441,8 @@ class VariogramFitting:
         nug0 = float(Nugget().fit(exp).value_)
         sill0 = max(float(Sill().fit(exp).value_), nug0 + 1e-6)
         rng0 = max(float(Range().fit(exp).value_), 1e-6)
-        # weakly-structured (near-nugget) data leaves a flat ridge in (partial_sill, range)
-        # space -- an unbounded optimizer can report an arbitrarily large "range" that is
-        # not actually resolved by the data. Cap the search at generous but physically
-        # interpretable multiples of what the experimental variogram can actually see.
+        # Weakly structured data leaves a flat (partial_sill, range) ridge; cap the search at
+        # multiples of what the experimental variogram can resolve.
         max_lag = float(lags[-1])
         max_level = float(max(gamma.max(), nug0, 1e-6))
 
@@ -458,8 +456,8 @@ class VariogramFitting:
             if model_name == "power":
                 names.append("exponent"); x0.append(1.0); lo.append(1e-3); hi.append(1.999)
         else:
-            # fit the partial sill (>= 0) rather than the total sill directly, so the
-            # optimizer can never drive sill below nugget (a nonphysical decreasing gamma)
+            # Fit the partial sill (>= 0) rather than the total sill so the optimizer can't push
+            # sill below nugget.
             names += ["partial_sill", "range"]
             x0 += [max(sill0 - nug0, 1e-6), min(rng0, 3.0 * max_lag)]
             lo += [1e-9, 1e-9]

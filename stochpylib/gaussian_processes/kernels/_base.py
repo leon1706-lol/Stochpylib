@@ -20,7 +20,6 @@ from stochpylib.gaussian_processes._utils import _as_2d, _sqdist
 class BaseKernel:
     """Abstract kernel with operator overloading and a parameter interface."""
 
-    #: subclasses list their optimizable attribute names here
     _param_names = ()
 
     def __call__(self, X, Y=None):
@@ -33,7 +32,6 @@ class BaseKernel:
     def _matrix(self, X, Y):
         raise NotImplementedError
 
-    # parameter interface ----------------------------------------------------
     def get_params(self):
         return {name: getattr(self, name) for name in self._param_names}
 
@@ -45,7 +43,6 @@ class BaseKernel:
                     if np.ndim(value) == 0 else np.asarray(value, dtype=float))
         return self
 
-    # operator overloading -----------------------------------------------------
     def __add__(self, other):
         from stochpylib.gaussian_processes.kernel_ops import KernelSum
 

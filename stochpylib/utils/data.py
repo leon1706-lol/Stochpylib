@@ -406,7 +406,7 @@ def missing_imputation(X, method="mean", *, fill_value=None, k=5, max_iter=100, 
                         col[i] = last
                 if np.isnan(col).any():
                     col[np.isnan(col)] = np.nanmean(col)
-            else:  # nocb
+            else:
                 nxt = None
                 for i in range(len(col) - 1, -1, -1):
                     if not m[i]:

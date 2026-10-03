@@ -12,9 +12,6 @@ from stochpylib.timeseries._result import ForecastResult
 from stochpylib.timeseries._utils import as_1d
 
 
-# --------------------------------------------------------------------------- dispatchers
-
-
 def forecast(model, horizon=10):
     """Dispatch to ``model.forecast(horizon)`` for any fitted timeseries model."""
     if hasattr(model, "forecast"):
@@ -46,9 +43,6 @@ def confidence_bands(result, level=0.95):
     mean = np.asarray(mean, dtype=float)
     std = np.asarray(std, dtype=float)
     return mean - z * std, mean + z * std
-
-
-# --------------------------------------------------------------------------- backtesting
 
 
 @dataclass
@@ -129,8 +123,8 @@ def cross_validation_ts(y, model_factory, n_splits=5, horizon=1, min_train=None)
     block = max((T - min_train) // n_splits, 1)
     folds = []
     for i in range(n_splits):
-        start = min_train + i * block          # first one-step-ahead test index
-        stop = start + block                    # exclusive
+        start = min_train + i * block
+        stop = start + block
         errors, preds, actuals = [], [], []
         for t in range(start, min(stop, T)):
             model = model_factory()

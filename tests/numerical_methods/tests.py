@@ -31,8 +31,6 @@ from stochpylib.levy_processes.sde import _brownian_increments as _legacy_binc
 from stochpylib.numerical_methods._common import _gauss_kronrod_15, _thomas
 
 
-# ============================================================== integration
-
 def test_gauss_legendre_matches_leggauss_and_is_exact_for_polynomials():
     gl = nm.GaussLegendre(10)
     xn, wn = np_leg.leggauss(10)
@@ -54,10 +52,8 @@ def test_gauss_hermite_matches_hermgauss_and_normal_moments():
 
 
 def test_gauss_hermite_expectation_matches_black_scholes_call():
-    # The call payoff has a kink at S=K, so Gauss-Hermite (which assumes a smooth/
-    # analytic integrand for its usual spectral accuracy) converges only slowly and
-    # non-monotonically here -- 300 nodes is needed for a 1e-2 match, unlike the smooth
-    # moment checks elsewhere in this file which converge to 1e-8 by n=20.
+    # The call payoff has a kink at S=K, so Gauss-Hermite converges slowly here: 300 nodes for 1e-2,
+    # unlike the smooth checks that reach 1e-8 by n=20.
     S, K, T, r, sigma = 100.0, 100.0, 1.0, 0.05, 0.2
     bs = BlackScholes(S=S, K=K, T=T, r=r, sigma=sigma)
     gh = nm.GaussHermite(300, kind="probabilists")
@@ -161,8 +157,6 @@ def test_gauss_kronrod_error_bounds_true_error():
     k15, err, _ = _gauss_kronrod_15(lambda x: np.exp(x), 0, 1)
     assert abs(k15 - (np.e - 1)) <= max(err, 1e-13)
 
-
-# =================================================================== ode_sde
 
 def _order_ratios(solver, ns_list, **kw):
     exact = np.exp(-1.0)
@@ -313,8 +307,6 @@ def test_euler_maruyama_sde_matches_legacy_levy_processes_solver():
     assert np.allclose(legacy_paths[0], sol.paths[0, :, 0], atol=1e-10)
 
 
-# ============================================================== linear_algebra
-
 def test_matrix_exponential_matches_scipy_pade_eig_and_scaling():
     rng = np.random.default_rng(0)
     A = rng.standard_normal((6, 6))
@@ -464,8 +456,6 @@ def test_complex_schur_is_strictly_triangular_and_reconstructs():
         assert np.max(np.abs(s.reconstruct() - A)) < 1e-5
 
 
-# ================================================================== root_solve
-
 _COS_ROOT = 0.7390851332151607
 
 
@@ -542,8 +532,6 @@ def test_non_bracketing_interval_raises():
     with pytest.raises(ValueError):
         nm.Brent(lambda x: np.cos(x) - x, 0.5, 0.6)
 
-
-# ================================================================ interpolation
 
 def test_spline_natural_clamped_notaknot_match_scipy():
     rng = np.random.default_rng(9)
@@ -663,10 +651,9 @@ def test_chebyshev_series_exp_and_derivative_and_roots():
 
 
 def test_chebyshev_interpolate_matches_numpy_polynomial():
-    # numpy's Chebyshev.interpolate uses Chebyshev-Gauss (no-endpoint) nodes while this
-    # class uses Chebyshev-Gauss-Lobatto (endpoint-including) nodes -- different node
-    # sets agree only once both have resolved the function (n large enough); at low n
-    # they can legitimately disagree by more than either's own error against f.
+    # numpy's Chebyshev.interpolate uses Chebyshev-Gauss nodes, this class Gauss-Lobatto
+    # (endpoint-including); they agree only once both resolve f, so at low n they can differ by more
+    # than either's error.
     n = 16
     f = lambda x: np.exp(x) * np.cos(2 * x)
     cb = nm.Chebyshev.from_function(f, n, -1, 1)
@@ -725,8 +712,6 @@ def test_interpolation_facade_dispatches_every_method():
     with pytest.raises(ValueError):
         nm.Interpolation(xi, yi, method="bogus")
 
-
-# ======================================================================= pde
 
 def test_fornberg_stencil_matches_standard_coefficients():
     fd = nm.FiniteDifference()
@@ -1013,8 +998,8 @@ def test_boundary_element_harmonic_functions_and_flux_balance():
                             for m, n in zip(bem.midpoints_, bem.normals_)])
         rel_err = np.linalg.norm(bem.flux_ - dudn_ex) / np.linalg.norm(dudn_ex)
         assert rel_err < 0.05
-        # exact-Laplace-solution flux integrates to zero (Gauss); our numerically solved
-        # flux only approximately does, at the discretization's own error level
+        # The exact-Laplace-solution flux integrates to zero (Gauss); the numerical flux only up to
+        # discretization error.
         assert abs(np.sum(bem.flux_ * bem.lengths_)) < 1e-3
 
 
@@ -1058,8 +1043,6 @@ def test_spectral_beats_finite_difference_at_equal_resolution():
     err_fd = np.max(np.abs(u_fd - exact_fd))
     assert err_spec < err_fd / 1e4
 
-
-# ======================================================================= misc
 
 def test_thomas_solver_matches_numpy():
     lower = np.array([1.0, 1.0, 1.0, 1.0])

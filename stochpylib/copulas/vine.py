@@ -44,7 +44,7 @@ class _LeafNode:
     def __init__(self, var, column):
         self.var = int(var)
         self.column = column
-        self.head = self.var                 # the variable this node carries
+        self.head = self.var
 
     def exposed(self, side="a"):
         return self.column
@@ -66,9 +66,9 @@ class _EdgeNode:
         self.head_b = child_b.head if head_b is None else int(head_b)
         self.side_a = side_a
         self.side_b = side_b
-        self.introduced = None               # filled by the builder
-        self._col_a = col_a                  # h(col_a | col_b)
-        self._col_b = col_b                  # h(col_b | col_a)
+        self.introduced = None
+        self._col_a = col_a
+        self._col_b = col_b
 
     @property
     def heads(self):
@@ -110,8 +110,8 @@ def _tau_mst_order(u):
                     best = (v, w)
         visited.append(best[1])
         rest.discard(best[1])
-    # DFS order of the MST path approximation: the greedy insertion order is
-    # itself a valid path-like ordering
+    # DFS order of the MST path approximation: the greedy insertion order is itself a valid
+    # path-like ordering.
     return visited
 
 
@@ -133,7 +133,6 @@ class _VineBase(BaseCopula):
         if self.levels_ is None:
             raise RuntimeError("fit() must be called first")
 
-    # -- policy hooks -----------------------------------------------------------
     def _leaf_order(self, u):
         if self.order is not None:
             return [int(v) for v in self.order]
@@ -143,7 +142,6 @@ class _VineBase(BaseCopula):
         """Choose node-index pairs among admissible ``adj`` pairs."""
         raise NotImplementedError
 
-    # -- construction -------------------------------------------------------------
     def _build(self, u):
         order = self._leaf_order(u)
         nodes_meta = [(pos, _LeafNode(var, u[:, var]))
@@ -193,11 +191,9 @@ class _VineBase(BaseCopula):
             levels.append(list(nodes_meta))
         self.levels_ = [[n for _, n in lvl] for lvl in levels]
         self._all_edges = all_edges
-        # Introduction plan — R-vine-matrix-style peeling order: starting from
-        # one seed variable drawn marginally, every further variable is drawn
-        # through an edge whose ENTIRE leaf set minus that variable is already
-        # drawn, so its conditioning column is fully observed (exact
-        # sequential Rosenblatt). Try every seed; take the first feasible peel.
+        # R-vine-style peeling: draw one seed marginally, then each further variable through an edge
+        # whose leaf set minus it is already drawn (exact sequential Rosenblatt). Try every seed;
+        # take the first feasible peel.
         d = u.shape[1]
 
         def leaf_set(node):
@@ -265,9 +261,8 @@ class _VineBase(BaseCopula):
         return _shared_child(A, B) is not None
 
     def _level0_admissible(self, count, i, j):
-        return True  # overridden per structure
+        return True
 
-    # ------------------------------------------------------------------ surface
     def fit(self, data):
         data = np.asarray(data, dtype=float)
         if data.ndim != 2 or data.shape[0] < 3:
@@ -350,7 +345,6 @@ class _VineBase(BaseCopula):
                             f"{e.pair.describe()} | |tau|={e._tau:.2f}")
         return "\n".join(rows)
 
-    # ------------------------------------------------------------------ sampling
     def sample(self, n, random_state=None):
         """Sequential Rosenblatt simulation following the deepest-first
         introduction plan; every sibling subtree is fully seeded before its
@@ -396,7 +390,7 @@ class _VineBase(BaseCopula):
             realize(my_child, var, child_vals)
 
         for e, var in self._intro_plan_:
-            if e is None:                     # seed variable
+            if e is None:
                 sim[:, var] = rng.random(n)
                 continue
             p = rng.random(n)
@@ -418,12 +412,11 @@ class DVine(_VineBase):
     structure_type = "D"
 
     def _level0_admissible(self, count, i, j):
-        return j == i + 1                       # path adjacency
+        return j == i + 1
 
     def _choose_merges(self, adj, nodes, level_idx):
         if level_idx == 0:
-            return [(i, j) for (i, j) in adj]   # consecutive pairs
-        # later levels: consecutive nodes in the (order-preserving) list
+            return [(i, j) for (i, j) in adj]
         return [(i, i + 1) for i in range(len(nodes) - 1)]
 
 
@@ -446,7 +439,7 @@ class CVine(_VineBase):
         return order
 
     def _level0_admissible(self, count, i, j):
-        return i == 0                           # star around the anchor
+        return i == 0
 
     def _choose_merges(self, adj, nodes, level_idx):
         return [(i, j) for (i, j) in adj if i == 0]

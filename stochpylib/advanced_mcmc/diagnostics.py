@@ -18,8 +18,6 @@ __all__ = ["ESS", "GelmanRubin", "PSRF", "RafteryLewisResult", "Rhat", "TraceAna
            "autocorr_time", "geweke_test", "raftery_lewis"]
 
 
-# --------------------------------------------------------------------------- shape utils
-
 def _chains_3d(chains):
     """Normalize to ``(n_chains, n, dim)`` float array."""
     arr = np.asarray(chains, dtype=float)
@@ -49,7 +47,6 @@ def _rank_normalize(x):
     order = np.argsort(flat, kind="mergesort")
     ranks = np.empty_like(order, dtype=float)
     ranks[order] = np.arange(1, len(flat) + 1)
-    # average ranks for ties
     sorted_flat = flat[order]
     i = 0
     while i < len(sorted_flat):
@@ -104,7 +101,7 @@ def _ess_one(x):
         var_plus += chain_means.var(ddof=1)
     if var_plus <= 0:
         return float(m * n)
-    acov = np.array([_autocov_fft(x[c]) for c in range(m)])  # (m, n)
+    acov = np.array([_autocov_fft(x[c]) for c in range(m)])
     mean_acov = acov.mean(axis=0)
     rho = 1.0 - (mean_var - mean_acov) / var_plus
     rho[0] = 1.0
@@ -248,7 +245,7 @@ def PSRF(chains):
     m, n, d = arr.shape
     if m < 2:
         raise ValueError("PSRF needs at least 2 chains")
-    chain_means = arr.mean(axis=1)  # (m, d)
+    chain_means = arr.mean(axis=1)
     W = np.zeros((d, d))
     for c in range(m):
         diff = arr[c] - chain_means[c]
@@ -410,7 +407,6 @@ def raftery_lewis(chain, q=0.025, r=0.005, s=0.95, eps=0.001):
         nk = len(zk)
         if nk < 20:
             break
-        # 2nd-order Markov transition counts on the thinned binary sequence
         t = np.zeros((2, 2, 2), dtype=float)
         for i in range(2, nk):
             t[zk[i - 2], zk[i - 1], zk[i]] += 1

@@ -41,7 +41,6 @@ class KernelDensityEstimate(NonparametricDensity):
         return {"h": h}
 
     def _fit_2d(self, X):
-        # used only when constructed directly on (n, d) data via fit()
         pass
 
     def fit(self, x):
@@ -102,7 +101,6 @@ class KernelDensityEstimate(NonparametricDensity):
             F = np.where(pos, 0.5 + uc - 0.5 * uc ** 2, 0.5 * (1 + uc) ** 2)
             out = np.mean(F, axis=1)
         else:
-            # numerically integrate the kernel CDF via fine quadrature (biweight/cosine)
             K = _kernel_fn(self.kernel)
             grid = np.linspace(-1.0, 1.0, 2001)
             cum = np.concatenate([[0.0], np.cumsum((K(grid[1:]) + K(grid[:-1])) / 2.0
@@ -134,7 +132,6 @@ class KernelDensityEstimate(NonparametricDensity):
             if self.kernel == "gaussian":
                 noise = rng.standard_normal(size) * h
             elif self.kernel in ("epanechnikov", "biweight", "triangular", "uniform", "cosine"):
-                # rejection sample from the kernel shape on [-1, 1], scaled by h
                 K = _kernel_fn(self.kernel)
                 peak = K(np.array([0.0]))[0] if self.kernel != "triangular" else 1.0
                 noise = np.empty(size)
@@ -283,7 +280,6 @@ class OrthogonalSeriesDensity(NonparametricDensity):
                 if a_j ** 2 < 2.0 * var_j:
                     break
         self.coefs_ = np.array(coefs)
-        # precompute a fine grid for the clip-and-renormalize step
         grid = np.linspace(lo, hi, 4000)
         tg = (grid - lo) / (hi - lo)
         vals = np.ones_like(tg)
@@ -348,11 +344,9 @@ class LogsplineEstimator(NonparametricDensity):
             w = np.exp(eta_grid - m)
             Z = np.trapezoid(w, grid)
             log_c = m + np.log(Z)
-            # gradient: mean(B(x_i)) - E_theta[B(X)]
             p_grid = w / Z
             E_B = np.trapezoid(B_grid * p_grid[:, None], grid, axis=0)
             grad = np.mean(B_data, axis=0) - E_B
-            # Hessian: -Cov_theta[B(X)]
             EBB = np.trapezoid(
                 B_grid[:, :, None] * B_grid[:, None, :] * p_grid[:, None, None],
                 grid, axis=0)

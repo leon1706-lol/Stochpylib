@@ -86,13 +86,11 @@ def run(verbose=False):
     if verbose:
         print(f"stochpylib selftest - version {stochpylib.__version__}")
 
-    # package sanity
     st.check("package: version string", isinstance(stochpylib.__version__, str))
     st.check("package: probability import", hasattr(getattr(stochpylib, "probability"), "bayes_theorem"))
     bt = stochpylib.probability.bayes_theorem(0.01, 0.99, 0.0197)
     st.check("probability: bayes sanity", abs(bt - 0.502539) < 0.001)
 
-    # univariate distributions (one small instance each; closed-form spot values where cheap)
     n = Normal(0.0, 1.0)
     st.check("Normal: pdf(0)", abs(n.pdf(0.0) - 0.3989422804014327) < _TOL)
     st.check("Normal: mean/var", abs(n.mean()) < _TOL and abs(n.var() - 1.0) < _TOL)
@@ -154,7 +152,6 @@ def run(verbose=False):
     st.check("Rayleigh: mean", abs(ra.mean() - np.sqrt(np.pi / 2)) < _TOL)
     _univariate_checks(st, "Rayleigh", ra)
 
-    # stable family: exact special-case delegation + fast CML sampling
     s2 = StableDistribution(2.0, 0.0, 0.0, 1.0)
     st.check(
         "Stable alpha=2 == Gaussian",
@@ -169,7 +166,6 @@ def run(verbose=False):
     st.check("Levy: support", lv.support()[0] == 0.0)
     _univariate_checks(st, "Levy", lv, moments=False)
 
-    # montecarlo quick checks
     from stochpylib.montecarlo import (
         AntitheticVariates,
         HaltonSequence,
@@ -192,7 +188,6 @@ def run(verbose=False):
     rpi = pi_estimation(n=100_000, random_state=9)
     st.check("MC: pi in confidence band", abs(rpi.estimate - np.pi) < 4 * rpi.std_error)
 
-    # timeseries quick checks
     from stochpylib.timeseries import ARIMA, GARCH, KalmanFilter, SpectralAnalysis
     from stochpylib.timeseries import adf_test as ts_adf
 
@@ -213,7 +208,6 @@ def run(verbose=False):
     adf_res = ts_adf(np.cumsum(rng_ts.standard_normal(400)))
     st.check("TS: ADF walk fails to reject", adf_res.statistic > -3.41)
 
-    # gaussian_processes quick checks
     from stochpylib.gaussian_processes import (
         GPClassification,
         GPRegression,
@@ -247,7 +241,6 @@ def run(verbose=False):
     mu_s = sgp.predict(X_tr, return_std=False)
     st.check("GP: sparse approximates exact", float(np.max(np.abs(mu_s - mu_gp))) < 0.2)
 
-    # copulas quick checks
     from scipy.special import ndtr as _norm_cdf
 
     from stochpylib.copulas import (
@@ -275,7 +268,6 @@ def run(verbose=False):
     best = CopulaFit(families=("clayton", "gaussian", "frank")).fit(cl_data)
     st.check("COP: CopulaFit ranking", best.best_name_ == "clayton")
 
-    # survival quick checks
     from stochpylib.survival import (
         KaplanMeier,
         CoxProportionalHazards,
@@ -301,7 +293,6 @@ def run(verbose=False):
     lr = LogRankTest().fit(t_cox, e_cox, np.repeat(['A', 'B'], 800))
     st.check("SURV: logrank separates", lr.p_value_ < 1e-10)
 
-    # queueing quick checks
     from stochpylib.queueing import MM1Queue, erlang_b_formula, JacksonNetwork
     q_mm1 = MM1Queue().fit(.5, 1.0)
     st.check("QUEUE: M/M/1 L=1", abs(q_mm1.L - 1.0) < 1e-9)
@@ -313,7 +304,6 @@ def run(verbose=False):
     st.check("QUEUE: Jackson traffic eq",
              np.allclose(jn.lam, [1., 1.], atol=1e-8))
 
-    # library conformance + cross-module checks (mirrors tests/library)
     spec_counts = {
         "probability": (21, ["sample_space", "P", "bayes_theorem",
                              "derangement"]),
@@ -363,8 +353,6 @@ def run(verbose=False):
             for m in ("pdf", "cdf", "ppf", "rvs", "fit", "ks_test"))
     st.check("CONFORM: distributions contract spot", dist_ok)
 
-    # cross-module: reliability_mc driven by a library Weibull
-    # (Weibull is imported at module level above)
     import stochpylib.montecarlo as _mc_mod
     rel = _mc_mod.reliability_mc(lambda X: X[:, 0], [Weibull(2.0, 10.0)],
                                     threshold=5.0, n=30000,
@@ -373,7 +361,6 @@ def run(verbose=False):
     st.check("XMOD: reliability vs closed form",
              abs(rel.estimate - p_true) < 4 * np.sqrt(
                  p_true * (1 - p_true) / 30000))
-    # cross-module: copula margins through the library Student_t
     from scipy.special import ndtr as _ndtr
     zc2 = rng_c.multivariate_normal([0.0, 0.0], [[1.0, .5], [.5, 1.0]], 1500)
     w2 = rng_c.chisquare(4, 1500)
@@ -383,7 +370,6 @@ def run(verbose=False):
         tc_data)
     st.check("XMOD: t-copula df recovery", 3.0 < tfit.df_ < 6.5)
 
-    # levy_processes quick checks
     from stochpylib.levy_processes import (
         GammaSubordinator,
         HawkesProcess,
@@ -412,7 +398,6 @@ def run(verbose=False):
     st.check("LEVY: Euler-Maruyama GBM terminal mean",
              abs(em_paths[:, -1].mean() - 100.0 * np.exp(0.05)) < 3.0)
 
-    # financial_stochastics quick checks
     from stochpylib.financial_stochastics import BlackScholes, HestonModel, RiskParity, VasicekModel
     from stochpylib.financial_stochastics.option_pricing import BinomialTree as _FinBinomialTree
 
@@ -442,7 +427,6 @@ def run(verbose=False):
     st.check("FIN: RiskParity equal risk contributions",
              np.allclose(rc_fs, rc_fs[0], atol=1e-6))
 
-    # statistics quick checks
     from stochpylib.statistics import (
         PCA as _StatPCA,
         ANOVA as _StatANOVA,
@@ -485,7 +469,6 @@ def run(verbose=False):
     st.check("STAT: studentized range CDF at q=0 is 0",
              abs(_stat_ptukey(0.0, 3, 20)) < 1e-8)
 
-    # random_matrix quick checks
     from stochpylib.random_matrix import (
         GOE as _RmGOE,
         EigenvalueSpacing as _RmSpacing,
@@ -517,7 +500,6 @@ def run(verbose=False):
     st.check("RMT: Ginibre-type circular law E|z|^2 ~ 1/2",
              abs(float(np.mean(np.abs(z_rm) ** 2)) - 0.5) < 0.08)
 
-    # advanced_mcmc quick checks
     from stochpylib.advanced_mcmc import ESS as _AmESS
     from stochpylib.advanced_mcmc import MetropolisHastings as _AmMH
     from stochpylib.advanced_mcmc import NoUTurnSampler as _AmNUTS
@@ -568,7 +550,6 @@ def run(verbose=False):
     tau_rm = _am_autocorr_time(ar1_rm)
     st.check("MCMC: autocorr_time of AR(1) phi=0.5 ~ 3", 2.0 < tau_rm < 4.5)
 
-    # numerical_methods quick checks
     from stochpylib.numerical_methods import (
         BDF as _NmBDF,
         Brent as _NmBrent,
@@ -625,7 +606,6 @@ def run(verbose=False):
     st.check("NUM: Fourier spectral derivative of sin(2x) matches 2cos(2x)",
              bool(np.max(np.abs(du_nm - 2 * np.cos(2 * x_nm))) < 1e-10))
 
-    # bayesian quick checks
     from stochpylib.bayesian import (
         prior as _bay_prior,
         likelihood as _bay_lik,
@@ -711,7 +691,6 @@ def run(verbose=False):
     bf_bay = _bay_bf(post_bay.log_evidence_, -1e9)
     st.check("BAYES: bayes_factor > 1 for the far-better model", bf_bay.value > 1.0)
 
-    # robust_statistics quick checks
     from stochpylib.robust_statistics import (
         HodgesLehmann as _RsHL,
         HuberRegression as _RsHuberReg,
@@ -783,7 +762,6 @@ def run(verbose=False):
     st.check("ROBUST: block bootstrap SE finite and reproducible",
              np.isfinite(bb_rs.std_error_) and bb_rs.std_error_ == bb_rs2.std_error_)
 
-    # nonparametric quick checks
     from stochpylib.nonparametric import (
         DistanceCorrelation as _NpDCor,
         EmpiricalCDF as _NpECDF,
@@ -840,7 +818,6 @@ def run(verbose=False):
     st.check("NONPAR: RunsTest flags a perfectly alternating sequence",
              runs_np.reject(0.01))
 
-    # optimization quick checks
     from stochpylib.optimization import (
         AugmentedLagrangian as _OptAugLag, BFGS as _OptBFGS, CMA_ES as _OptCMA,
         LevenbergMarquardt as _OptLM, Objective as _OptObjective,
@@ -904,7 +881,6 @@ def run(verbose=False):
              bool(np.allclose(al_opt.x_, [0.5, 0.5], atol=1e-5))
              and al_opt.result_.extras["feasible"])
 
-    # experimental_design quick checks
     from stochpylib.experimental_design import (
         BoxBehnken as _DoeBB, CCD as _DoeCCD, D_OptimalDesign as _DoeD,
         FractionalFactorial as _DoeFF, FullFactorial as _DoeFull, GraecoLatin as _DoeGL,
@@ -966,7 +942,6 @@ def run(verbose=False):
     st.check("DOE: polynomial chaos gives the exact mean and variance of x^2",
              abs(pce_doe.mean_ - 1 / 3) < 1e-12 and abs(pce_doe.var_ - 4 / 45) < 1e-12)
 
-    # spatial_statistics quick checks
     from stochpylib.spatial_statistics import (
         BrownianSheet as _SpBS, ExperimentalVariogram as _SpEV,
         GaussianRandomField as _SpGRF, MoransI as _SpMoran,
@@ -1048,7 +1023,6 @@ def run(verbose=False):
              set(show_candidates.get("GaussianRandomField", [])) ==
              {"stochpylib.levy_processes", "stochpylib.spatial_statistics"})
 
-    # viz quick checks
     import xml.etree.ElementTree as _VzET
 
     from stochpylib.distributions import Normal as _VzNormal
@@ -1109,7 +1083,6 @@ def run(verbose=False):
     st.check("VIZ: native SVG still renders once matplotlib is 'absent' again",
              bool(fig_vz.to_svg()))
 
-    # utils quick checks
     import sys as _ut_sys
 
     from stochpylib.utils import (
@@ -1237,7 +1210,6 @@ def run(verbose=False):
         _ut_sys.modules.update(_saved_nb_ut)
     st.check("UTILS: JIT_compile falls back to Python when numba is absent", _fallback_ok_ut)
 
-    # CLI helpers: pure offline logic behind spl --version / spl update
     from stochpylib.cli_pypi import install_mode, update_available, version_key
     st.check("CLI: version_key numeric ordering",
              version_key("0.10.2") > version_key("0.9.9")

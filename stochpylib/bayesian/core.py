@@ -21,15 +21,13 @@ def _prior_dim(dist):
     """Dimensionality of a library distribution/``_NormalInverseGamma`` used as a prior."""
     from stochpylib.bayesian._common import _NormalInverseGamma
     if isinstance(dist, _NormalInverseGamma):
-        return 2  # (mu, sigma2)
-    if hasattr(dist, "k"):  # MultivariateNormal, MultivariateT
+        return 2
+    if hasattr(dist, "k"):
         return int(dist.k)
-    if hasattr(dist, "alpha") and np.ndim(dist.alpha) > 0:  # Dirichlet
+    if hasattr(dist, "alpha") and np.ndim(dist.alpha) > 0:
         return len(dist.alpha)
     return 1
 
-
-# --------------------------------------------------------------------------- Prior
 
 class Prior:
     """A prior distribution over one or more parameters.
@@ -117,8 +115,6 @@ def prior(dist=None, **kw):
         return dist
     return Prior(dist, **kw)
 
-
-# --------------------------------------------------------------------------- Likelihood
 
 def _bincount_counts(labels, k):
     labels = np.asarray(labels, dtype=int)
@@ -278,8 +274,6 @@ def likelihood(family=None, data=None, **kw):
     """Factory for :class:`Likelihood`."""
     return Likelihood(family, data, **kw)
 
-
-# --------------------------------------------------------------------- ConjugateFamily
 
 class ConjugateFamily:
     """The conjugate-update rule for one likelihood family."""
@@ -645,8 +639,6 @@ def conjugate_prior(family, **hyper):
     return cf
 
 
-# ------------------------------------------------------------------------- posterior
-
 def _is_conjugate_pair(pr, lik):
     if lik.family is None or lik.family not in _CONJUGATE_RULES:
         return False
@@ -819,8 +811,6 @@ def _posterior_mcmc(pr, lik, dim, sampler, n_samples, n_warmup, theta0, random_s
                       log_evidence_=None, extras={"sampler": mc, "acceptance_rate": mc.acceptance_rate_})
 
 
-# ---------------------------------------------------------------------- bayes_update
-
 def bayes_update(prior, data, family=None, **known):
     """Sequential conjugate update: returns the posterior distribution (same class as
     ``prior``). ``prior`` may be a distribution, an ``_NormalInverseGamma``, or a
@@ -836,8 +826,6 @@ def bayes_update(prior, data, family=None, **known):
     cf = ConjugateFamily(fam)
     return cf.update(dist, data, **known)
 
-
-# --------------------------------------------------------------- posterior_predictive
 
 def posterior_predictive(post, likelihood=None, *, n_samples=4000, random_state=None, **known):
     """Posterior-predictive distribution: closed form for a conjugate posterior,
@@ -869,8 +857,6 @@ def posterior_predictive(post, likelihood=None, *, n_samples=4000, random_state=
     from stochpylib.bayesian._result import EmpiricalPredictive
     return EmpiricalPredictive(draws)
 
-
-# ------------------------------------------------------------------------- evidence
 
 def evidence(prior, likelihood, method="auto", *, grid=None, n_samples=4000,
              random_state=None, **kw):

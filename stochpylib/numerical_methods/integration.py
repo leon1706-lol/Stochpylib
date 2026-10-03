@@ -420,7 +420,6 @@ class CubatureRule:
         if self.rule == "gauss_hermite":
             gh = GaussHermite(npts, kind="probabilists")
             return gh.nodes_.copy(), gh.weights_.copy()
-        # clenshaw_curtis on [-1, 1], npts points (npts=1 -> single node at 0)
         if npts == 1:
             return np.array([0.0]), np.array([2.0])
         j = np.arange(npts)
@@ -435,7 +434,6 @@ class CubatureRule:
             c0 = 1.0 if (i == 0 or i == npts - 1) else 2.0
             w[i] = (c0 / (npts - 1)) * (1.0 - s * 2.0)
         w *= 1.0
-        # normalize so weights sum to 2 (matches Gauss-Legendre's [-1,1] measure)
         w = w * (2.0 / np.sum(w))
         return x, w
 

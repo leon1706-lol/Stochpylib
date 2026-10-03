@@ -46,12 +46,12 @@ def _bivariate_workflow(cop, data, expect_tau=None):
     assert u.shape == (300, 2) and np.all((u > 0) & (u < 1))
     c = np.asarray(fitted.cdf(u[:20]), dtype=float)
     assert np.all((c >= -1e-9) & (c <= 1 + 1e-9))
-    try:                                    # empirical families expose no closed-form density
+    try:
         d = np.asarray(fitted.density(u[:20]), dtype=float)
         assert np.all(d >= 0) and np.isfinite(fitted.aic(u))
     except NotImplementedError:
         pass
-    tau = fitted.kendall_tau()              # None when the family has no closed form
+    tau = fitted.kendall_tau()
     if tau is not None:
         assert -1 <= tau <= 1
         if expect_tau is not None:
@@ -152,7 +152,7 @@ def _vine_workflow(vine):
     assert np.isfinite(vine.loglik()) and np.isfinite(vine.aic())
     assert np.isfinite(vine.loglik(s, raw=False))
     assert isinstance(vine.summary(), str)
-    tau = np.asarray(vine.kendall_tau(), dtype=float)     # pairwise tau matrix
+    tau = np.asarray(vine.kendall_tau(), dtype=float)
     assert tau.shape == (4, 4) and np.all(np.abs(tau) <= 1)
 
 

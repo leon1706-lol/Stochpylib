@@ -34,10 +34,6 @@ from stochpylib.timeseries._utils import (
 )
 
 
-# ---------------------------------------------------------------------------
-# shared machinery
-
-
 def _innovations(y, c, ar_map, ma_map):
     """Conditional-sum-of-squares innovations with zero pre-sample residuals."""
     n = len(y)
@@ -105,9 +101,8 @@ class _UnivariateBase:
         self.bic_ = None
         self._resid = None
         self._y = None
-        self._fit_series = None  # the transformed series the CSS machinery actually fit
+        self._fit_series = None
 
-    # subclasses override these -------------------------------------------------
     def _maps(self):
         return _lag_maps(self.ar_coefs_, self.ma_coefs_, getattr(self, "_seasonal", None))
 
@@ -124,7 +119,6 @@ class _UnivariateBase:
         ar_map, ma_map = self._maps()
         return _psi_from_maps(ar_map, ma_map, h)
 
-    # API -----------------------------------------------------------------------
     def residuals(self):
         """In-sample CSS innovations of the fitted model."""
         if self._resid is None:
@@ -139,8 +133,8 @@ class _UnivariateBase:
         if horizon < 1:
             raise ValueError("horizon must be >= 1")
         ar_map, ma_map = self._maps()
-        # innovations aligned to the FIT series (zero pre-sample values) so the
-        # MA recursion indexes consistently with the history array below
+        # Innovations aligned to the FIT series (zero pre-sample values) so the MA recursion indexes
+        # consistently with the history array.
         eh_full = _innovations(self._fit_series, self.intercept_, ar_map, ma_map)
         hist = np.concatenate([self._fit_series, np.full(horizon, np.nan)])
         eh = np.concatenate([eh_full, np.zeros(horizon)])
@@ -185,9 +179,6 @@ class _UnivariateBase:
         return out[0] if n == 1 else out
 
 
-# --------------------------------------------------------------------------- AR
-
-
 class AR(_UnivariateBase):
     """Autoregressive model AR(p): y_t = c + sum_i phi_i y_{t-i} + e_t.
 
@@ -212,9 +203,6 @@ class AR(_UnivariateBase):
         self._y = y
         self._fit_series = y
         return self
-
-
-# --------------------------------------------------------------------------- MA
 
 
 class MA(_UnivariateBase):
@@ -250,9 +238,6 @@ class MA(_UnivariateBase):
         return self
 
 
-# --------------------------------------------------------------------------- ARMA
-
-
 class ARMA(_UnivariateBase):
     """ARMA(p, q): Hannan-Rissanen initialization followed by CSS refinement."""
 
@@ -266,13 +251,11 @@ class ARMA(_UnivariateBase):
         y = as_1d(y)
         self._y = y
 
-        # step 1: long autoregression to approximate innovations
         k = min(max(10, round(len(y) ** (1 / 3)) + self.p + self.q), len(y) // 4)
         Xk, tk = lag_matrix(y, k)
         bk, *_ = np.linalg.lstsq(Xk, tk, rcond=None)
         ehat_full = np.concatenate([np.zeros(k), tk - Xk @ bk])
 
-        # step 2: regress y on its lags and the innovation proxies
         start = k
         rows = []
         targets = []
@@ -285,7 +268,6 @@ class ARMA(_UnivariateBase):
         H = np.asarray(rows)
         b_init, *_ = np.linalg.lstsq(H, np.asarray(targets), rcond=None)
 
-        # step 3: CSS polish
         ar_map0 = {j: b_init[j] for j in range(1, self.p + 1)}
         ma_map0 = {j: b_init[self.p + j] for j in range(1, self.q + 1)}
 
@@ -314,9 +296,6 @@ class ARMA(_UnivariateBase):
         self._y = y
         self._fit_series = y
         return self
-
-
-# --------------------------------------------------------------------------- ARIMA
 
 
 class ARIMA(_UnivariateBase):
@@ -366,7 +345,7 @@ class ARIMA(_UnivariateBase):
 
     def _integrated_psi(self, h):
         psi = _psi_from_maps(*self._maps(), h)
-        for _ in range(self.d):  # each integration convolves with the all-ones kernel
+        for _ in range(self.d):
             psi = np.cumsum(psi)
         return psi
 
@@ -376,7 +355,6 @@ class ARIMA(_UnivariateBase):
         return integrate_levels(diff_path, self._levels_tail)
 
 
-# --------------------------------------------------------------------------- SARIMA
 class SARIMA(_UnivariateBase):
     """SARIMA(p, d, q)(P, D, Q)s with D restricted to {0, 1} (documented).
 
@@ -403,7 +381,6 @@ class SARIMA(_UnivariateBase):
         y = as_1d(y)
         z = difference(y, self.d) if self.d else y
         z = seasonal_difference(z, self.s, self.D) if self.D else z
-        # tails needed to undo differencing when forecasting
         self._tail_regular = list(np.asarray(y, dtype=float)[-self.d :]) if self.d else []
         pre = difference(y, self.d) if self.d else y
         self._tail_seasonal = list(pre[-self.s * self.D :]) if self.D else []
@@ -475,7 +452,6 @@ class SARIMA(_UnivariateBase):
         if self.d:
             psi = np.cumsum(psi)
         if self.D:
-            # (1 - B^s)^{-1} truncated: unit coefficients at multiples of s
             kernel = np.zeros(h + 2 * self.s)
             kernel[:: self.s] = 1.0
             psi = np.convolve(psi, kernel)[:h]
@@ -483,7 +459,7 @@ class SARIMA(_UnivariateBase):
 
     def _integrate_forecast(self, diff_path):
         out = np.asarray(diff_path, dtype=float)
-        if self.D:  # inverse runs in reverse order of the forward transforms
+        if self.D:
             from collections import deque
 
             window = deque(self._tail_seasonal[-self.s :], maxlen=self.s)
@@ -496,9 +472,6 @@ class SARIMA(_UnivariateBase):
         if self.d:
             out = integrate_levels(out, self._tail_regular)
         return out
-
-
-# --------------------------------------------------------------------------- ARFIMA
 
 
 class ARFIMA(_UnivariateBase):
@@ -517,8 +490,8 @@ class ARFIMA(_UnivariateBase):
 
     def fit(self, y):
         y = as_1d(y)
-        # differencing filter (1-B)^{+d}; the inverse (integration) kernel used in
-        # forecasting is built separately below
+        # Differencing filter (1-B)^{+d}; the integration kernel used in forecasting is built
+        # separately.
         self._w = frac_diff_weights(self.d)
         L = len(self._w)
         filtered = np.convolve(y, self._w, mode="valid")
@@ -530,7 +503,7 @@ class ARFIMA(_UnivariateBase):
         elif self.q >= 1:
             inner = MA(self.q)
         else:
-            inner = None  # pure fractional noise ARFIMA(0, d, 0): constant only
+            inner = None
 
         if inner is not None:
             inner.fit(filtered)
@@ -561,7 +534,7 @@ class ARFIMA(_UnivariateBase):
 
     def forecast(self, horizon=1):
         horizon = int(horizon)
-        g = frac_diff_weights(-self.d)[: horizon + 1]  # inverse-filter kernel
+        g = frac_diff_weights(-self.d)[: horizon + 1]
         if self._inner is not None:
             inner_fc = self._inner.forecast(horizon)
             inner_mean = inner_fc.mean
@@ -579,9 +552,6 @@ class ARFIMA(_UnivariateBase):
             total_psi = g[:horizon]
         var = sigma2_inner * np.cumsum(total_psi**2)
         return ForecastResult(level, np.sqrt(var))
-
-
-# --------------------------------------------------------------------------- VAR
 
 
 class VAR:
@@ -611,7 +581,7 @@ class VAR:
         self.sigma_cov_ = resid.T @ resid / (len(targets) - self.k * self.p - 1)
         self._resid = resid
         self._Y = Y
-        self.sigma2_ = float(np.trace(self.sigma_cov_) / self.k)  # aggregate scalar for AIC
+        self.sigma2_ = float(np.trace(self.sigma_cov_) / self.k)
         self.aic_, self.bic_ = aic_bic(
             self.sigma2_, len(targets), self.k * (self.k * self.p + 1)
         )
@@ -622,7 +592,7 @@ class VAR:
 
     def forecast(self, horizon=1):
         horizon = int(horizon)
-        hist = [row.copy() for row in self._Y[-self.p :]][::-1]  # hist[0]=y_T
+        hist = [row.copy() for row in self._Y[-self.p :]][::-1]
         means = np.empty((horizon, self.k))
         psis = [np.eye(self.k)]
         for i in range(1, horizon):
@@ -659,9 +629,6 @@ class VAR:
                     s = s + A @ y[t - j]
             y[t] = s + innov[t]
         return y[burnin:]
-
-
-# --------------------------------------------------------------------------- VARMA
 
 
 class VARMA(VAR):
@@ -708,7 +675,6 @@ class VARMA(VAR):
                 e[t] = Y[t] - s
             return float(np.sum(e**2))
 
-        # initialize from VAR fit
         var_fit = VAR(self.p).fit(Y)
         init = [var_fit.intercept_]
         for A in var_fit.coef_matrices_:
@@ -776,9 +742,6 @@ class VARMA(VAR):
         return ForecastResult(means, std)
 
 
-# --------------------------------------------------------------------------- VECM
-
-
 class VECM:
     """Vector error-correction model via reduced-rank regression (Johansen-style).
 
@@ -800,7 +763,7 @@ class VECM:
         k = Y.shape[1]
         T = Y.shape[0]
         self.k = k
-        m = self.p  # number of lagged-difference terms
+        m = self.p
         if T - self.p - m < k + 2:
             raise ValueError("sample too short for VECM fit")
         dY = Y[1:] - Y[:-1]
@@ -825,13 +788,11 @@ class VECM:
         order = np.argsort(eigvals.real)[::-1]
         eigvals, eigvecs = eigvals.real[order], eigvecs.real[:, order]
         beta_raw = eigvecs[:, : self.rank]
-        # normalize: beta' S11 beta = I
         norm = np.linalg.inv(np.sqrt(beta_raw.T @ S11 @ beta_raw))
         self.beta_ = beta_raw @ norm
         self.alpha_ = S01 @ self.beta_
         self.eigenvalues_ = np.clip(eigvals, 0.0, 1.0)
 
-        # unrestricted short-run dynamics: levels + lagged differences
         full_design = np.hstack([levels, lags]) if m else levels
         Cols, *_ = np.linalg.lstsq(full_design, endog, rcond=None)
         self.Pi_mat_ = Cols[:k].T

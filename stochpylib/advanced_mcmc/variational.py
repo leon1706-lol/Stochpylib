@@ -252,8 +252,8 @@ class ADVI:
         theta = np.atleast_2d(np.asarray(theta, dtype=float))
         out = np.empty(len(theta))
         for i, t in enumerate(theta):
-            # invert the transform numerically is unnecessary here: approximate density
-            # is only reported in the unconstrained-Gaussian sense via std_/scale_tril_
+            # Density is reported only in the unconstrained-Gaussian sense (std_/scale_tril_); no
+            # numerical inversion needed.
             out[i] = float("nan")
         return out
 
@@ -339,15 +339,9 @@ class NormalizingFlows:
         self.n_mc = int(n_mc)
         self.lr = float(lr)
         self.init_scale = float(init_scale)
-        # ``u`` is only constrained (for invertibility) through its dot product with
-        # ``w``; the component orthogonal to ``w`` is otherwise unpenalized, so plain
-        # gradient ascent (with or without Adam) can drift ``u`` there without bound --
-        # verified this is a real instability, not just an Adam artifact, by watching
-        # plain small-step gradient ascent diverge to NaN within ~15 iterations. Weight
-        # decay, per-step gradient clipping and a hard cap on ``||u||`` keep training
-        # stable without touching the exact ELBO gradient formulas above (the cap is
-        # applied after the optimizer step, so the *reported* gradient a test checks
-        # against finite differences is still the raw, uncapped one).
+        # `u` is constrained only through u.w; its orthogonal part is unpenalized and diverged to
+        # NaN under plain ascent, so weight decay, gradient clipping and a ||u|| cap stabilize it.
+        # The cap is applied after the optimizer step, so the reported gradient stays the exact one.
         self.weight_decay = float(weight_decay)
         self.grad_clip = float(grad_clip)
         self.max_u_norm = float(max_u_norm)
@@ -424,13 +418,11 @@ class NormalizingFlows:
             uw = u @ w
             uv = u @ grad_z
 
-            # flow-map pullback: z_next = z_prev + u * h(w.z_prev + b)
             d_zprev_map = grad_z + uv * hp * w
             d_u_map = grad_z * h
             d_w_map = uv * hp * z_prev
             d_b_map = uv * hp
 
-            # logdet = log|1 + u.(hp * w)|; sign of denom folded via 1/denom (safe: |.|)
             inv_denom = 1.0 / denom
             d_zprev_logdet = (uw * hpp / denom) * w
             d_u_logdet = psi / denom
@@ -523,38 +515,29 @@ class NormalizingFlows:
         adams = [{"u": _Adam(self.dim, lr=self.lr), "w": _Adam(self.dim, lr=self.lr),
                   "b": _Adam((), lr=self.lr)} for _ in range(self.n_layers)]
         history = []
-        # Keep-best tracking: this objective is noisy (Monte Carlo gradients over a
-        # nonconvex loss) and can regress from a good solution late in training even
-        # with the stability measures above, so the final flow is the snapshot with the
-        # best smoothed (20-iteration trailing average) ELBO seen, not just the last one.
+        # Keep the best flow by 20-iteration trailing-average ELBO: the noisy nonconvex objective
+        # can regress late in training.
         best_elbo = -np.inf
         best_params = None
         window = 20
         for it in range(self.n_iter):
-            # 1/sqrt(t) decay: Adam's adaptive normalization makes every step roughly
-            # ``lr``-sized regardless of the true (noisy) gradient magnitude, which for
-            # this small-parameter-scale, nonconvex objective caused late-training
-            # excursions away from good solutions even at fairly small constant lr;
-            # decaying the effective step size lets early iterations move freely and
-            # later ones settle.
+            # 1/sqrt(t) decay: Adam's normalized steps stay ~lr-sized and caused late excursions on
+            # this small-scale nonconvex objective.
             decay = 1.0 / np.sqrt(1.0 + it / 100.0)
             for opt in adams:
                 for a in opt.values():
                     a.lr = self.lr * decay
             Z0 = rng.standard_normal((self.n_mc, self.dim))
-            # Flow forward/backward (this class's own code) is vectorized over the whole
-            # batch; the target log-density is arbitrary user code taking one point at a
-            # time, so that evaluation stays a per-sample loop.
+            # Flow passes are batch-vectorized; the target log-density takes one point at a time, so
+            # it stays a per-sample loop.
             Theta, logdet, cache = self._forward_batch(Z0)
             logp = np.empty(self.n_mc)
             grad_theta = np.empty((self.n_mc, self.dim))
             for k in range(self.n_mc):
                 logp[k] = self.target(Theta[k])
                 grad_theta[k] = self.target.grad(Theta[k])
-            # per-sample clipping: an occasional z0 landing in a region where the
-            # (still-forming) flow maps to an extreme theta can otherwise produce a
-            # single-sample gradient large enough to dominate and destabilize the whole
-            # batch average.
+            # Per-sample clipping: one z0 in an extreme region of the forming flow can otherwise
+            # dominate the batch gradient.
             per_layer_grads, _ = self._backward_batch(cache, grad_theta, clip=self.grad_clip)
             for i, layer in enumerate(self.params_):
                 gu = per_layer_grads[i]["u"] - self.weight_decay * layer["u"]

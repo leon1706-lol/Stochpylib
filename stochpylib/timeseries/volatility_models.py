@@ -23,10 +23,6 @@ from stochpylib.timeseries._utils import as_1d, frac_diff_weights
 from stochpylib._rng import as_generator as _rng
 
 
-# ---------------------------------------------------------------------------
-# recursion cores
-
-
 def _garch_recursion(e, omega, alpha, beta):
     """sigma2_t = omega + sum a_i e^2_{t-i} + sum b_j sigma2_{t-j}, backcast = early var."""
     T = len(e)
@@ -105,10 +101,10 @@ class _VolatilityBase:
         self.aic_ = None
         self.bic_ = None
 
-    def _unpack(self, theta):  # subclass hook -> dict(omega, alpha[], beta[], extra)
+    def _unpack(self, theta):
         raise NotImplementedError
 
-    def _variance(self, e, unpacked):  # subclass hook
+    def _variance(self, e, unpacked):
         raise NotImplementedError
 
     def fit(self, y):
@@ -131,8 +127,8 @@ class _VolatilityBase:
                 nll_val += pen(un)
             return nll_val
 
-        # multi-start: subclasses may offer alternative initializations so that
-        # Nelder-Mead does not settle on a constraint-wall local optimum
+        # Multi-start: subclasses may offer alternative initializations so Nelder-Mead doesn't
+        # settle on a constraint-wall local optimum.
         main_budget, alt_budget = getattr(self, "_fit_budget", (3500, 1800))
         starts = [x0] + list(getattr(self, "_alternative_starts", lambda e, x0: [])(e, x0))
         best_theta, best_val = x0, nll(x0)
@@ -188,7 +184,7 @@ class _VolatilityBase:
         total = int(n) + int(burnin)
         e = rng.standard_normal(total)
         y = np.zeros(total)
-        s2 = float(np.atleast_1d(self.sigma2_)[-1])  # scalar seed from the fitted path
+        s2 = float(np.atleast_1d(self.sigma2_)[-1])
         for t in range(total):
             y[t] = self.mu_ + np.sqrt(max(s2, 1e-14)) * e[t]
             s2 = float(self._one_step_ahead_variance(e[t], s2, y[t]))
@@ -199,9 +195,6 @@ class _VolatilityBase:
         return un["omega"] + sum(a * last_e**2 for a in un["alpha"]) + sum(
             b * last_s2 for b in un["beta"]
         )
-
-
-# --------------------------------------------------------------------------- GARCH family
 
 
 class GARCH(_VolatilityBase):
@@ -244,7 +237,7 @@ class GARCH(_VolatilityBase):
         s2_last = self.sigma2_[-max(self.p, 1) :]
         e2_last = e[-self.q :] ** 2 if self.q else np.array([])
         path = []
-        s_hist = list(s2_last)[::-1]  # newest first
+        s_hist = list(s2_last)[::-1]
         e_hist = list(e2_last)[::-1]
         pers = self.persistence_
         long_run = un["omega"] / max(1e-12, 1.0 - min(pers, 0.999999))
@@ -302,7 +295,7 @@ class _LeverageGARCH(GARCH):
         """Second start with stronger leverage/asymmetry values to escape gamma=0 walls."""
         alt = list(x0)
         for i in range(1, 1 + 2 * self.q):
-            if i % 2 == 0:  # gamma slots
+            if i % 2 == 0:
                 alt[i] = max(alt[i], 0.15)
         return [alt]
 
@@ -427,7 +420,6 @@ class EGARCH(_VolatilityBase):
         path = []
         for h in range(horizon):
             if h == 0:
-                # first step conditions on the realized innovation
                 ln_next = (
                     un["omega"]
                     + un["alpha"][0] * (abs(z_last) - Ez)
@@ -519,8 +511,8 @@ class FIGARCH(_VolatilityBase):
         L = len(lam)
         T = len(e)
         backcast = float(np.mean(e[: min(T, 75)] ** 2))
-        # fractional weights alternate in sign; the conditional variance is floored
-        # at a small positive constant (standard practice for FIGARCH variants)
+        # Fractional weights alternate in sign; the conditional variance is floored at a small
+        # positive constant, as is standard for FIGARCH variants.
         s2 = np.empty(T)
         e2_ext = np.concatenate([np.full(L, backcast), e**2])
         for t in range(T):
@@ -542,7 +534,7 @@ class FIGARCH(_VolatilityBase):
     def _forecast_variance_path(self, horizon):
         un = self.params_
         lam = self._weights() * un["lam_total"]
-        e2_hist = list((self._e[-len(lam) :] ** 2))[::-1]  # newest first
+        e2_hist = list((self._e[-len(lam) :] ** 2))[::-1]
         long_run = un["longrun"] * (1.0 - un["lam_total"])
         path = []
         for h in range(horizon):
@@ -553,9 +545,6 @@ class FIGARCH(_VolatilityBase):
             e2_hist.insert(0, long_run)
             path.append(s)
         return path
-
-
-# --------------------------------------------------------------------------- multivariate
 
 
 class MGARCH:
@@ -635,7 +624,6 @@ class DCC_GARCH(MGARCH):
         res = optimize.minimize(dcc_nll, [0.05, 0.90], method="Nelder-Mead",
                                 options={"maxiter": 250, "xatol": 1e-5})
         self.dcc_params_ = {"a": float(res.x[0]), "b": float(res.x[1])}
-        # rebuild full paths with fitted params
         T = Z.shape[0]
         self.dynamic_correlations_ = np.empty((T, self.k, self.k))
         Q = self.Qbar_.copy()

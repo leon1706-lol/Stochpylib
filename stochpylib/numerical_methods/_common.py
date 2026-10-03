@@ -10,7 +10,6 @@ linear-algebra classes.
 import numpy as np
 
 
-# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
 from stochpylib._rng import as_generator as _rng
 
 
@@ -72,7 +71,6 @@ def _transform_infinite(f, a, b):
             jac = 1.0 / (denom * denom)
             return np.asarray(f(x), dtype=float) * jac
         return g, 0.0, 1.0 - 1e-10
-    # a_inf only: (-inf, b]
     def g(t):
         t = np.asarray(t, dtype=float)
         denom = 1.0 - t
@@ -207,16 +205,13 @@ def _hessenberg(A):
         Qk = np.eye(n)
         Qk[k + 1:, k + 1:] = Hk
         Q = Q @ Qk
-    # clean sub-sub-diagonal numerical noise
     for i in range(2, n):
         A[i, :i - 1] = 0.0
     return A, Q
 
 
-# ---- Gauss-Kronrod 7-15 tables (QUADPACK, published, used only as building blocks) ----
-# _GK15_NODES[i] / _GK15_WEIGHTS[i] (i=0..6) are the positive Kronrod abscissae/weights;
-# index 7 is the center (x=0). The embedded 7-point Gauss rule reuses Kronrod nodes at
-# positions 1, 3, 5 (positive side) plus the center, with its own weights _GK7_WEIGHTS.
+# Gauss-Kronrod 7-15 tables (QUADPACK): 7 positive abscissae/weights per _GK15_*, index 7 is the
+# center; the embedded Gauss-7 reuses nodes 1, 3, 5 and the center with _GK7_WEIGHTS.
 
 _GK15_NODES = np.array([
     0.991455371120813, 0.949107912342759, 0.864864423359769,
@@ -240,14 +235,13 @@ def _gauss_kronrod_15(f, a, b):
     """
     c = 0.5 * (a + b)
     h = 0.5 * (b - a)
-    pos = _GK15_NODES[:-1]                       # 7 positive nonzero nodes
+    pos = _GK15_NODES[:-1]
     nodes = c + h * np.concatenate([pos, [0.0], -pos])
     fv = np.asarray(f(nodes), dtype=float)
     w15 = np.concatenate([_GK15_WEIGHTS[:-1], [_GK15_WEIGHTS[-1]], _GK15_WEIGHTS[:-1]])
     k15 = h * float(np.sum(w15 * fv))
-    # embedded Gauss-7 reuses the same 15 evaluations: fv[1,3,5] are +node, fv[9,11,13]
-    # are the mirrored -node (pos block is fv[0:7], center fv[7], mirror block fv[8:15]),
-    # fv[7] is the center.
+    # The embedded Gauss-7 reuses the same evaluations: fv[1,3,5] and fv[9,11,13] are +/-node, fv[7]
+    # is the center.
     f_pos = fv[[1, 3, 5]]
     f_neg = fv[[9, 11, 13]]
     f_center = fv[7]

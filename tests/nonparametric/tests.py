@@ -37,8 +37,6 @@ from stochpylib.nonparametric._common import _bspline_design, _bspline_knots, _p
 _RNG = np.random.default_rng(0)
 
 
-# ==================================================================== density
-
 def test_kde_matches_gaussian_kde_pdf_and_cdf():
     x = _RNG.normal(0, 2, 400)
     kde = KernelDensityEstimate(bandwidth="silverman").fit(x)
@@ -62,7 +60,7 @@ def test_kde_full_distribution_contract():
     assert 0 < kde.pdf(5.0)
     assert 0 <= kde.cdf(5.0) <= 1
     assert abs(kde.mean() - np.mean(x)) < 1e-10
-    assert kde.var() > np.var(x, ddof=1)  # smoothing inflates variance
+    assert kde.var() > np.var(x, ddof=1)
     m = kde.ppf(0.5)
     assert abs(kde.cdf(m) - 0.5) < 1e-4
     draws = kde.rvs(2000, random_state=1)
@@ -108,14 +106,14 @@ def test_adaptive_kde_reduces_ise_on_heavy_tailed_mixture():
 
 
 def test_nearest_neighbor_density_integrates_and_tracks_shape():
-    rng = np.random.default_rng(101)  # a fresh, order-independent generator
+    rng = np.random.default_rng(101)
     x = rng.normal(0, 1, 2000)
     nn = NearestNeighborDensity(k=15).fit(x)
     grid = np.linspace(*nn.support(), 4000)
     assert abs(np.trapezoid(nn.pdf(grid), grid) - 1.0) < 0.01
     true = stats.norm(0, 1).pdf(grid)
     ise = np.trapezoid((nn.pdf(grid) - true) ** 2, grid)
-    assert ise < 0.05  # overall shape close to the true density (pointwise kNN bias is high)
+    assert ise < 0.05
     d, p = nn.ks_test(x)
     assert d < 0.05
 
@@ -138,8 +136,6 @@ def test_logspline_estimator_integrates_and_fits_gamma():
     d, p = ls.ks_test(x)
     assert p > 0.01
 
-
-# =================================================================== empirical
 
 def test_empirical_distribution_matches_ecdf_and_quantile():
     x = _RNG.normal(4, 2, 250)
@@ -182,10 +178,10 @@ def test_glivenko_cantelli_matches_ks_statistic_and_dkw_bound():
     gc = GlivenkoCantelli().fit(x, dist)
     ks = stats.kstest(x, dist.cdf).statistic
     assert gc.distance_ == pytest.approx(ks, abs=1e-10)
-    assert gc.dkw_bound(0.95) > gc.distance_ * 0  # positive, sanity
+    assert gc.dkw_bound(0.95) > gc.distance_ * 0
     assert gc.n_required(0.05, 0.95) > 0
     conv = gc.convergence([50, 200, 800], dist, random_state=5)
-    assert conv[-1] <= conv[0] + 0.1  # roughly decreasing trend
+    assert conv[-1] <= conv[0] + 0.1
 
 
 def test_empirical_likelihood_matches_statsmodels_desc_stat():
@@ -211,8 +207,6 @@ def test_empirical_likelihood_multivariate_mean():
     res_far = el.test_mean([5.0, 5.0])
     assert res_far.pvalue < 0.01
 
-
-# ================================================================= resampling
 
 def test_permutation_test_exact_matches_scipy():
     x = _RNG.normal(0, 1, 6)
@@ -243,14 +237,14 @@ def test_permutation_test_monte_carlo_close_to_scipy():
 
 
 def test_permutation_test_pairings_and_samples_run():
-    x = _RNG.normal(0, 1, 7)  # 7! = 5040 <= 20000: exact enumeration
+    x = _RNG.normal(0, 1, 7)
     y = x * 0.5 + _RNG.normal(0, 0.3, 7)
     pt = PermutationTest(statistic="mean_diff", permutation_type="pairings").fit(x, y)
     assert pt.exact_
     d = x - y + 0.5
     pt2 = PermutationTest(permutation_type="samples").fit(d)
     assert pt2.exact_
-    assert pt2.pvalue_ < 0.5  # shifted difference should trend low-p
+    assert pt2.pvalue_ < 0.5
 
 
 def test_permutation_test_type1_error_calibrated():
@@ -289,8 +283,6 @@ def test_bootstrap_test_to_result_and_reject():
     assert res is bt.result_
     assert bt.reject(0.05) == (bt.pvalue_ < 0.05)
 
-
-# =============================================================== rank tests
 
 def test_mood_scale_test_matches_scipy():
     x = _RNG.normal(0, 1, 30)
@@ -391,13 +383,9 @@ def test_wald_wolfowitz_detects_different_distributions():
     assert ww.reject(0.01)
 
 
-# ========================================================== goodness of fit
-
 def test_anderson_darling_statistic_matches_scipy_and_critical_values_match_table():
-    # only the A^2 statistic is oracled against scipy: scipy switched critical-value
-    # correction formulas mid-1.x and drops `critical_values` entirely in 1.19, so
-    # comparing them pins us to one scipy version. The table below is the library's
-    # own documented contract (D'Agostino & Stephens 1986, Table 4.7).
+    # Only the A^2 statistic is oracled against scipy: scipy changed its critical-value correction
+    # mid-1.x and drops `critical_values` in 1.19, so comparing them pins one scipy version.
     xn = _RNG.normal(2, 3, 60)
     ad = AndersenDarling(dist="norm").fit(xn)
     ref = stats.anderson(xn, dist="norm")
@@ -423,10 +411,8 @@ def test_anderson_darling_alias_is_identical():
 
 
 def test_anderson_darling_known_distribution_calibrated_and_powerful():
-    # the "parameters known" (case-0) test is sensitive to ANY location/scale
-    # mismatch (it does not absorb estimated nuisance parameters the way the
-    # fitted dist="norm" path does), so a single true-null draw isn't
-    # guaranteed p > 0.10 -- check the Type-I rate over repeated draws instead.
+    # The case-0 test is sensitive to ANY location/scale mismatch, so one true-null draw isn't
+    # guaranteed p > 0.10; check the Type-I rate over repeated draws.
     rng = np.random.default_rng(70)
     rejects = 0
     trials = 100
@@ -435,8 +421,7 @@ def test_anderson_darling_known_distribution_calibrated_and_powerful():
         ad = AndersenDarling(dist=distributions.Normal(0, 1)).fit(x)
         rejects += ad.pvalue_ < 0.05
     rate = rejects / trials
-    assert rate < 0.20  # loose bound: table interpolation is approximate, not exact
-    # a clearly different distribution should be rejected decisively
+    assert rate < 0.20
     x_bad = rng.uniform(-3, 3, 300)
     ad_bad = AndersenDarling(dist=distributions.Normal(0, 1)).fit(x_bad)
     assert ad_bad.pvalue_ < 0.01
@@ -475,8 +460,6 @@ def test_cramer_von_mises_rejects_clearly_different_distributions():
     assert cvm.pvalue_ < 0.001
 
 
-# =============================================================== correlation
-
 def test_spearman_correlation_matches_scipy():
     x = _RNG.normal(0, 1, 60)
     y = 2 * x + _RNG.normal(0, 0.5, 60)
@@ -514,7 +497,6 @@ def test_kendall_tau_variants_a_and_c():
     tau_b = KendallTau(variant="b").fit(x, y).estimate_
     tau_a = KendallTau(variant="a").fit(x, y).estimate_
     tau_c = KendallTau(variant="c").fit(x, y).estimate_
-    # no ties: tau-a == tau-b exactly
     assert tau_a == pytest.approx(tau_b, abs=1e-10)
     assert 0 < tau_c <= 1
 
@@ -617,8 +599,6 @@ def test_hoeffding_d_perfect_monotone_is_one():
     hd = HoeffdingD(n_resamples=100, random_state=3).fit(x, x.copy())
     assert hd.estimate_ == pytest.approx(1.0, abs=1e-8)
 
-
-# ================================================================ regression
 
 def test_local_polynomial_matches_statsmodels_kernelreg():
     x = np.sort(_RNG.uniform(0, 10, 80))
@@ -738,8 +718,6 @@ def test_quantile_regression_empirical_coverage():
     se = np.sqrt(0.9 * 0.1 / 150)
     assert abs(coverage - 0.9) < 5 * se
 
-
-# ============================================================== quickstart
 
 def test_quickstart_example_runs():
     rng = np.random.default_rng(0)

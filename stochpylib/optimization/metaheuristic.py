@@ -311,7 +311,7 @@ class DifferentialEvolution(PopulationOptimizer):
             for i in range(n):
                 trial = np.clip(self._mutant(pop, vals, i, rng), lo, hi)
                 cross = rng.random(dim) < self.CR
-                cross[rng.integers(dim)] = True  # at least one coordinate always crosses
+                cross[rng.integers(dim)] = True
                 cand = np.where(cross, trial, pop[i])
                 f_cand = obj(cand)
                 if f_cand <= vals[i]:
@@ -480,8 +480,8 @@ class BayesianOptimization(PopulationOptimizer):
         trajectory = []
         span = np.where(hi > lo, hi - lo, 1.0)
         for _ in range(int(self.n_iter)):
-            # the surrogate is fitted on the unit cube with standardized responses: a single
-            # default length_scale/noise is only meaningful once both axes are scale-free
+            # The surrogate is fitted on the unit cube with standardized responses: a single default
+            # length_scale/noise only makes sense once both axes are scale-free.
             y_mu, y_sd = float(np.mean(y)), float(np.std(y)) or 1.0
             gp = GPRegression(MaternKernel(nu=self.nu, length_scale=self.length_scale),
                               noise=self.noise).fit((X - lo) / span, (y - y_mu) / y_sd)

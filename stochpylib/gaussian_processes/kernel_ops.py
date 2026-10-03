@@ -112,7 +112,6 @@ class KernelProduct(_CompositeBase):
         return out
 
 
-# grouping aliases matching the spec naming (stationary / non-stationary families)
 from stochpylib.gaussian_processes.kernels._base import (
     NonStationaryKernel, StationaryKernel,
 )

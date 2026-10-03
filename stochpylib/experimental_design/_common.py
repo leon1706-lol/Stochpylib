@@ -16,7 +16,6 @@ import numpy as np
 _LETTERS = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
 
 
-# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
 from stochpylib._rng import as_generator as _rng
 
 
@@ -45,8 +44,6 @@ def _normalize_bounds(bounds, k):
         raise ValueError("every bound needs hi > lo")
     return b
 
-
-# ------------------------------------------------------------------------ model terms
 
 def _model_terms(k, model):
     """Exponent tuples (intercept first) for a named polynomial model over k factors."""
@@ -119,8 +116,6 @@ def _logdet(M):
     return float(val) if sign > 0 else -np.inf
 
 
-# ---------------------------------------------------------------------- finite fields
-
 def _is_prime(n):
     if n < 2:
         return False
@@ -169,7 +164,6 @@ def _irreducible(p, m):
         poly = list(tail) + [1]
         if poly[0] == 0:
             continue
-        # irreducible iff it has no monic factor of degree 1..m//2
         reducible = False
         for d in range(1, m // 2 + 1):
             for ftail in itertools.product(range(p), repeat=d):
@@ -233,8 +227,6 @@ def _gf_neg(q):
     return np.array([int(np.where(add[a] == 0)[0][0]) for a in range(q)])
 
 
-# ------------------------------------------------------ mutually orthogonal Latin squares
-
 def _mols_prime_power(q):
     """Two orthogonal Latin squares of prime-power order q: L_a(i, j) = a*i + j."""
     add, mul = _gf_tables(q)
@@ -285,8 +277,6 @@ def _are_orthogonal(A, B):
     n = len(A)
     return len({(int(a), int(b)) for a, b in zip(A.ravel(), B.ravel())}) == n * n
 
-
-# ------------------------------------------------------------------ space-filling metrics
 
 def _discrepancy(U, method="CD"):
     """L2-type discrepancy of points in [0, 1]^d.
@@ -353,8 +343,6 @@ def _is_lhs(U):
     strata = np.clip(np.floor(U * n).astype(int), 0, n - 1)
     return all(sorted(strata[:, j]) == list(range(n)) for j in range(U.shape[1]))
 
-
-# ---------------------------------------------------------------- correlation / ranks
 
 def _ranks(x):
     """Average ranks (1-based) with ties sharing their mean rank."""

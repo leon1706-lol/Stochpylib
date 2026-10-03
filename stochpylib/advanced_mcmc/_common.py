@@ -8,7 +8,6 @@ import numpy as np
 from scipy import special
 
 
-# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
 from stochpylib._rng import as_generator as _rng
 from stochpylib._rng import legacy_spawn as _spawn_rngs
 

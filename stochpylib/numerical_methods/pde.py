@@ -318,7 +318,7 @@ class FiniteElement:
 
     def assemble(self, p=1.0, q=0.0, f=1.0, dirichlet=None, neumann=None):
         self.p, self.q, self.f = p, q, f
-        # `or {}` would silently drop a genuine dirichlet=0.0 (falsy); check identity instead
+        # `or {}` would drop a genuine dirichlet=0.0 (falsy); check identity instead.
         self.dirichlet = {} if dirichlet is None else dirichlet
         self.neumann = {} if neumann is None else neumann
         if self.mesh.dim == 1:
@@ -384,8 +384,7 @@ class FiniteElement:
                 dirichlet_idx[n_nodes - 1] = v
             else:
                 dirichlet_idx[int(k)] = v
-        # actual Dirichlet elimination happens in .solve() (needs the full unmodified
-        # stiffness matrix to correctly subtract each column's contribution from F)
+        # Dirichlet elimination happens in .solve(), which needs the unmodified stiffness matrix.
         self.stiffness_ = K
         self.load_ = F
         self.mass_ = None

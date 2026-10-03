@@ -71,8 +71,6 @@ from stochpylib.levy_processes.subordinators import (
 from stochpylib.distributions import Exponential
 
 
-# ------------------------------------------------------------ subordinators
-
 class TestSubordinators:
     def test_gamma_mean_and_monotone(self):
         gs = GammaSubordinator(rate=2.0, scale=0.5)
@@ -117,8 +115,8 @@ class TestSubordinators:
         assert ts.truncation_mass() > 0.0
 
     def test_upper_gamma_negative_matches_positive_shape_recurrence(self):
-        # Gamma(s+1, x) = s*Gamma(s, x) + x**s * exp(-x); check for s in (-1,0)
-        # and s in (-2,-1] against scipy's positive-shape gammaincc directly.
+        # Gamma(s+1, x) = s*Gamma(s, x) + x**s * exp(-x); check s in (-1, 0) and (-2, -1] against
+        # scipy's gammaincc.
         from scipy import special
         x = 2.5
         for s in (-0.3, -0.7, -1.2, -1.8):
@@ -139,8 +137,6 @@ class TestSubordinators:
         assert np.all(paths[:, 0] == 0.0)
         assert np.all(np.diff(paths, axis=1) >= 0.0)
 
-
-# ------------------------------------------------------------------ levy.py
 
 class TestLevyKhintchine:
     def test_levy_process_cf_matches_manual_exponent(self):
@@ -205,7 +201,7 @@ class TestLevyKhintchine:
         paths = sub.simulate(1.0, 20, n_paths=20_000, random_state=rng_seed)
         terminal = paths[:, -1]
         assert abs(terminal.mean()) < 0.05
-        expected_var = 2.0 * 0.5 * 1.0  # E[T_1] for the gamma subordinator
+        expected_var = 2.0 * 0.5 * 1.0
         se = np.sqrt(2.0) * expected_var / np.sqrt(len(terminal))
         assert abs(terminal.var() - expected_var) < 6 * se
 
@@ -216,22 +212,19 @@ class TestLevyKhintchine:
             return lam ** alpha
 
         lk = LevyKhintchine(b=0.0, sigma=0.0, laplace_exponent=psi)
-        # exponent(u) should analytically continue psi at lam = -i*u
         u = np.array([0.4, 1.2])
         lam = -1j * u
         assert np.allclose(lk.exponent(u), lam ** alpha)
 
     def test_levy_khintchine_compound_poisson_form(self):
         def jump_cf(u):
-            return np.exp(-0.5 * u ** 2)  # standard normal jump CF
+            return np.exp(-0.5 * u ** 2)
 
         lk = LevyKhintchine(b=0.1, sigma=0.2, jump_rate=1.5, jump_cf=jump_cf)
         u = np.array([0.5, -0.3])
         manual = 1j * u * 0.1 - 0.5 * 0.2 ** 2 * u ** 2 + 1.5 * (jump_cf(u) - 1.0)
         assert np.allclose(lk.exponent(u), manual)
 
-
-# ------------------------------------------------------------ jump_diffusion
 
 class TestJumpDiffusion:
     S0, K, T, r = 100.0, 100.0, 1.0, 0.05
@@ -297,7 +290,6 @@ class TestJumpDiffusion:
         cg = CGMYProcess(C=1.0, G=5.0, M=5.0, Y=1.2)
         with pytest.raises(ValueError):
             cg._increment(0.1, np.random.default_rng(0))
-        # characteristic function stays valid for Y in (0, 2)
         assert np.isfinite(cg.characteristic_function(0.5, 1.0))
 
     def test_normal_inverse_gaussian_mean(self):
@@ -328,8 +320,6 @@ class TestJumpDiffusion:
         assert abs(price - bs) < 1e-4
 
 
-# ----------------------------------------------------------------- advanced
-
 class TestAdvancedProcesses:
     def test_hawkes_simulate_fit_branching_and_ks_residuals(self):
         hp = HawkesProcess(mu=0.5, alpha=0.3, beta=1.0)
@@ -341,7 +331,6 @@ class TestAdvancedProcesses:
         fitted = HawkesProcess().fit(events, T=2000.0)
         assert abs(fitted.mu_ - 0.5) < 0.2
         assert 0.0 < fitted.branching_ratio() < 1.0
-        # regression for Probleme.md #50: no-argument call after fit()
         stat, p_value = fitted.ks_residuals()
         assert 0.0 <= stat <= 1.0
         assert p_value > 0.01
@@ -387,10 +376,8 @@ class TestAdvancedProcesses:
         assert q > 0.9
 
     def test_branching_process_supercritical_can_survive(self):
-        # Keep `generations` small: a surviving supercritical path's
-        # population grows like 1.5**generations (~10 million by gen 40),
-        # which makes the per-generation rng.poisson(pop, rng) array
-        # explode; 15 generations already gives ample separation from q=1.
+        # Keep `generations` small: a surviving supercritical population grows like 1.5**generations
+        # (~10 million by gen 40), exploding the per-generation poisson array.
         bp = BranchingProcess(lambda n, rng: rng.poisson(1.5, n))
         q = bp.extinction_probability(generations=15, n_paths=1000,
                                       random_state=7)
@@ -403,7 +390,7 @@ class TestAdvancedProcesses:
         durs = np.diff(times)
         st = states[:-1]
         frac0 = durs[st == 0].sum() / durs.sum()
-        expected = 0.5 / (0.5 + 0.25)  # mean holding times 1/2, 1/4
+        expected = 0.5 / (0.5 + 0.25)
         assert abs(frac0 - expected) < 0.05
 
     def test_gaussian_random_field_shape_mean_and_finite(self):
@@ -434,8 +421,6 @@ class TestAdvancedProcesses:
         lt_true = np.exp(-length * lam ** alpha)
         assert abs(lt_mc - lt_true) < 0.03
 
-
-# ---------------------------------------------------------------------- sde
 
 class _GBM:
     mu, sigma, x0 = 0.05, 0.2, 100.0
@@ -486,7 +471,6 @@ class TestSDESolvers:
         assert 0.8 < order("Milstein") < 1.2
         assert 0.8 < order("RK") < 1.2
         assert 1.2 < order("Taylor") < 1.8
-        # higher-order schemes must be more accurate at the finest step size
         assert res["Milstein"]["error"][-1] < res["EM"]["error"][-1]
         assert res["Taylor"]["error"][-1] < res["Milstein"]["error"][-1]
 
@@ -501,8 +485,6 @@ class TestSDESolvers:
         se = xT.std(ddof=1) / np.sqrt(len(xT))
         assert abs(xT.mean() - exact_mean) < 6 * se
 
-
-# ------------------------------------------------------------------- wiring
 
 _SPEC_NAMES = {
     "LevyProcess", "StableProcess", "AlphaStableDistribution",

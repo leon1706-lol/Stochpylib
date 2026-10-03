@@ -114,8 +114,6 @@ def _rss(cols, y):
     return float(r @ r), int(np.linalg.matrix_rank(F))
 
 
-# ------------------------------------------------------------------------------ ANOVA
-
 class ANOVA_DOE:
     """ANOVA for a designed experiment.
 
@@ -192,8 +190,6 @@ class ANOVA_DOE:
         return self
 
 
-# ---------------------------------------------------------------------- main effects
-
 class MainEffects:
     """Main-effect estimates: per-level means of every factor and, for two-level factors,
     the effect ``mean(high) - mean(low)``. With replicated runs, ``std_errors_`` holds the
@@ -221,8 +217,6 @@ class MainEffects:
         self.ranking_ = sorted(self.effects_, key=lambda n: -abs(self.effects_[n]))
         return self
 
-
-# ------------------------------------------------------------------- interaction plot
 
 class InteractionPlot:
     """Interaction-plot data for two factors: the table of cell means, one line per level
@@ -286,8 +280,6 @@ class InteractionPlot:
         return fig
 
 
-# ------------------------------------------------------------------------ normal plot
-
 class NormalPlot:
     """(Half-)normal probability plot of factorial effects (Daniel 1959) with Lenth's (1989)
     method for unreplicated two-level designs.
@@ -350,8 +342,6 @@ class NormalPlot:
 
         return plot_qqplot(self, ax=ax)
 
-
-# ------------------------------------------------------------------------- sensitivity
 
 def _input_count(bounds, distributions):
     if distributions is not None:

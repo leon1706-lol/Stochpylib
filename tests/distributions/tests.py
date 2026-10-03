@@ -25,22 +25,16 @@ from stochpylib import cli as cli_mod
 from stochpylib import selftest as selftest_mod
 from stochpylib import distributions as D
 
-# ---------------------------------------------------------------- export surface
-
 SPEC_CLASSES = [
-    # discrete
     "Bernoulli", "Binomial", "Poisson", "Geometric", "NegBinomial", "Hypergeometric",
     "DiscreteUniform", "Multinomial", "ZipfDistribution", "BetaBinomial",
     "ConwayMaxwellPoisson",
-    # continuous
     "Normal", "Exponential", "Uniform", "Beta", "Gamma", "Chi2", "Student_t", "F",
     "Cauchy", "Laplace", "Weibull", "Pareto", "LogNormal", "Gumbel", "Frechet", "GEV",
     "GPareto", "InvGamma", "InvGaussian", "Rayleigh", "Maxwell", "Nakagami", "Rice",
     "VonMises", "Kumaraswamy",
-    # multivariate
     "MultivariateNormal", "Dirichlet", "Wishart", "InverseWishart", "MultivariateT",
     "MultivariatePareto",
-    # heavy tail
     "AlphaStable", "LevyDistribution", "StableDistribution", "SubGaussian",
     "SubExponential",
 ]
@@ -52,8 +46,6 @@ def test_module_exports_match_spec():
     assert set(D.__all__) >= set(SPEC_CLASSES)
     assert stochpylib.distributions is D
 
-
-# ---------------------------------------------------------------- instances
 
 # name -> (factory, is_discrete, moments_finite)
 UNIVARIATE = {
@@ -137,7 +129,7 @@ def test_interface_contract(name):
         ent = float(d.entropy())
         assert np.isnan(ent) or ent < 100.0
     mg = float(d.mgf(0.05))
-    assert np.isnan(mg) or mg >= 1.0 or mg == float("inf") or mg != mg  # must not raise
+    assert np.isnan(mg) or mg >= 1.0 or mg == float("inf") or mg != mg
     cfv = complex(d.cf(0.5))
     assert abs(cfv) <= 1.0 + 1e-9
     data = np.asarray(d.rvs(200, random_state=7), dtype=float)
@@ -184,8 +176,6 @@ def test_mvn_pdf_matches_closed_form():
     for x in ([1.0, -1.0], [0.0, 0.0], [2.5, 1.0]):
         assert np.isclose(d.pdf(x), ref.pdf(x), rtol=1e-10)
 
-
-# ---------------------------------------------------------------- scipy references
 
 SCIPY_REF = {
     "Bernoulli": lambda: st.bernoulli(0.3),
@@ -291,8 +281,8 @@ def test_von_mises_circular_variance_convention():
 
 @pytest.mark.parametrize("kappa", [0.5, 2.0, 20.0])
 def test_von_mises_fit_recovers_parameters(kappa):
-    # regression: fit used i1/i0 whose inf/inf = NaN at the 1e4 bracket end made brentq
-    # abort on every dataset (development/Probleme.md #71)
+    # Regression: fit used i1/i0, whose inf/inf = NaN at the 1e4 bracket end made brentq abort on
+    # every dataset.
     x = np.asarray(D.VonMises(0.3, kappa).rvs(5000, random_state=0))
     fitted = D.VonMises.fit(x)
     assert abs(fitted.mu - 0.3) < 0.1
@@ -304,8 +294,6 @@ def test_gpareto_support_mask():
     assert float(d.pdf(-0.5)) == 0.0
     assert float(d.pdf(0.0)) > 0.0
 
-
-# ---------------------------------------------------------------- masses & tails
 
 CONTINUOUS_FOR_MASS = ["Normal", "Exponential", "Uniform", "Beta", "Gamma", "Chi2",
                        "Laplace", "Weibull", "Rayleigh", "Maxwell"]
@@ -342,8 +330,6 @@ def test_tail_cdf_identities():
         x_hi = float(d.ppf(1 - q))
         assert abs(float(d.cdf(x_hi)) - (1 - q)) < tol, type(d).__name__
 
-
-# ---------------------------------------------------------------- fit round-trips
 
 FIT_CASES = [
     (D.Normal, lambda n: np.random.default_rng(1).normal(2.0, 3.0, n),
@@ -385,8 +371,6 @@ def test_ks_test_on_fitted_normal():
     assert pval > 0.01
 
 
-# ---------------------------------------------------------------- stable family
-
 def test_stable_alpha_two_delegates_to_gaussian():
     d = D.StableDistribution(2.0, 0.7, 1.0, 2.0)
     ref = st.norm(1.0, np.sqrt(8))
@@ -421,7 +405,6 @@ def test_stable_cml_sampler_matches_characteristic_function(alpha, beta):
 
 
 def test_stable_numeric_inversion_pdf_reasonable():
-    # general case alpha=1.5 symmetric: numeric Gil-Pelaez pdf vs CML sample quantiles
     d = D.StableDistribution(1.5, 0.0, 0.0, 1.0)
     x = np.sort(np.asarray(d.rvs(40_000, random_state=5), dtype=float))
     probs = np.array([0.25, 0.5, 0.75])
@@ -439,7 +422,6 @@ def test_stable_alpha_one_skewed_sampler_matches_cf(beta):
     emp = np.array([np.mean(np.exp(1j * t * x)) for t in ts])
     theo = np.array([d.cf(t) for t in ts])
     assert float(np.max(np.abs(emp - theo))) < 0.03
-    # cached: second call is instant and reproducible
     assert np.array_equal(d.rvs(100, random_state=32), d.rvs(100, random_state=32))
 
 
@@ -456,12 +438,10 @@ def test_stable_alpha_one_quantile_accuracy():
         assert abs(got - truth) <= 2e-2 * d.scale
 
 
-# ---------------------------------------------------------------- CLI & selftest
-
 def test_cli_version_flag(capsys, monkeypatch):
     import stochpylib.cli as cli
 
-    monkeypatch.setattr(cli, "fetch_pypi_meta", lambda **kw: None)  # no network
+    monkeypatch.setattr(cli, "fetch_pypi_meta", lambda **kw: None)
     rc = cli_mod.main(["--version"])
     out = capsys.readouterr().out.strip().splitlines()
     assert rc == 0
@@ -474,7 +454,6 @@ def test_cli_help_shows_library_overview(capsys):
         cli_mod.main(["--help"])
     assert excinfo.value.code == 0
     out = capsys.readouterr().out
-    # module overview with dynamic inventory
     for token in (
         "probability",
         "distributions",
@@ -482,7 +461,6 @@ def test_cli_help_shows_library_overview(capsys):
         "Normal",
         "StableDistribution",
         ".ks_test()",
-        # implemented-module blocks
         "montecarlo",
         "Sobol",
         "timeseries",
@@ -512,8 +490,6 @@ def test_selftest_run_returns_zero():
     assert selftest_mod.run() == 0
 
 
-# ---------------------------------------------------------------- doctests
-
 def test_doctests_pass():
     import stochpylib.distributions._base as _base
     import stochpylib.probability as probability_pkg
@@ -525,9 +501,6 @@ def test_doctests_pass():
                     probability_pkg.independence):
             total_failed += doctest.testmod(mod, verbose=False).failed
     assert total_failed == 0, buf.getvalue()
-
-
-# --------------------------------------------------- V0.20.0 random_state= retrofit
 
 
 def test_set_seed_makes_unseeded_rvs_reproducible():

@@ -457,14 +457,14 @@ class DisjunctiveKriging:
         self._phi_inv = PchipInterpolator(zs_u, ys[first], extrapolate=True)
 
         gh = GaussHermite(self.n_hermite, kind="probabilists")
-        He_nodes = _hermite(gh.nodes_, self.n_hermite - 1)          # (n_hermite, n_hermite)
+        He_nodes = _hermite(gh.nodes_, self.n_hermite - 1)
         phi_vals = self._phi(gh.nodes_)
-        self.coeffs_ = He_nodes @ (gh.weights_ * phi_vals)          # phi_k = E[Z He_k(Y)]
+        self.coeffs_ = He_nodes @ (gh.weights_ * phi_vals)
 
         self.variogram_ = self.variogram if self.variogram is not None else _auto_variogram(X, y)
         H = _pairwise(X)
         rho_h = self.variogram_.covariance(H) / self.variogram_.sill
-        self._He_data = _hermite(y, self.n_hermite - 1)             # (n_hermite, n)
+        self._He_data = _hermite(y, self.n_hermite - 1)
         self._Cinv_k = [np.linalg.inv(rho_h ** k + 1e-10 * np.eye(n))
                          for k in range(1, self.n_hermite)]
         return self

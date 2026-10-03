@@ -67,7 +67,7 @@ def _sojourn():
 def _wtd():
     w = mod.WaitingTimeDistribution("MM1", arrival_rate=0.5, service_rate=1.0)
     assert 0 <= w.cdf(1.0) <= 1 and w.sf(1.0) == pytest.approx(1 - w.cdf(1.0))
-    assert w.mean() == pytest.approx(1.0)  # Wq = rho / (mu - lambda) = 0.5 / 0.5
+    assert w.mean() == pytest.approx(1.0)
 
 
 @exercise("MM1Queue")
@@ -91,12 +91,12 @@ def _mminf():
 @exercise("MD1Queue")
 def _md1():
     q = mod.MD1Queue().fit(0.5, 1.0)
-    assert q.Lq == pytest.approx(0.25)  # rho^2 / (2 (1 - rho))
+    assert q.Lq == pytest.approx(0.25)
 
 
 @exercise("MG1Queue")
 def _mg1():
-    q = mod.MG1Queue().fit(0.5, 1.0, second_moment=2.0)   # exponential service -> M/M/1
+    q = mod.MG1Queue().fit(0.5, 1.0, second_moment=2.0)
     assert q.L == pytest.approx(1.0)
 
 
@@ -109,7 +109,7 @@ def _gi1():
 @exercise("GIGQueue")
 def _gig():
     q = mod.GIGQueue().fit(0.5, 1.0, arrival_cv=1.0, service_cv=1.0)
-    assert q.Wq == pytest.approx(1.0, abs=1e-9)  # Kingman reduces to M/M/1
+    assert q.Wq == pytest.approx(1.0, abs=1e-9)
 
 
 @exercise("MG1PriorityQueue")

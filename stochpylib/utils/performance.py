@@ -233,7 +233,6 @@ class GPUBackend:
     def available():
         return _backends.available_backends()
 
-    # -- conversion --------------------------------------------------------
     def asarray(self, x):
         if self.name == "numpy":
             return np.asarray(x, dtype=float)
@@ -306,7 +305,6 @@ class GPUBackend:
     def matmul(self, a, b):
         return self._xp().matmul(a, b)
 
-    # -- RNG / simulation ---------------------------------------------------
     def standard_normal(self, shape, random_state=None):
         if self.native_rng and self.name != "numpy":
             if self.name == "torch":

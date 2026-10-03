@@ -8,7 +8,7 @@ between anchors keeps them monotone in perceived lightness for the sequential ma
 
 import numpy as np
 
-__all__ = []  # private module
+__all__ = []
 
 # Tableau-10 categorical palette.
 _CATEGORICAL = [

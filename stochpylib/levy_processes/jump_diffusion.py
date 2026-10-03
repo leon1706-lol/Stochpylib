@@ -173,7 +173,7 @@ class KouJumpDiffusion(JumpDiffusion):
         self.eta_down = float(eta_down)
         self.p_up = float(p_up)
         self.martingale = bool(martingale)
-        e_pos = p_up * eta_up / (eta_up - 1.0)      # E[e^J] terms
+        e_pos = p_up * eta_up / (eta_up - 1.0)
         e_neg = (1.0 - p_up) * eta_down / (eta_down + 1.0)
         k = e_pos + e_neg - 1.0
         b = mu - 0.5 * sigma ** 2 - jump_rate * k if martingale \
@@ -384,8 +384,8 @@ class CGMYProcess:
     def _jump_grid(self, lam):
         if lam not in self._grids:
             x_max = max(self.jump_floor * 4000.0, 10.0 / lam)
-            # log-spaced + cumulative-trapezoid: see TemperingSubordinator's
-            # ``_jump_quantile_grid`` for why a linear grid biases the mean.
+            # Log-spaced + cumulative trapezoid: a linear grid biases the mean (see
+            # TemperingSubordinator._jump_quantile_grid).
             x = np.logspace(np.log10(self.jump_floor), np.log10(x_max), 8192)
             logd = -lam * x + (-1.0 - self.Y) * np.log(x)
             d = np.exp(logd - logd.max())

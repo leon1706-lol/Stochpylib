@@ -57,7 +57,6 @@ class _ArchimedeanBase(BaseCopula):
         if dimension is not None:
             self.dimension = int(dimension)
 
-    # -- generator primitives (abstract) -------------------------------------
     def _psi(self, t):
         raise NotImplementedError
 
@@ -72,12 +71,10 @@ class _ArchimedeanBase(BaseCopula):
         """Second derivative of the Laplace transform."""
         raise NotImplementedError
 
-    # -- validation ------------------------------------------------------------
     def _require_fit(self):
         if self.theta_ is None:
             raise RuntimeError("fit() must be called first (or pass theta=)")
 
-    # -- shared surface ----------------------------------------------------------
     def cdf(self, u):
         self._require_fit()
         u = _clip_open(u)
@@ -114,7 +111,6 @@ class _ArchimedeanBase(BaseCopula):
         num = self._psi_d(t + self._psi_inv(w))
         return num / self._psi_d(t)
 
-    # -- tau machinery ---------------------------------------------------------
     def tau_of_theta(self, theta):
         """Genest–MacKay: tau = 1 - 4 int_0^inf t psi'(t)^2 dt.
 
@@ -191,11 +187,10 @@ class _ArchimedeanBase(BaseCopula):
         lo, hi = self._theta_bounds()
         cls = type(self)
         if self._tau_cache_key():
-            # two-parameter families: tau depends on the extra parameter, so a curve per
-            # key would cost 48 integrals per delta -- a direct root-find needs ~12
+            # Two-parameter families: a direct root-find (~12 integrals) beats a per-key tau curve
+            # (48 integrals per delta). tau(theta) is unreliable at the tiny lower bound, so scan a
+            # short geometric grid for the sign change first.
             f = lambda th: self._tau_integral(th) - tau
-            # tau(theta) is monotone but numerically unreliable at the tiny lower bound,
-            # so scan a short geometric grid for the sign change before root-finding
             grid = np.geomspace(max(lo, 1e-3), hi, 10)
             prev_th, prev_f = None, None
             for th in grid:
@@ -233,7 +228,6 @@ class _ArchimedeanBase(BaseCopula):
         tau = float(kendall_tau_estimate(u[:, 0], u[:, 1]))
         self.theta_ = self._invert_tau(tau)
 
-    # -- sampling ---------------------------------------------------------------
     def sample(self, n, random_state=None):
         """Marshall–Olkin fast path when available, else conditional inversion."""
         self._require_fit()
@@ -271,7 +265,7 @@ class _ArchimedeanBase(BaseCopula):
         w_grid = np.clip(grid[1:-1], _EPS, 1.0 - _EPS)
         targets = rng.random(n)
         phi_u1 = np.asarray(self._psi_inv(out[:, 0]), dtype=float)
-        denom = -np.asarray(self._psi_d(phi_u1), dtype=float)      # positive
+        denom = -np.asarray(self._psi_d(phi_u1), dtype=float)
         rows = np.empty((n * len(w_grid), 2))
         rows[:, 0] = np.repeat(out[:, 0], len(w_grid))
         rows[:, 1] = np.tile(w_grid, n)
@@ -286,10 +280,6 @@ class _ArchimedeanBase(BaseCopula):
             for j in range(start, stop):
                 out[j, 1] = float(np.interp(targets[j], cond[j], grid[1:-1]))
         return out
-
-
-# ---------------------------------------------------------------------------
-# concrete families
 
 
 class ClaytonCopula(_ArchimedeanBase):
@@ -597,7 +587,6 @@ class BB1Copula(_ArchimedeanBase):
                + (1.0 / self.delta_) * (beta - 1.0) * f)
 
     def _estimate(self, u):
-        # two parameters: invert tau over a delta grid, keep best loglik
         if u.shape[1] != 2:
             raise ValueError("BB1Copula fits bivariate data only")
         tau = float(kendall_tau_estimate(u[:, 0], u[:, 1]))
@@ -680,8 +669,8 @@ class BB7Copula(_ArchimedeanBase):
         a = -1.0 / self.delta_
         y = 1.0 + np.maximum(t, 1e-300)
         inner = np.maximum(1.0 - y ** a, _EPS)
-        din = -a * y ** (a - 1.0)                     # d/dy inner, positive
-        d2in = -a * (a - 1.0) * y ** (a - 2.0)        # negative
+        din = -a * y ** (a - 1.0)
+        d2in = -a * (a - 1.0) * y ** (a - 2.0)
         r = 1.0 / self.theta_
         # psi = 1 - inner^r -> psi'' = -r inner^(r-2) [inner*d2in + (r-1) din^2]
         return -r * inner ** (r - 2.0) * (inner * d2in + (r - 1.0) * din ** 2)
@@ -723,7 +712,6 @@ class BB7Copula(_ArchimedeanBase):
             u = 10.0 ** (-k)
             c = float(self.cdf([[u, u]])[0])
             vals.append(c / u if lower else (1.0 - 2.0 * u + c) / u)
-        # Richardson-style extrapolation toward the limit
         return float(np.clip(vals[-1], 0.0, 1.0))
 
 
@@ -794,8 +782,7 @@ class PlackettCopula(BaseCopula):
             dd = np.maximum(ss * ss - 4.0 * th * (th - 1.0) * uu * vv, 1e-300)
             return 0.5 * (1.0 - (ss - 2.0 * th * uu) / np.sqrt(dd))
 
-        # P(U <= w | V = v) = dC/dv (w, v) / dC/dv (1, v); by symmetry of the
-        # family this is the same ratio computed with the roles kept as-is
+        # P(U <= w | V = v) = dC/dv(w, v) / dC/dv(1, v).
         num = 0.5 * (1.0 - (s - 2.0 * th * w) / np.sqrt(disc))
         s1 = 1.0 + (th - 1.0) * (v + 1.0)
         d1 = np.maximum(s1 * s1 - 4.0 * th * (th - 1.0) * v, 1e-300)

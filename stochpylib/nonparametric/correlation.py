@@ -72,9 +72,8 @@ class KendallTau(DependenceMeasure):
         n = len(x)
         tau_b = kendall_tau_estimate(x, y)
 
-        # nc - nd (excluding ties) recovered from tau-b's own denominator --
-        # avoids re-deriving the O(n log n) inversion count: tau_b = (nc-nd)/
-        # sqrt((N-tx)(N-ty)), so (nc-nd) = tau_b * sqrt((N-tx)(N-ty)).
+        # nc - nd (ties excluded) from tau-b's own denominator: nc - nd = tau_b *
+        # sqrt((N-tx)(N-ty)).
         con_minus_dis = self._con_minus_dis(x, y, tau_b)
 
         if self.variant == "a":
@@ -146,7 +145,7 @@ class KendallTau(DependenceMeasure):
         total = counts.sum()
         s_obs = abs(con_minus_dis)
         k_grid = np.arange(len(counts))
-        s_grid = (n * (n - 1) // 2) - 2 * k_grid          # S = nc - nd for k discordant pairs
+        s_grid = (n * (n - 1) // 2) - 2 * k_grid
         p = float(np.sum(counts[np.abs(s_grid) >= s_obs - 1e-9]) / total)
         return p
 
@@ -170,7 +169,6 @@ class RankCorrelation(DependenceMeasure):
         con_minus_dis = KendallTau._con_minus_dis(x, y)
         if self.method == "gamma":
             n = len(x)
-            # pairs tied on x or y contribute to neither nc nor nd
             all_pairs = n * (n - 1) / 2.0
             tx = np.sum(KendallTau._tie_groups(x) * (KendallTau._tie_groups(x) - 1) / 2.0)
             ty = np.sum(KendallTau._tie_groups(y) * (KendallTau._tie_groups(y) - 1) / 2.0)
@@ -180,8 +178,8 @@ class RankCorrelation(DependenceMeasure):
             gamma = (nc - nd) / (nc + nd) if (nc + nd) > 0 else float("nan")
             return float(gamma), float("nan"), {}
         if self.method == "somers_d":
-            # D(Y|X) = tau_a(X,Y) / tau_a(X,X): the denominator excludes ties
-            # in X, the independent/row variable (matches scipy.stats.somersd(x, y)).
+            # D(Y|X) = tau_a(X,Y) / tau_a(X,X): the denominator excludes ties in X (matches
+            # scipy.stats.somersd(x, y)).
             n = len(x)
             tx = np.sum(KendallTau._tie_groups(x) * (KendallTau._tie_groups(x) - 1) / 2.0)
             all_pairs = n * (n - 1) / 2.0

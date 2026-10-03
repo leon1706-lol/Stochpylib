@@ -30,8 +30,6 @@ def _finite(a):
     return bool(np.all(np.isfinite(np.asarray(a, dtype=float))))
 
 
-# --------------------------------------------------------------- base classes
-
 @exercise("NonparametricDensity")
 def _nonparametric_density():
     kde = mod.KernelDensityEstimate().fit(_X)
@@ -59,8 +57,6 @@ def _nonparametric_regressor():
     assert isinstance(r, mod.NonparametricRegressor)
     assert _finite(r.predict(np.array([5.0, 15.0])))
 
-
-# --------------------------------------------------------------------- density
 
 @exercise("KernelDensityEstimate")
 def _kde():
@@ -91,8 +87,6 @@ def _logspline():
     k = mod.LogsplineEstimator(n_knots=6).fit(_X)
     assert _finite(k.pdf(0.0))
 
-
-# ------------------------------------------------------------------- empirical
 
 @exercise("EmpiricalDistribution")
 def _empirical_distribution():
@@ -125,8 +119,6 @@ def _empirical_likelihood():
     res = e.test_mean(0.0)
     assert res.pvalue is not None
 
-
-# ---------------------------------------------------------------------- tests
 
 @exercise("PermutationTest")
 def _permutation_test():
@@ -194,8 +186,6 @@ def _cramer_von_mises():
     assert t.pvalue_ is not None
 
 
-# ----------------------------------------------------------------- correlation
-
 @exercise("SpearmanCorrelation")
 def _spearman():
     d = mod.SpearmanCorrelation().fit(_A, _B)
@@ -231,8 +221,6 @@ def _hoeffding_d():
     d = mod.HoeffdingD(n_resamples=50, random_state=0).fit(_A, _B)
     assert _finite(d.estimate_)
 
-
-# ----------------------------------------------------------------- regression
 
 @exercise("LocalPolynomialReg")
 def _local_polynomial():

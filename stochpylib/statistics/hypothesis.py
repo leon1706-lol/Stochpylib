@@ -20,8 +20,6 @@ __all__ = [
 ]
 
 
-# ---------------------------------------------------------------------------- z / t
-
 def z_test(x, mu0=0.0, sigma=None, y=None, sigma_y=None, proportion=False,
            pooled=True, alternative="two-sided"):
     """One- or two-sample z-test on a mean (or, with ``proportion=True``, a
@@ -133,8 +131,6 @@ def t_test(x, y=None, mu0=0.0, paired=False, equal_var=True, alternative="two-si
                        method, alternative, estimate, se, ci, None, {"cohens_d": cohens_d})
 
 
-# ---------------------------------------------------------------------- chi2 / F
-
 def chi2_test(observed, expected=None, ddof=0, yates=False):
     """Chi-squared goodness-of-fit (1-D ``observed``) or test of independence
     (2-D contingency table)."""
@@ -197,8 +193,6 @@ def f_test(x, y):
     return TestResult(stat, pvalue, (df1, df2), "equal variances", "F variance-ratio test",
                        estimate=stat)
 
-
-# ---------------------------------------------------------------------- ANOVA / MANOVA
 
 def ANOVA(*args, factors=None, interaction=True, equal_var=True):
     """One-way ANOVA (``ANOVA(g1, g2, ...)``) or two-way Type-II ANOVA
@@ -290,8 +284,8 @@ def _twoway_anova(y, a, b, interaction):
     df_a = Da.shape[1]
     df_b = Db.shape[1]
 
-    ss_a = rss_b - rss_ab   # SS(A|B)
-    ss_b = rss_a - rss_ab   # SS(B|A)
+    ss_a = rss_b - rss_ab
+    ss_b = rss_a - rss_ab
 
     if interaction:
         Dint = np.column_stack([Da[:, i] * Db[:, j] for i in range(Da.shape[1]) for j in range(Db.shape[1])])
@@ -404,8 +398,6 @@ def MANOVA(Y, groups):
     return TestResult(float(F_wilks), p_wilks, (df1_w, df2_w), "group mean vectors are equal",
                        "MANOVA", table=table, extras={"wilks_lambda": wilks_L})
 
-
-# ---------------------------------------------------------------------- rank tests
 
 def _mwu_exact_counts(n1, n2):
     """Exact null distribution of the Mann-Whitney U1 statistic (no ties): returns a
@@ -575,8 +567,6 @@ def wilcoxon(x, y=None, method="auto", zero_method="wilcox", correction=False,
                        alternative, extras={"T_plus": T_plus, "T_minus": T_minus})
 
 
-# ---------------------------------------------------------------------- KS / normality
-
 def ks_test(x, cdf_or_y, args=()):
     """One-sample (against a CDF callable, a fitted ``Distribution`` instance, or a
     ``stochpylib.distributions`` class name + ``args``) or two-sample Kolmogorov-Smirnov
@@ -709,8 +699,6 @@ def shapiro_wilk(x):
                        "Shapiro-Wilk test")
 
 
-# ---------------------------------------------------------------------- variance tests
-
 def levene(*groups, center="median"):
     """Levene's test for equality of variances across groups (Brown-Forsythe when
     ``center='median'``, the default and most robust choice)."""
@@ -747,8 +735,6 @@ def bartlett(*groups):
     pvalue = float(_chi2_sf(stat, df))
     return TestResult(float(stat), pvalue, df, "group variances are equal", "Bartlett's test")
 
-
-# ---------------------------------------------------------------------- multiple comparisons
 
 def tukey_hsd(*groups, level=0.95):
     """Tukey-Kramer honestly-significant-difference pairwise comparisons.

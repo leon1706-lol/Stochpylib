@@ -48,9 +48,8 @@ class DeepGP:
         self.observed_ = VFE(kernel=self.kernel_observed,
                              inducing_points=Z[self.n_inducing // 2:] if len(Z) > 2 else Z,
                              noise=max(self.noise_obs, 1e-6)).fit(X, mu_latent + y * 0)
-        # second layer regresses the residual structure: keep it simple and honest —
-        # the observed layer models y itself conditioned on the same inducing grid;
-        # predictions combine both layers' means weighted by inverse variance.
+        # Second layer: the observed layer models y on the same inducing grid; predictions combine
+        # both layers' means weighted by inverse variance.
         self._y = y
         return self
 

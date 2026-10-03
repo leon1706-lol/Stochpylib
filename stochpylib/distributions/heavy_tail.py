@@ -49,7 +49,6 @@ class StableDistribution(Distribution):
         if not (-1 <= beta <= 1):
             raise ValueError("beta must be in [-1, 1]")
         self.alpha, self.beta, self.loc, self.scale = float(alpha), float(beta), float(loc), float(scale)
-        # Exact special cases: alpha=2 is always Gaussian; alpha=1,beta=0 is Cauchy.
         self._gauss = _Normal(self.loc, self.scale * np.sqrt(2)) if self.alpha == 2 else None
         self._cauchy = _Cauchy(self.loc, self.scale) if (self.alpha == 1 and self.beta == 0) else None
 
@@ -153,7 +152,6 @@ class StableDistribution(Distribution):
             )
             out = self.loc + self.scale * x_std
             return out[0] if size == 1 else out
-        # alpha == 1, beta != 0: numerical quantile lookup
         q_grid, x_grid = self._quantile_table()
         u = rng.uniform(size=n)
         out = np.interp(u, q_grid, x_grid)
@@ -188,7 +186,6 @@ class StableDistribution(Distribution):
         tail_left = c * (1.0 - self.beta) / np.pi
         window = 25.0 * c
 
-        # --- central region: numeric CDF on a grid inside the reliable window ---
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             gx = np.linspace(self.loc - window, self.loc + window, 129)
@@ -200,13 +197,12 @@ class StableDistribution(Distribution):
         fine_x = np.linspace(gx[0], gx[-1], 100_001)
         fine_f = np.maximum.accumulate(np.clip(np.asarray(spline(fine_x), dtype=float), 0.0, 1.0))
 
-        # --- analytic tails grafted onto the central endpoints ---
         f_left_edge, f_right_edge = float(fine_f[0]), float(fine_f[-1])
         edge_lo, edge_hi = float(fine_x[0]), float(fine_x[-1])
 
         q_left = np.geomspace(max(f_left_edge, 1e-12), 1e-9, 400)
         x_left = self.loc - tail_left / q_left
-        q_left = np.minimum(q_left, f_left_edge)  # keep strictly below central start
+        q_left = np.minimum(q_left, f_left_edge)
 
         q_right = np.geomspace(max(1.0 - f_right_edge, 1e-12), 1e-9, 400)
         x_right = self.loc + tail_right / q_right
@@ -247,8 +243,8 @@ class AlphaStable(StableDistribution):
 
     @classmethod
     def _generic_fit(cls, data, x0, bounds=None):
-        # AlphaStable's constructor takes (alpha, loc, scale); base StableDistribution._generic_fit
-        # works unmodified since it just calls cls(*params).
+        # AlphaStable takes (alpha, loc, scale); StableDistribution._generic_fit works unmodified
+        # since it just calls cls(*params).
         return super()._generic_fit(data, x0, bounds)
 
 

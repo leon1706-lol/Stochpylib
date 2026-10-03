@@ -23,9 +23,6 @@ def _as_xy(x, y):
     return x, y
 
 
-# --------------------------------------------------------------------------- artists
-
-
 @dataclass
 class Line:
     x: np.ndarray
@@ -111,7 +108,7 @@ class RefLine:
 
 @dataclass
 class Segments:
-    segs: np.ndarray  # shape (k, 2, 2): k segments of (x, y) endpoint pairs
+    segs: np.ndarray
     color: str = None
     label: str = None
     width: float = 1.0
@@ -233,9 +230,6 @@ def _artist_extent(artist):
     return xe, ye
 
 
-# --------------------------------------------------------------------------- Axes
-
-
 class Axes:
     """One plotting panel: a list of artists plus titles/limits/scale."""
 
@@ -267,8 +261,6 @@ class Axes:
             artist.color = self._next_color()
         self.artists.append(artist)
         return artist
-
-    # ---- artist-adding methods, each returns the artist ----
 
     def line(self, x, y, **kw):
         x, y = _as_xy(x, y)
@@ -368,9 +360,6 @@ class Axes:
 
     def __repr__(self):
         return f"Axes(artists={len(self.artists)}, title={self.title!r})"
-
-
-# --------------------------------------------------------------------------- Figure
 
 
 class Figure:

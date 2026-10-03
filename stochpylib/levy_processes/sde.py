@@ -151,10 +151,10 @@ def StochasticTaylor(sde, T=1.0, n_steps=100, n_paths=1, random_state=None):
         z = rng.standard_normal(n_paths)
         a0 = sde.a(t, x)
         b0 = sde.b(t, x)
-        ap = sde._a_x(t, x, eps=eps)                       # a'
+        ap = sde._a_x(t, x, eps=eps)
         app = (sde.a(t, x + eps) - 2 * a0 + sde.a(t, x - eps)) / eps ** 2
-        bp = sde._b_x(t, x, eps=eps)                       # b'
-        bpp = sde._b_xx(t, x, eps=1e-4)                    # b''
+        bp = sde._b_x(t, x, eps=eps)
+        bpp = sde._b_xx(t, x, eps=1e-4)
         dZ = 0.5 * dt * dw + 0.5 / np.sqrt(3.0) * dt ** 1.5 * z
         x = (x
              + a0 * dt
@@ -189,11 +189,8 @@ def WeakApproximation(sde, T=1.0, n_steps=50, n_paths=100_000,
     x = np.full(n_paths, sde.x0, dtype=float)
     t = 0.0
     for _ in range(n_steps):
-        # P(-sqrt(3dt)) = P(+sqrt(3dt)) = 1/6, P(0) = 2/3 -- NOT a uniform
-        # three-way split (development/Probleme.md documents the incident:
-        # rng.integers(0, 3, ...) gives 1/3 each, doubling E[dW**2] to 2*dt
-        # and biasing every moment computed downstream by an O(1) amount
-        # that never shrinks as n_steps grows).
+        # P(-sqrt(3dt)) = P(+sqrt(3dt)) = 1/6, P(0) = 2/3: not a uniform three-way split, which
+        # would double E[dW**2].
         u = rng.random(n_paths)
         dW = np.where(u < 1.0 / 6.0, -sq3,
                      np.where(u < 5.0 / 6.0, 0.0, sq3)) * np.sqrt(dt)

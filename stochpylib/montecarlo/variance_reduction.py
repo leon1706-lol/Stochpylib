@@ -175,7 +175,6 @@ class StratifiedSampling:
             pts = self.rng.uniform(lo, lo + widths, size=(self.m, self.dim))
             ests[idx] = _eval_integrand(integrand, pts).mean()
         integral = volume * float(ests.mean())
-        # between-cell variance drives the error once within-cell counts are fixed
         se = volume * float(ests.std(ddof=1) / np.sqrt(total))
         return MCResult(estimate=integral, std_error=se, n_samples=total * self.m,
                         method="stratified_grid")
@@ -216,11 +215,9 @@ class RejectionControl:
         threshold = threshold or float(np.quantile(w_raw, 0.9))
         clipped = np.minimum(w_raw, threshold)
         deficit_mass = float(np.sum(w_raw[clipped >= threshold] - threshold)) / len(w_raw)
-        # distribute the removed mass evenly over un-clipped draws (proportional split)
         share = np.where(clipped < threshold, deficit_mass / max(int((clipped < threshold).sum()), 1), 0.0)
         w_star = clipped + share
         estimate = float(np.sum(w_star * g) / np.sum(w_star))
-        # reference: plain self-normalized importance sampling SE (delta method)
         is_estimate = float(np.sum(w_raw * g) / np.sum(w_raw))
         is_se = float(
             np.sqrt(np.sum(w_raw**2 * (g - is_estimate) ** 2)) / abs(np.sum(w_raw))

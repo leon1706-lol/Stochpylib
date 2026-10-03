@@ -48,7 +48,7 @@ def _demo_montecarlo():
           f"dim-0 mean={pts[:, 0].mean():.5f} (exact block mean 0.5)")
     price = AntitheticVariates(n_simulations=50_000).price_european_call(
         S=100, K=100, T=1, r=0.05, sigma=0.2)
-    sq = 0.2  # sigma * sqrt(T), T = 1
+    sq = 0.2
     d1 = (np.log(100 / 100) + (0.05 + sq * sq / 2)) / sq
     d2 = d1 - sq
     nd = lambda x: Normal(0, 1).cdf(x)
@@ -245,7 +245,7 @@ def _demo_advanced_mcmc():
 
     def log_prob_gamma(theta):
         x = theta[0]
-        return -np.inf if x <= 0 else 2.0 * np.log(x) - x / 2.0  # Gamma(3, scale=2), mean 6
+        return -np.inf if x <= 0 else 2.0 * np.log(x) - x / 2.0
 
     sl = SliceSampling(log_prob_gamma, n_samples=2000, n_warmup=300, width=3.0)
     sl.sample(np.array([6.0]), random_state=1)
@@ -366,7 +366,7 @@ def _demo_robust_statistics():
 
     t = rng.uniform(0, 10, 100)
     y = 1.0 + 2.0 * t + rng.normal(0, 0.3, 100)
-    y[:30] += 20.0  # 30% gross outliers
+    y[:30] += 20.0
     ols = linear_regression(t, y)
     ts = TheilSenRegression().fit(t, y)
     mm = MMRegression(random_state=0).fit(t, y)

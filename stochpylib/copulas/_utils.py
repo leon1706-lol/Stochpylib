@@ -38,7 +38,7 @@ def _rank_ties(col):
         j = i
         while j + 1 < len(col) and sorted_col[j + 1] == sorted_col[i]:
             j += 1
-        avg = 0.5 * (i + j) + 1.0          # mean of positions i+1 .. j+1
+        avg = 0.5 * (i + j) + 1.0
         ranks[order[i:j + 1]] = avg
         i = j + 1
     return ranks
@@ -85,7 +85,6 @@ def kendall_tau_estimate(x, y):
     tx = _group_ties(rx)
     ty = _group_ties(ry)
 
-    # pairs tied in BOTH coordinates
     txy = 0.0
     order = np.argsort(rx, kind="mergesort")
     s = ry[order]
@@ -98,11 +97,10 @@ def kendall_tau_estimate(x, y):
             txy += float(np.sum(cts * (cts - 1) / 2.0))
         start = b
 
-    # strict inversions of s via Fenwick tree over compressed values;
-    # pairs inside an equal-x group contribute neither P nor Q, so each whole
-    # group queries against previous groups before any of its members inserts
+    # Strict inversions via a Fenwick tree over compressed values; an equal-x group queries earlier
+    # groups before inserting any member.
     keys = np.unique(s)
-    comp = np.searchsorted(keys, s) + 1               # 1..K
+    comp = np.searchsorted(keys, s) + 1
     size = len(keys)
     tree = [0] * (size + 1)
 
@@ -125,7 +123,7 @@ def kendall_tau_estimate(x, y):
     for b in list(boundaries) + [n]:
         grp = comp[start:b]
         for v in grp:
-            q += inserted - prefix(v)                 # strictly greater
+            q += inserted - prefix(v)
         for v in grp:
             update(v)
         inserted += len(grp)

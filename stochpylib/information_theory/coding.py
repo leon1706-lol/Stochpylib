@@ -62,7 +62,6 @@ class HuffmanCode:
             self.is_optimal_ = True
             return self
 
-        # build Huffman tree using heap of (prob, node_id, tree)
         heap = []
         node_id = [0]
         for i in range(n):
@@ -75,7 +74,6 @@ class HuffmanCode:
             node_id[0] += 1
             heapq.heappush(heap, (p1 + p2, node_id[0], ("node", t1, t2)))
 
-        # traverse to assign codes
         codes = {}
 
         def assign(tree, prefix=""):
@@ -147,6 +145,5 @@ class AEP:
         hi = self.block_length_ * self.entropy_
         self.typical_set_size_lower_ = 2 ** lo
         self.typical_set_size_upper_ = 2 ** hi
-        # probability that a random sequence is typical >= 1 - epsilon
         self.typical_set_probability_lower_ = 1.0 - self.epsilon
         return self

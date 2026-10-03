@@ -27,8 +27,6 @@ __all__ = [
 ]
 
 
-# --------------------------------------------------------------------------- Heston
-
 class HestonModel:
     """Heston (1993) stochastic volatility.
 
@@ -203,8 +201,6 @@ class HestonModel:
         return self
 
 
-# --------------------------------------------------------------------------- SABR
-
 class SABRModel:
     """SABR (Hagan et al. 2002) stochastic-alpha-beta-rho volatility model.
 
@@ -232,9 +228,7 @@ class SABRModel:
         log_FK = np.log(F / K)
 
         z = (nu / alpha) * FK_beta * log_FK
-        # z_over_x = z / x(z); the small-z expansion of x(z) is
-        # z - (rho/2) z^2 + O(z^3), so z/x(z) -> 1 + (rho/2) z (not the
-        # reciprocal, and not the sign-flipped 1 - (rho/2) z).
+        # z/x(z) -> 1 + (rho/2) z as z -> 0, since x(z) ~ z - (rho/2) z^2.
         x_of_z = np.log((np.sqrt(1.0 - 2.0 * rho * z + z**2) + z - rho) / (1.0 - rho))
         z_over_x = np.where(
             np.abs(z) < 1e-7,
@@ -304,8 +298,6 @@ class SABRModel:
                 F[:, t + 1] = np.maximum(F[:, t] + incr, 0.0)
         return F, A
 
-
-# --------------------------------------------------------------------------- Rough Heston
 
 class RoughHeston:
     """El Euch-Rosenbaum (2019) rough Heston: fractional Riccati equation
@@ -430,8 +422,6 @@ class RoughHeston:
         return _mc_result(payoff, "rough-heston-mc", discount=disc)
 
 
-# --------------------------------------------------------------------------- Rough Bergomi
-
 class RoughBergomi:
     """Bayer-Friz-Gatheral (2016) rough Bergomi via exact Cholesky simulation
     of the joint Gaussian ``(Y, W)`` where ``Y`` is Riemann-Liouville fBM."""
@@ -520,8 +510,6 @@ class RoughBergomi:
         price = res.estimate if kind == "call" else res.estimate - self.S0 * math.exp(-self.q * T) + K * math.exp(-self.r * T)
         return _implied_vol(price, self.S0, K, T, self.r, self.q, kind)
 
-
-# --------------------------------------------------------------------------- Local vol / Dupire
 
 class LocalVol:
     """Local volatility model: ``dS = (r-q) S dt + sigma(t,S) S dW``."""
@@ -653,8 +641,6 @@ class Dupire:
         return LocalVol(sigma_fn, self.S0, self.r, self.q)
 
 
-# --------------------------------------------------------------------------- LVSV
-
 class LVSV:
     """Local-stochastic volatility: Heston-type variance with a leverage
     function ``L(t,S)`` matching a target local-vol surface (Guyon &
@@ -723,8 +709,6 @@ class LVSV:
         disc = math.exp(-self.r * T)
         return _mc_result(payoff, "lvsv-mc", discount=disc)
 
-
-# --------------------------------------------------------------------------- Variance swap
 
 class VarianceSwap:
     """Fair variance-swap strike (annualized), by closed form (Heston),

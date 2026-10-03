@@ -50,14 +50,13 @@ class TestMatplotlibRealBackend:
         mfig = fig.to_matplotlib()
         ax = mfig.axes[0]
         assert len(ax.collections) >= 1
-        # a colorbar is a second axes attached to the figure
         assert len(mfig.axes) >= 2
 
     def test_markov_chain_self_loops_are_circle_patches(self):
         P = np.array([[0.9, 0.1], [0.3, 0.7]])
         fig = plot_markov_chain(P)
         mfig = fig.to_matplotlib()
-        assert len(mfig.axes[0].patches) >= 2  # 2 node circles + self-loop rings
+        assert len(mfig.axes[0].patches) >= 2
 
     def test_categorical_ticks_carry_over(self):
         fig = plot_heatmap(_RNG.random((3, 3)), row_labels=["a", "b", "c"],

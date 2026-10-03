@@ -110,7 +110,7 @@ class DiscreteEventSim:
     def run(self):
         rng = _rng(self.random_state)
         st = self.stats
-        cal = []                        # heap of (time, seq, kind)
+        cal = []
         seq = [0]
 
         def push(t, kind):
@@ -118,7 +118,7 @@ class DiscreteEventSim:
             heapq.heappush(cal, (t, seq[0], kind))
 
         busy = 0
-        waiting = []                    # (arrival_time,) FIFO
+        waiting = []
         end_T = self._duration
 
         first_arr = self._arr_fn(rng)
@@ -163,7 +163,6 @@ class DiscreteEventSim:
                         st.sojourn_times.append(soj)
                         st.n_served += 1
 
-        # drain remaining departures past end_time
         while cal:
             ev_t, _, ev_kind = heapq.heappop(cal)
             if ev_kind != "dep":

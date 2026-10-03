@@ -32,8 +32,6 @@ from stochpylib.copulas.empirical import (
 )
 from stochpylib.copulas.vine import CVine, DVine, RVine, VineStructureSelect
 
-# ------------------------------------------------------------------ helpers
-
 GRID = np.linspace(0.05, 0.95, 9)
 _UU, _VV = np.meshgrid(GRID, GRID)
 PTS = np.column_stack([_UU.ravel(), _VV.ravel()])
@@ -80,8 +78,6 @@ def _textbook_cdf(name):
                 amh=c_amh, bb1=c_bb1, bb7=c_bb7, plackett=c_plackett)[name]
 
 
-# ------------------------------------------------------------------ utils
-
 def test_pseudo_obs_in_open_cube_and_rank_preserving():
     rng = np.random.default_rng(0)
     data = rng.standard_normal((100, 3))
@@ -112,8 +108,6 @@ def test_student_t_ppf_matches_scipy():
         assert np.max(np.abs(student_t_ppf(q, df) -
                              stats.t.ppf(q, df))) < 1e-8
 
-
-# ------------------------------------------------------------------ elliptical
 
 def test_gaussian_copula_fit_sample_and_cdf_vs_oracle():
     from scipy.integrate import quad
@@ -172,8 +166,6 @@ def test_student_t_h_function_matches_textbook_formula():
     expected = _t_cdf((a - rho * b) / scale, nu + 1)
     assert np.allclose(tc._h_u(w, v), expected)
 
-
-# ------------------------------------------------------------------ archimedean
 
 _ARCH = [
     ("clayton", lambda: ClaytonCopula(theta=2.3), lambda u, v, p:
@@ -272,13 +264,10 @@ def test_fit_recovers_theta_from_samples():
                              (FrankCopula, 5.0, "theta_")]:
         data = cls(theta=theta).sample(8000, random_state=7)
         fitted = cls().fit(data)
-        # tau inversion: fitted parameter implies close tau to the truth
         tau_true = cls(theta=theta).kendall_tau()
         tau_fit = cls(theta=getattr(fitted, attr)).kendall_tau()
         assert abs(tau_true - tau_fit) < 0.03, cls.__name__
 
-
-# ------------------------------------------------------------------ empirical
 
 _dep_cache = {}
 
@@ -298,7 +287,7 @@ def test_empirical_copula_matches_bruteforce_and_frechet():
     for pt in [(.25, .25), (.5, .75), (.8, .4)]:
         brute = np.mean(np.all(obs <= pt, axis=1))
         assert abs(float(ec.cdf([pt])[0]) - brute) < 1e-12
-    assert float(ec.cdf([[.8, .4]])[0]) >= 0.2          # Frechet lower bound
+    assert float(ec.cdf([[.8, .4]])[0]) >= 0.2
     smp = ec.sample(500, random_state=2)
     assert smp.shape == (500, 2)
 
@@ -327,8 +316,6 @@ def test_beta_copula_converges_to_checkerboard():
     assert d60 < d20
     assert abs(float(bc60.cdf([[1., 1.]])[0]) - 1.0) < 1e-6
 
-
-# ------------------------------------------------------------------ vines
 
 _VINE_R = np.array([[1, .7, .4, .3, .2], [.7, 1, .5, .2, .1],
                     [.4, .5, 1, .6, .3], [.3, .2, .6, 1, .4],
@@ -417,14 +404,11 @@ def test_pair_rotation_h_functions_match_fd_of_rotated_cdf():
             assert abs(fd - ana) < 1e-4
 
 
-# ------------------------------------------------------------------ methods
-
 @pytest.mark.parametrize("cls,kw", [(BB1Copula, dict(theta=1.4, delta=1.7)),
                                     (BB7Copula, dict(theta=1.8, delta=1.1))])
 def test_two_parameter_tau_cache_is_keyed_on_delta(cls, kw):
-    # regression: the per-class tau(theta) curve cache ignored delta, so after any BB1/BB7
-    # fit every instance's kendall_tau() read a curve built for a different delta, and the
-    # fit's own theta inversion used the wrong curve (development/Probleme.md #82)
+    # Regression: the per-class tau(theta) curve cache ignored delta, so after a BB1/BB7 fit
+    # kendall_tau() read a curve built for another delta.
     exact = cls(**kw)._tau_integral(kw["theta"])
     data = cls(**kw).sample(2000, random_state=3)
     fitted = cls().fit(data)
@@ -435,14 +419,12 @@ def test_two_parameter_tau_cache_is_keyed_on_delta(cls, kw):
 
 
 def test_vine_loglik_accepts_copula_scale_data():
-    # regression: loglik(data, raw=False) referenced as_u_matrix without importing it
-    # and raised NameError (development/Probleme.md #73)
+    # Regression: loglik(data, raw=False) used as_u_matrix without importing it (NameError).
     vine = cp.DVine(families=("gaussian",)).fit(VINE_DATA)
     u = vine.sample(300, random_state=3)
     ll_u = vine.loglik(u, raw=False)
     assert np.isfinite(ll_u)
     assert np.isfinite(vine.aic(u, raw=False))
-    # raw=True recomputes pseudo-observations; on already-uniform data both agree closely
     assert abs(vine.loglik(u, raw=True) - ll_u) < 0.1 * abs(ll_u) + 5.0
 
 
@@ -479,8 +461,6 @@ def test_conditional_copula_boundaries():
     out = cp.conditional_copula(c, [0.0, 1.0], [0.5, 0.5])
     assert np.allclose(out, [0.0, 1.0])
 
-
-# ------------------------------------------------------------------ package
 
 def test_module_wiring_and_exports():
     assert "copulas" in stochpylib.__all__

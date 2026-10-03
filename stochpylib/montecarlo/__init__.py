@@ -46,7 +46,6 @@ from stochpylib.montecarlo.applications import (  # noqa: E402
 from stochpylib.montecarlo._result import MCResult  # noqa: E402
 
 __all__ = [
-    # quasi_random
     "SobolSequence",
     "HaltonSequence",
     "FaureSequence",
@@ -54,14 +53,12 @@ __all__ = [
     "DigitalNet",
     "DigitalNetBase2",
     "LowDiscrepancy",
-    # simulation
     "simulate",
     "crude_mc",
     "importance_sampling",
     "rejection_sampling",
     "stratified_sampling",
     "quasi_montecarlo",
-    # variance reduction
     "AntitheticVariates",
     "ControlVariates",
     "StratifiedSampling",
@@ -69,13 +66,11 @@ __all__ = [
     "OrthogonalSampling",
     "ConditionedMC",
     "RejectionControl",
-    # applications
     "MonteCarloIntegration",
     "pi_estimation",
     "option_pricing_mc",
     "risk_analysis",
     "reliability_mc",
     "sensitivity_analysis",
-    # shared result type
     "MCResult",
 ]

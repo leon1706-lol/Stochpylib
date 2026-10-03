@@ -27,7 +27,7 @@ __all__ = [
 
 def _as_sf_callable(source):
     """Return sf(times) callable for any accepted source."""
-    if hasattr(source, "survival_function_"):          # KaplanMeier
+    if hasattr(source, "survival_function_"):
         return lambda t: np.asarray(
             SurvivalFitter._step_evaluate(source.survival_function_, t))
     if hasattr(source, "survival_") and callable(source.survival_):
@@ -65,7 +65,6 @@ def _as_hazard_callable(source):
         return lambda t: np.asarray(
             source.hazard(np.atleast_1d(np.asarray(t, dtype=float))),
             dtype=float)
-    # generic fallback: hazard = pdf / (1 - cdf) from any distribution
     if hasattr(source, "pdf") and callable(source.pdf) \
             and hasattr(source, "cdf") and callable(source.cdf):
         def haz_from_pdf(t):
@@ -134,7 +133,6 @@ class CumulativeHazard(_FromDataOrSourceMixin):
     def predict(self, times):
         times = np.atleast_1d(np.asarray(times, dtype=float))
         if self._mode == "na_step":
-            # evaluate the cumulative-hazard step function directly
             from stochpylib.survival._base import SurvivalFitter
             return np.asarray(
                 SurvivalFitter._step_evaluate(
@@ -209,8 +207,8 @@ class ResidualLifetime(_FromDataOrSourceMixin):
         self._sf = _as_sf_callable(src)
         self.source_ = src
         self.upper = float(upper)
-        # nonparametric survival functions are only defined up to the last
-        # observed time — never integrate their plateau beyond it
+        # Nonparametric survival functions are defined only up to the last observed time; never
+        # integrate their plateau beyond it.
         if hasattr(src, "survival_function_"):
             arr = src.survival_function_
             self.upper = min(self.upper, float(np.asarray(arr["time"])[-1]))

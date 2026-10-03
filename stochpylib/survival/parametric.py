@@ -37,7 +37,6 @@ class _ParametricBase(SurvivalFitter):
         self.loglik_ = None
         self.n_obs_ = 0
 
-    # -- to override ---------------------------------------------------------
     def _survival(self, t, theta):
         raise NotImplementedError
 
@@ -53,7 +52,6 @@ class _ParametricBase(SurvivalFitter):
     def _bounds(self):
         return None
 
-    # -- shared fit ------------------------------------------------------------
     def fit(self, durations, events=None):
         t, e = _check_durations_events(durations, events)
         self.n_obs_ = len(t)

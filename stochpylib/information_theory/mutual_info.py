@@ -108,7 +108,6 @@ class ConditionalMutualInfo:
             frac = mask.sum() / total_weight
             if frac < 1e-12:
                 continue
-            # I(X;Y | Z=zv): MI on the subset
             sub_x = x[mask]
             sub_y = y[mask]
             ux = np.unique(sub_x)
@@ -167,7 +166,6 @@ class MultiInformation:
         if n_vars < 2:
             raise ValueError("need at least two variables")
         individual_h = sum(EntropyProxy(c).h for c in cols)
-        # joint entropy via discretised multi-way contingency table
         encoded = np.zeros(len(cols[0]))
         for j, col in enumerate(cols):
             _, codes = np.unique(col, return_inverse=True)

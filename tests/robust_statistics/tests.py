@@ -42,8 +42,6 @@ def _contaminated(n_clean=160, n_out=40, loc=0.0, scale=1.0, out_val=1e6, seed=0
     return np.concatenate([rng.normal(loc, scale, n_clean), np.full(n_out, out_val)])
 
 
-# ============================================================== _common helpers
-
 def test_kth_pairwise_bisection_matches_explicit():
     rng = np.random.default_rng(1)
     x = rng.standard_normal(1500)
@@ -91,8 +89,6 @@ def test_tau_scale_consistent_at_gaussian():
     assert abs(loc) < 0.05
     assert abs(scale - 1.0) < 0.05
 
-
-# ==================================================================== location
 
 @pytest.mark.parametrize("p", [0.0, 0.1, 0.2, 0.25])
 def test_trimmed_mean_matches_scipy(p):
@@ -276,16 +272,13 @@ def test_r_estimator_normal_scores_close_to_truth():
     (M_Estimator, dict(psi="huber")), (R_Estimator, dict(score="wilcoxon")),
 ])
 def test_location_breakdown_under_20pct_contamination(cls, kwargs):
-    # HodgesLehmann/Wilcoxon-R/Huber-M have breakdown points below 50% (~29% for HL,
-    # and a fixed-scale Huber M-estimator can wander further under 20% contamination
-    # depending on the draw) -- 2.0 still separates "resists" from the raw mean, which
-    # blows up to ~2e5 on this same data.
+    # HodgesLehmann/Wilcoxon-R/Huber-M have breakdown points below 50% (~29% for HL), and
+    # fixed-scale Huber can wander under 20% contamination; 2.0 still separates "resists" from the
+    # raw mean (~2e5 here).
     x = _contaminated(160, 40, seed=8)
     est = cls(**kwargs).fit(x)
     assert abs(est.estimate_) < 2.0
 
-
-# ======================================================================= scale
 
 def test_mad_matches_scipy():
     x = _RNG.normal(0, 2, 150)
@@ -361,8 +354,6 @@ def test_robust_std_invalid_method_raises():
         RobustStd("bogus")
 
 
-# =================================================================== regression
-
 @pytest.mark.parametrize("method", ["separate", "joint"])
 def test_theilsen_matches_scipy_simple(method):
     x = _RNG.uniform(0, 10, 64)
@@ -387,9 +378,8 @@ def test_theilsen_matches_scipy_with_ties():
 
 
 def test_theilsen_multi_predictor_recovers_truth():
-    # small-p subsets need (1-contamination)^(p+1) > 0.5 for a comfortable majority
-    # of clean subsets to dominate the spatial median -- n=60 at 15% keeps that margin
-    # (n=15 at 25%+ makes the estimator's own breakdown boundary the binding constraint).
+    # Small-p subsets need (1-contamination)^(p+1) > 0.5 for a clean majority; n=60 at 15% keeps
+    # that margin, while n=15 at 25%+ makes the breakdown boundary binding.
     rng = np.random.default_rng(15)
     n = 60
     X = rng.uniform(0, 10, (n, 2))
@@ -468,7 +458,6 @@ def test_lts_exact_enumeration_matches_fast():
     lts_exact = LTS_Regression(random_state=0).fit(x, y)
     assert lts_exact.exhaustive_
 
-    # brute-force cross-check of the raw objective
     n, h = 14, lts_exact.h_ if hasattr(lts_exact, "h_") else None
     p = 2
     from stochpylib.robust_statistics.regression import _lts_h
@@ -556,8 +545,6 @@ def test_regressor_predict_score_and_result(cls, kwargs):
         assert np.all(lo[finite] <= hi[finite])
 
 
-# =================================================================== covariance
-
 def test_mcd_exact_enumeration_matches_fast():
     rng = np.random.default_rng(21)
     X = rng.standard_normal((12, 2))
@@ -634,7 +621,7 @@ def test_ogk_clean_and_contaminated_recovery():
     rel2 = np.linalg.norm(ogk2.covariance_ - Sigma) / np.linalg.norm(Sigma)
     assert rel2 < 0.30
     for scale in ("qn", "mad"):
-        OGK(scale=scale).fit(X)  # runs without error
+        OGK(scale=scale).fit(X)
 
 
 def test_robust_covariance_dispatcher():
@@ -714,10 +701,8 @@ def test_cov_shrinkage_oas_and_fixed_and_targets():
 
 
 def test_cov_shrinkage_large_n_shrinks_little():
-    # shrinkage intensity depends on how far the TRUE covariance is from the target,
-    # not on n alone -- a true covariance equal to the identity target correctly keeps
-    # delta near 1 even as n grows (full shrinkage is then asymptotically lossless), so
-    # this needs off-target correlation to see delta -> 0 with more data.
+    # Shrinkage intensity depends on how far the TRUE covariance is from the target, not on n alone:
+    # an identity truth keeps delta near 1, so use off-target correlation to see delta -> 0.
     rng = np.random.default_rng(30)
     Sigma = np.array([[1.0, 0.5, 0.2], [0.5, 1.0, 0.3], [0.2, 0.3, 1.0]])
     L = np.linalg.cholesky(Sigma)
@@ -725,8 +710,6 @@ def test_cov_shrinkage_large_n_shrinks_little():
     cs = CovShrinkage(method="ledoit_wolf").fit(R)
     assert cs.shrinkage_ < 0.05
 
-
-# =================================================================== bootstrap
 
 def test_robust_bootstrap_median_se_and_ci_methods():
     x = np.random.default_rng(31).normal(0, 1, 200)
@@ -841,8 +824,6 @@ def test_bootstrap_deterministic_with_seed():
         b = cls(np.mean, **kw).fit(x)
         assert a.std_error_ == b.std_error_
 
-
-# ============================================================== base-class checks
 
 def test_base_classes_present_and_subclassed():
     assert issubclass(TrimmedMean, RobustEstimator)

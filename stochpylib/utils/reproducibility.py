@@ -43,7 +43,7 @@ class Reproducibility:
 
     def __exit__(self, *exc):
         with _rng._LOCK:
-            _rng._STATE["root"] = self._prev_root  # restore the exact SeedSequence object
+            _rng._STATE["root"] = self._prev_root
         if self.numpy_global:
             np.random.set_state(self._prev_np_state)
         if self.python_random:

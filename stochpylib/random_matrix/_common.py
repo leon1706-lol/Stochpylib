@@ -8,7 +8,6 @@ import numpy as np
 from scipy import interpolate
 
 
-# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
 from stochpylib._rng import as_generator as _rng
 
 
@@ -44,7 +43,6 @@ class _GridInterp:
         self.total = float(F[-1]) if total is None else float(total)
         self._cdf = interpolate.PchipInterpolator(self.x, F, extrapolate=False)
         self._pdf = self._cdf.derivative()
-        # strictly increasing subset for the inverse
         keep = np.concatenate([[True], np.diff(F) > 1e-15])
         self._ppf = interpolate.PchipInterpolator(F[keep], self.x[keep], extrapolate=False)
 
@@ -69,8 +67,6 @@ class _GridInterp:
         out = np.where(q >= self.total, self.x[-1], out)
         return out
 
-
-# ------------------------------------------------------------- spacing references
 
 def _wigner_surmise(s, beta):
     """Wigner surmise density of the unit-mean nearest-neighbour spacing.
@@ -99,7 +95,6 @@ def _wigner_surmise_cdf(s, beta):
     return np.interp(s, x, F / F[-1])
 
 
-# Mean adjacent-gap ratio <r> = E[min(s_i, s_{i+1}) / max(s_i, s_{i+1})]: large-N values from
-# Atas et al. (2013), Poisson exactly 2 ln 2 - 1. Needs no unfolding, so it is the primary
-# spacing oracle throughout the module.
+# Mean adjacent-gap ratio <r> (Atas et al. 2013; Poisson = 2 ln 2 - 1) needs no unfolding, so it is
+# the primary spacing oracle.
 _MEAN_RATIO_REFERENCE = {"poisson": 2.0 * np.log(2.0) - 1.0, 1: 0.5307, 2: 0.5996, 4: 0.6744}

@@ -18,10 +18,8 @@ from stochpylib.statistics._common import (  # noqa: F401  (re-exported for sibl
 from stochpylib.copulas._utils import _rank_ties  # noqa: F401
 
 
-# --------------------------------------------------------------------- kernels
-#
-# Each kernel is K(u); R(K) = integral K(u)^2 du and mu2(K) = integral u^2 K(u) du
-# are used by bandwidth rules and asymptotic-variance formulas in density/regression.
+# Each kernel is K(u); R(K) = int K^2 and mu2(K) = int u^2 K feed the bandwidth rules and asymptotic
+# variances.
 
 def _kernel_gaussian(u):
     return np.exp(-0.5 * u * u) / np.sqrt(2.0 * np.pi)
@@ -83,8 +81,6 @@ def _kernel_fn(kernel):
         raise ValueError(f"unknown kernel {kernel!r}; choose from {sorted(_KERNELS)}")
     return _KERNELS[kernel]
 
-
-# --------------------------------------------------------------------- bandwidths
 
 def _bw_scott(x):
     """Scott's rule, matching scipy.stats.gaussian_kde's 1-D ``scotts_factor``:
@@ -163,8 +159,6 @@ def _select_bandwidth(x, bandwidth, kernel="gaussian"):
     raise ValueError(f"unknown bandwidth rule {bandwidth!r}")
 
 
-# --------------------------------------------------------------------- isotonic (weighted PAVA)
-
 def _pava_weighted(y, w=None, increasing=True):
     """Weighted pool-adjacent-violators isotonic regression.
 
@@ -196,8 +190,6 @@ def _pava_weighted(y, w=None, increasing=True):
     return out
 
 
-# --------------------------------------------------------------------- B-splines
-
 def _bspline_knots(x, n_knots, degree):
     """Clamped uniform knot vector spanning ``x``'s range with ``n_knots`` interior
     control intervals."""
@@ -223,8 +215,6 @@ def _bspline_design(x, knots, degree):
         B[:, j] = spline(x)
     return B
 
-
-# --------------------------------------------------------------------- Owen's empirical likelihood
 
 def _el_logstar(z, eps):
     """Owen's pseudo-log: log(z) for z >= eps, a quadratic extrapolation below eps
@@ -258,8 +248,6 @@ def _el_logstar2(z, eps):
     out[lo] = -1.0 / eps ** 2
     return out
 
-
-# --------------------------------------------------------------------- DKW / distance helpers
 
 def _cdf_grid_from_pdf(grid, pdf_vals):
     """Cumulative-trapezoid CDF grid from a pdf sampled on ``grid``, normalized

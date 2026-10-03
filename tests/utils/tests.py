@@ -59,8 +59,6 @@ from stochpylib.utils import (
 )
 
 
-# ============================================================================ random
-
 class TestRandom:
     def test_random_state_matches_default_rng_for_int(self):
         g1 = random_state_fn(5)
@@ -143,8 +141,6 @@ class TestRandom:
         seen = [tuple(v) for v in results.values()]
         assert len(set(seen)) == 8
 
-
-# ======================================================================= performance
 
 class TestBenchmark:
     def test_benchmark_positive_times_and_se(self):
@@ -434,8 +430,6 @@ class TestJITCompile:
         assert wrapped.py_func is h
 
 
-# ==================================================================== reproducibility
-
 class TestReproducibility:
     def test_context_manager_restores_prior_root(self):
         _rng_mod.set_root(999)
@@ -562,8 +556,6 @@ class TestExperimentLogger:
         assert logger.runs_[0]["metrics"]["est"] == {"estimate": 1.5, "std_error": 0.1}
 
 
-# ============================================================================== data
-
 class TestFit:
     def test_fit_ranks_gamma_first_and_matches_scipy_loglik(self):
         rng = np.random.default_rng(0)
@@ -591,7 +583,7 @@ class TestFit:
 
     def test_fit_unsupported_candidate_lands_in_failed(self):
         rng = np.random.default_rng(3)
-        x = -rng.gamma(3.0, 2.0, 500)  # negative support: Exponential/Gamma/Weibull should fail
+        x = -rng.gamma(3.0, 2.0, 500)
         result = fit(x, distributions=["Normal", "Exponential"])
         assert "Exponential" in result.failed_
         assert result.best_name_ == "Normal"
@@ -721,8 +713,8 @@ class TestOutlierDetection:
     def test_grubbs_critical_value_matches_student_t(self):
         x = self._contaminated()
         out = outlier_detection(x, method="grubbs", alpha=0.05)
-        # the returned threshold is from the *last* (deciding, stopping) iteration,
-        # whose sample size has already shrunk by the number of removed outliers.
+        # The returned threshold is from the last (deciding, stopping) iteration, whose sample size
+        # has already shrunk by the removed outliers.
         m = len(x) - out.n_outliers
         t_crit = stats.t.ppf(1.0 - 0.05 / (2.0 * m), m - 2)
         g_crit = ((m - 1) / np.sqrt(m)) * np.sqrt(t_crit ** 2 / (m - 2 + t_crit ** 2))
@@ -730,10 +722,8 @@ class TestOutlierDetection:
         assert out.mask[-1] and out.mask[-2]
 
     def test_hampel_flags_isolated_outliers(self):
-        # Hampel's rolling window can mask *adjacent* outliers of opposite sign (a
-        # known property of small local windows, not this implementation) -- unlike
-        # the other methods' fixture, the outliers here are placed far apart so
-        # neither falls in the other's window.
+        # Hampel's rolling window can mask adjacent outliers of opposite sign (inherent to small
+        # local windows), so the outliers here are placed far apart.
         rng = np.random.default_rng(11)
         x = rng.standard_normal(200)
         x[50] = 60.0
@@ -806,8 +796,6 @@ class TestMissingImputation:
         out = missing_imputation(x, method="mean")
         assert out.ndim == 1 and out.shape == x.shape
 
-
-# ================================================================================ io
 
 class TestToDictFromDict:
     @pytest.mark.parametrize("name,args", [
@@ -990,8 +978,6 @@ class TestSummary:
         result = fit(rng.standard_normal(300), distributions=["Normal", "Cauchy"])
         assert result.best_name_ in summary(result)
 
-
-# ============================================================================= compat
 
 class TestCompat:
     def test_numpy_interface_list_and_result(self):

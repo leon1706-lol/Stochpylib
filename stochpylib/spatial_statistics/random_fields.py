@@ -197,7 +197,7 @@ class OrnsteinUhlenbeckField:
     def sample(self, coords, n_samples=1, random_state=None):
         X = _as_coords(coords)
         if self.separable:
-            H = np.abs(X[:, None, :] - X[None, :, :])          # per-axis |h_i|
+            H = np.abs(X[:, None, :] - X[None, :, :])
             C = self.variance * np.exp(-H.sum(axis=2) / self.length_scale)
         else:
             C = self._cov_fn(_pairwise(X))
@@ -250,9 +250,8 @@ class BrownianSheet:
             raise ValueError("shape must have one entry per extent dimension")
         rng = _rng(random_state)
         field = rng.standard_normal(shape)
-        # scale by sqrt(cell) and zero each axis's origin slice *before* cumulative-summing
-        # any axis -- W must vanish whenever any coordinate is 0, and zeroing only after
-        # cumsum leaves earlier terms contaminated by the discarded origin draw
+        # Scale by sqrt(cell) and zero each axis's origin slice before cumulative-summing: W must
+        # vanish whenever any coordinate is 0.
         for axis, (size, ext) in enumerate(zip(shape, self.extent)):
             cell = ext / (size - 1) if size > 1 else ext
             field = field * np.sqrt(cell)
@@ -297,7 +296,6 @@ class FractionalBrownianSheet:
         rng = _rng(random_state)
         Ls = [self._axis_cholesky(s, e, h) for s, e, h in zip(shape, self.extent, self.hurst)]
         field = rng.standard_normal(shape)
-        # apply each axis's Cholesky factor via tensordot, moving the transformed axis back
         for axis, L in enumerate(Ls):
             field = np.moveaxis(np.tensordot(L, field, axes=([1], [axis])), 0, axis)
         return field

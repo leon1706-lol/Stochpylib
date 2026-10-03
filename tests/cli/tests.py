@@ -24,8 +24,6 @@ PYPI_META = {
 }
 
 
-# --------------------------------------------------------------- version_key
-
 @pytest.mark.parametrize("version,expected", [
     ("0.6.3", (0, 6, 3)),
     ("1.0", (1, 0)),
@@ -40,8 +38,6 @@ def test_version_key_parses(version, expected):
 def test_version_key_numeric_not_lexicographic():
     assert version_key("0.10.0") > version_key("0.9.9")
 
-
-# ------------------------------------------------------------------- fetch
 
 class _FakeResponse:
     def __init__(self, payload):
@@ -140,8 +136,6 @@ def test_fetch_unwritable_cache_still_returns_meta(tmp_path, monkeypatch):
     assert meta is not None and meta["latest"] == "0.7.0"
 
 
-# ------------------------------------------------------------ update_available
-
 def test_update_available_statuses():
     assert update_available("0.6.3", {"latest": "0.7.0"}) == "update"
     assert update_available("0.7.0", {"latest": "0.7.0"}) == "current"
@@ -150,13 +144,9 @@ def test_update_available_statuses():
     assert update_available("0.6.3", {"latest": ""}) == "unknown"
 
 
-# ------------------------------------------------------------------ install_mode
-
 def test_install_mode_returns_known_classification():
     assert install_mode() in ("editable", "local", "wheel", "source")
 
-
-# --------------------------------------------------------------- spl --version
 
 def test_version_cmd_reports_installed_and_latest(capsys, monkeypatch):
     monkeypatch.setattr(cli, "fetch_pypi_meta", lambda **kw: dict(PYPI_META))
@@ -198,8 +188,6 @@ def test_version_list_marks_installed_and_latest(capsys, monkeypatch):
     assert "* installed" in out
     assert "latest" in out
     assert "4 published versions" in out
-    # the installed release line (indented table row) carries the marker;
-    # exclude the bare version echo on line 1
     installed_line = [ln for ln in out.splitlines()
                       if ln.startswith("  ") and ln.strip().startswith("0.6.3")][0]
     assert "* installed" in installed_line
@@ -215,8 +203,6 @@ def test_version_list_no_releases(capsys, monkeypatch):
     assert cli.main(["--version", "--list"]) == 0
     assert "no published releases" in capsys.readouterr().out
 
-
-# ------------------------------------------------------------------ spl update
 
 def test_update_dry_run_prints_plan_without_executing(capsys, monkeypatch):
     ran = []
@@ -332,8 +318,6 @@ class _FakeResult:
         self.returncode = returncode
 
 
-# -------------------------------------------------------------------- spl info
-
 def test_info_reports_environment(capsys):
     import numpy
     import scipy
@@ -347,14 +331,12 @@ def test_info_reports_environment(capsys):
         assert module in out
 
 
-# -------------------------------------------------------------------- spl show
-
 def test_show_known_class_prints_signature_and_doc(capsys):
     assert cli.main(["show", "Normal"]) == 0
     out = capsys.readouterr().out
     assert "stochpylib.distributions.Normal" in out
-    assert "(mu" in out  # constructor signature
-    assert len(out) > 100  # docstring present
+    assert "(mu" in out
+    assert len(out) > 100
 
 
 def test_show_known_function(capsys):
@@ -372,7 +354,7 @@ def test_show_unknown_suggests_close_matches(capsys):
     assert cli.main(["show", "Nrmal"]) == 1
     out = capsys.readouterr().out
     assert "unknown public name" in out
-    assert "Normal" in out  # suggestion
+    assert "Normal" in out
 
 
 def test_show_ambiguous_name_lists_every_owner(capsys):
@@ -384,9 +366,8 @@ def test_show_ambiguous_name_lists_every_owner(capsys):
 
 
 def test_show_qualified_name_picks_one_owner(capsys):
-    # each docstring legitimately mentions the other module by name (see their
-    # relationship), so check the qualified header and the absence of the
-    # disambiguation line, not a blanket absence of the other module's name.
+    # Each docstring mentions the other module by name, so check the qualified header and the
+    # missing disambiguation line, not a blanket absence.
     assert cli.main(["show", "spatial_statistics.GaussianRandomField"]) == 0
     out = capsys.readouterr().out
     assert out.startswith("stochpylib.spatial_statistics.GaussianRandomField")
@@ -414,8 +395,6 @@ def test_show_every_exported_name_resolves():
             assert cli.cmd_show(attr) == 0, f"{module_name}.{attr} not resolvable"
 
 
-# -------------------------------------------------------------------- spl demo
-
 def test_demo_bare_lists_all_modules(capsys):
     assert cli.main(["demo"]) == 0
     out = capsys.readouterr().out
@@ -436,8 +415,6 @@ def test_demo_unknown_module_fails_with_suggestion(capsys):
     assert "probability" in out
 
 
-# -------------------------------------------------------------------- spl cite
-
 def test_cite_contains_bibtex_and_urls(capsys):
     assert cli.main(["cite"]) == 0
     out = capsys.readouterr().out
@@ -446,8 +423,6 @@ def test_cite_contains_bibtex_and_urls(capsys):
     assert "https://github.com/leon1706-lol/Stochpylib" in out
     assert stochpylib.__version__ in out
 
-
-# ------------------------------------------------------------------- --help
 
 def test_help_lists_subcommands_and_flags(capsys):
     with pytest.raises(SystemExit):

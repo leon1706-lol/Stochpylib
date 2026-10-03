@@ -103,7 +103,6 @@ def importance_sampling(integrand, target_pdf, proposal_sampler, proposal_pdf,
     g = _eval_integrand(integrand, pts)
     weighted = t * g
     estimate = float(weighted.sum() / d.sum())
-    # self-normalized delta-method standard error
     w = t / d
     se = float(np.sqrt(np.mean(w * (g - estimate) ** 2) / n))
     w_norm = w / w.sum()
@@ -128,7 +127,7 @@ def rejection_sampling(target_pdf, proposal_sampler, proposal_pdf, n_samples=100
     batch_size = batch_size or max(n_samples, 1000)
     accepted = []
     trials = 0
-    if k_bound is None:  # pilot calibration
+    if k_bound is None:
         pilot_pts = np.atleast_2d(proposal_sampler(min(batch_size, 5000), rng))
         t = np.asarray(target_pdf(pilot_pts), dtype=float).reshape(-1)
         p = np.asarray(proposal_pdf(pilot_pts), dtype=float).reshape(-1)

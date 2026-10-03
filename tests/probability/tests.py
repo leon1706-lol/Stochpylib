@@ -31,8 +31,6 @@ from stochpylib.probability.independence import (
 )
 
 
-# --- basics ---
-
 def test_sample_space_uniform():
     s = sample_space(["H", "T"])
     assert s == {"H": 0.5, "T": 0.5}
@@ -71,7 +69,6 @@ def test_union_and_intersection():
 
 def test_conditional_P_fair_die():
     s = sample_space([1, 2, 3, 4, 5, 6])
-    # P(even | in {2,3,4,5}) = P({2,4}) / P({2,3,4,5}) = (2/6) / (4/6) = 0.5
     assert conditional_P(event(2, 4, 6), event(2, 3, 4, 5), s) == pytest.approx(0.5)
 
 
@@ -82,7 +79,6 @@ def test_conditional_P_rejects_zero_probability_condition():
 
 
 def test_total_probability_and_bayes_disease_screening():
-    # Classic example: 1% prevalence, 99% sensitivity, 5% false-positive rate.
     p_b = total_probability((0.99, 0.01), (0.05, 0.99))
     assert p_b == pytest.approx(0.0594)
     p_disease_given_positive = bayes_theorem(0.01, 0.99, p_b)
@@ -93,8 +89,6 @@ def test_bayes_theorem_rejects_zero_probability_evidence():
     with pytest.raises(ZeroDivisionError):
         bayes_theorem(0.5, 0.5, 0.0)
 
-
-# --- combinatorics ---
 
 def test_factorial():
     assert factorial(5) == 120
@@ -136,10 +130,7 @@ def test_derangement():
     assert derangement(1) == 0
 
 
-# --- independence ---
-
 def test_is_independent_true_for_independent_events():
-    # Two fair coin flips: A = first is H, B = second is H.
     s = sample_space(["HH", "HT", "TH", "TT"])
     a = event("HH", "HT")
     b = event("HH", "TH")
@@ -158,9 +149,9 @@ def test_mutual_exclusion():
 
 def test_pairwise_independence():
     s = sample_space(["HH", "HT", "TH", "TT"])
-    a = event("HH", "HT")  # first flip is H
-    b = event("HH", "TH")  # second flip is H
-    c = event("HH")  # both flips are H — dependent on a and on b individually
+    a = event("HH", "HT")
+    b = event("HH", "TH")
+    c = event("HH")
     assert pairwise_independence([a, b], s)
     assert not pairwise_independence([a, b, c], s)
 

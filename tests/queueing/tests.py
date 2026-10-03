@@ -32,8 +32,6 @@ from stochpylib.queueing.networks import (
 )
 
 
-# ---------------------------------------------------------------- M/M/1
-
 class TestMM1:
     def test_closed_form_identity(self):
         r = MM1Queue().fit(.8, 1.2)
@@ -58,8 +56,6 @@ class TestMM1:
             r.L = 999
 
 
-# ---------------------------------------------------------------- M/M/c
-
 class TestMMC:
     def test_c1_equals_mm1(self):
         mmc = MMCQueue(n_servers=1).fit(.8, 1.2)
@@ -75,8 +71,6 @@ class TestMMC:
         r4 = MMCQueue(n_servers=4).fit(.8, 1.0)
         assert r4.Wq <= r2.Wq
 
-
-# ---------------------------------------------------------------- M/D/1 & M/G/1
 
 class TestMDMG1:
     def test_md1_lower_lq_than_mm1(self):
@@ -95,8 +89,6 @@ class TestMDMG1:
         assert mg_high.Lq > mg_low.Lq
 
 
-# ---------------------------------------------------------------- G/G/1
-
 class TestGIG1:
     def test_positive_results(self):
         r = GIGQueue().fit(.7, 1.2, arrival_cv=1., service_cv=1.)
@@ -105,8 +97,6 @@ class TestGIG1:
     def test_gi1_alias(self):
         assert isinstance(GI1Queue().fit(.5, 1.0), QueueResult)
 
-
-# ---------------------------------------------------------------- priority
 
 class TestPriority:
     def test_class1_shorter_wait_than_class2(self):
@@ -123,8 +113,6 @@ class TestPriority:
         assert "system" in pq.results_
         assert pq.results_["system"].L > 0
 
-
-# ---------------------------------------------------------------- birth-death
 
 class TestBirthDeath:
     def test_erlang_b_known_value(self):
@@ -157,8 +145,6 @@ class TestBirthDeath:
         mm1 = MM1Queue().fit(.5, 1.0)
         assert abs(result["L"] - mm1.L) < 0.05
 
-
-# ---------------------------------------------------------------- networks
 
 class TestNetworks:
     def _make_jackson(self):
@@ -210,8 +196,6 @@ class TestNetworks:
             BCMP(population=2, service_demands=[.5], station_types=[2])
 
 
-# ---------------------------------------------------------------- simulation
-
 class TestSimulation:
     def test_mm1_simulation_close_to_analytical(self):
         qs = QueueSimulation("MM1", arrival_rate=.5, service_rate=1.,
@@ -246,8 +230,6 @@ class TestSimulation:
         assert res.extras.get("n_served", 0) > 0
 
 
-# ---------------------------------------------------------------- analysis
-
 class TestAnalysis:
     def test_little_law_solve_for_W(self):
         r = LittleLaw(L=10, arrival_rate=2.)
@@ -277,12 +259,10 @@ class TestAnalysis:
         wtd = WaitingTimeDistribution("MM1", arrival_rate=.5,
                                        service_rate=1.)
         cdf_vals = wtd.cdf([0., 1., 5.])
-        assert cdf_vals[0] >= .5       # atom at zero
+        assert cdf_vals[0] >= .5
         assert cdf_vals[2] > .9
         assert abs(wtd.mean() - 1.0) < .01
 
-
-# ---------------------------------------------------------------- wiring
 
 def test_module_wiring():
     import stochpylib
@@ -300,9 +280,6 @@ def test_module_wiring():
                 "DiscreteEventSim", "SimStats"}
     missing = expected - set(qm.__all__)
     assert not missing, f"missing: {missing}"
-
-
-# --------------------------------------------------- V0.20.0 random_state= retrofit
 
 
 class TestRandomStateRetrofit:

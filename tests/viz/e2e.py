@@ -29,8 +29,6 @@ def _svg(fig):
     return fig
 
 
-# ------------------------------------------------------------------------- scene graph
-
 @exercise("Figure")
 def _figure():
     fig = mod.Figure(nrows=1, ncols=2, title="demo")
@@ -46,8 +44,6 @@ def _axes():
     assert art.kind == "scatter"
     _svg(fig)
 
-
-# ------------------------------------------------------------------------- distributions
 
 @exercise("plot_pdf")
 def _plot_pdf():
@@ -113,8 +109,6 @@ def _plot_kde():
     _svg(mod.plot_kde(_RNG.standard_normal(300)))
 
 
-# ------------------------------------------------------------------------- processes
-
 @exercise("plot_process")
 def _plot_process():
     paths = _RNG.standard_normal((20, 60)).cumsum(axis=1)
@@ -164,8 +158,6 @@ def _plot_wavelet():
 def _plot_trajectory():
     _svg(mod.plot_trajectory(_ar1_series(), lag=1))
 
-
-# ------------------------------------------------------------------------- diagnostics
 
 def _hmc_sampler():
     from stochpylib.advanced_mcmc import HamiltonianMonteCarlo
@@ -230,8 +222,6 @@ def _funnel_plot():
     _svg(fig)
 
 
-# ------------------------------------------------------------------------- multivariate
-
 @exercise("plot_heatmap")
 def _plot_heatmap():
     _svg(mod.plot_heatmap(_RNG.random((5, 6))))
@@ -264,8 +254,6 @@ def _plot_dendrogram():
     X = np.vstack([_RNG.standard_normal((5, 2)), _RNG.standard_normal((5, 2)) + 8])
     _svg(mod.plot_dendrogram(X))
 
-
-# ------------------------------------------------------------------------- special
 
 @exercise("plot_markov_chain")
 def _plot_markov_chain():

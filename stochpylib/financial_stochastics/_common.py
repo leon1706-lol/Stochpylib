@@ -29,7 +29,6 @@ def _check_kind(kind):
         raise ValueError("kind must be 'call' or 'put'")
 
 
-# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
 from stochpylib._rng import as_generator as _rng
 
 

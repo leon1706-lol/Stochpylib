@@ -10,7 +10,6 @@ import numpy as np
 from scipy import optimize, special
 
 
-# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
 from stochpylib._rng import as_generator as _rng
 
 
@@ -41,8 +40,6 @@ def _design(X, fit_intercept=True):
         return np.column_stack([np.ones(X.shape[0]), X])
     return X
 
-
-# --------------------------------------------------------------------- distributions
 
 def _norm_cdf(x):
     return special.ndtr(np.asarray(x, dtype=float))
@@ -120,11 +117,8 @@ def _pvalue_from_t(t, df, alternative="two-sided"):
     raise ValueError("alternative must be 'two-sided', 'greater', or 'less'")
 
 
-# --------------------------------------------------------------------- studentized range
-#
-# q ~ range of k iid N(0,1) draws, scaled by an independent sqrt(chi2_df/df) estimate of
-# scale. P(q < x) = integral over s>0 of f_df(s) * [ k * integral phi(z)[Phi(z)-Phi(z-x*s)]^(k-1) dz ] ds
-# where f_df is the density of s = sqrt(chi2_df/df) (so s has mean ~1). Used by tukey_hsd.
+# Studentized range: q = range of k iid N(0,1) over an independent sqrt(chi2_df/df) scale estimate;
+# P(q < x) = int f_df(s) k int phi(z)[Phi(z)-Phi(z-x s)]^(k-1) dz ds. Used by tukey_hsd.
 
 _GL96_X, _GL96_W = np.polynomial.legendre.leggauss(96)
 _GL128_X, _GL128_W = np.polynomial.legendre.leggauss(128)
@@ -136,7 +130,6 @@ def _inner_range_integral(x, k):
     lo, hi = -8.5, 8.5
     z = 0.5 * (hi - lo) * _GL96_X + 0.5 * (hi + lo)
     w = 0.5 * (hi - lo) * _GL96_W
-    # z: (96,), x: (m,) -> broadcast to (m, 96)
     zz = z[None, :]
     xx = x[:, None]
     diff = _norm_cdf(zz) - _norm_cdf(zz - xx)
@@ -157,7 +150,6 @@ def _ptukey(q, k, df):
         out = _inner_range_integral(q, k)
         return out if out.size > 1 else float(out[0])
 
-    # s has density of sqrt(chi2_df/df); peak near s=1, spread ~ 1/sqrt(2df).
     lo = np.sqrt(max(_chi2_ppf(1e-14, df), 1e-8) / df)
     hi = np.sqrt(_chi2_ppf(1.0 - 1e-14, df) / df)
     s = 0.5 * (hi - lo) * _GL128_X + 0.5 * (hi + lo)
@@ -168,8 +160,7 @@ def _ptukey(q, k, df):
     )
     f_s = np.exp(log_f)
 
-    # For each q, integrate inner(q * s, k) * f_s(s) ds
-    qs = q[:, None] * s[None, :]  # (m, 128)
+    qs = q[:, None] * s[None, :]
     inner = _inner_range_integral(qs.ravel(), k).reshape(qs.shape)
     out = np.sum(inner * (f_s * w)[None, :], axis=1)
     out = np.clip(out, 0.0, 1.0)
@@ -188,8 +179,6 @@ def _qtukey(p, k, df, lo=0.1, hi=30.0):
         return hi
     return float(optimize.brentq(f, lo, hi, xtol=1e-10, rtol=1e-12))
 
-
-# --------------------------------------------------------------------- calculus
 
 def _numeric_grad(f, x, eps=1e-6):
     """Central-difference gradient of a scalar function f(x) -> float."""

@@ -10,7 +10,6 @@ import numpy as np
 from scipy import special
 
 
-# shared library-wide RNG resolution (accepts Generator/RandomState/RandomStream/int/...)
 from stochpylib._rng import as_generator as _rng
 
 
@@ -145,7 +144,7 @@ class _NormalInverseGamma:
     def rvs(self, size=1, random_state=None):
         rng = _rng(random_state)
         n = size if isinstance(size, int) else int(np.prod(size))
-        sigma2 = self.beta / rng.gamma(self.alpha, 1.0, size=n)  # InvGamma(alpha, beta)
+        sigma2 = self.beta / rng.gamma(self.alpha, 1.0, size=n)
         mu = self.mu + rng.standard_normal(n) * np.sqrt(sigma2 / self.kappa)
         out = np.column_stack([mu, sigma2])
         return out[0] if size == 1 else out
@@ -280,7 +279,7 @@ def _psis(log_ratios):
         else:
             q = sigma / k * ((1 - probs) ** (-k) - 1)
         smoothed = np.log(np.exp(cutoff) + q)
-        out[tail_idx, j] = smoothed  # tail_idx is already ascending in col value, as is q
+        out[tail_idx, j] = smoothed
     log_max_w = np.log(S ** 0.75) + _logsumexp(out, axis=0) - np.log(S)
     out = np.minimum(out, log_max_w[None, :])
     out = out - _logsumexp(out, axis=0)[None, :]

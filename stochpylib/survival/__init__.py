@@ -45,22 +45,16 @@ from stochpylib.survival.competing_risks import (
 
 __all__ = [
     "SurvivalFitter",
-    # nonparametric
     "KaplanMeier", "NelsonAalen", "LifeTable", "EmpiricalSurvival",
     "BreslowEstimator",
-    # functions
     "SurvivalFunction", "HazardFunction", "CumulativeHazard",
     "ResidualLifetime", "MeanResidualLife",
-    # parametric
     "WeibullSurvival", "ExponentialSurvival", "LogNormalSurvival",
     "LogLogisticSurvival", "GompertzSurvival",
-    # regression
     "CoxProportionalHazards", "StratifiedCox", "AcceleratedFailureTime",
     "AalenAdditiveModel", "FineGrayModel",
-    # tests (log-rank family)
     "LogRankTest", "WilcoxonSurvival", "TaroneWareTest", "PetoTest",
     "FlemingHarrington",
-    # competing risks
     "CauseSpecificHazard", "CumulativeIncidenceFunction",
     "CompetingRisksModel",
 ]

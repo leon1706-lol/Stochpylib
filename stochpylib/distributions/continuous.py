@@ -214,8 +214,7 @@ class Gamma(Distribution):
     def pdf(self, x):
         x = np.asarray(x, dtype=float)
         k, theta = self.shape, self.scale
-        # log-space: x**(k-1)/theta**k overflows for large k (e.g. a conjugate
-        # Poisson-Gamma posterior with a large sample size) -- see development/Probleme.md.
+        # Log-space: x**(k-1)/theta**k overflows for large k.
         with np.errstate(divide="ignore", invalid="ignore"):
             log_pdf = special.xlogy(k - 1, x) - x / theta - special.gammaln(k) - k * np.log(theta)
         return np.where(x >= 0, np.exp(log_pdf), 0.0)
@@ -1055,8 +1054,7 @@ class Rice(Distribution):
         x = np.asarray(x, dtype=float)
         nu, s = self.nu, self.sigma
         with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
-            # evaluated in log space: log I0(y) = y + log(i0e(y)) avoids the overflow to NaN
-            # of the naive form (I0 explodes like e^y while the Gaussian factor decays).
+            # log I0(y) = y + log(i0e(y)) avoids the NaN overflow of the naive form.
             y = x * nu / s**2
             logpdf = (
                 np.log(x / s**2)
@@ -1142,7 +1140,7 @@ class VonMises(Distribution):
         c, s = np.mean(np.cos(data)), np.mean(np.sin(data))
         mu = np.arctan2(s, c)
         r = np.sqrt(c**2 + s**2)
-        # i1e/i0e: same ratio as i1/i0 without the overflow to inf/inf = NaN at the upper bracket
+        # i1e/i0e: same ratio as i1/i0 without inf/inf = NaN at the upper bracket.
         kappa = optimize.brentq(lambda k: special.i1e(k) / special.i0e(k) - r, 1e-8, 1e4)
         return cls(float(mu), float(kappa))
 

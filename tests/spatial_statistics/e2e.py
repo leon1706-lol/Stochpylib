@@ -24,8 +24,6 @@ _VALUES = _RNG.normal(size=60) + 0.05 * _COORDS[:, 0]
 _WINDOW = ((0.0, 10.0), (0.0, 10.0))
 
 
-# ------------------------------------------------------------------------- variogram
-
 @exercise("Variogram")
 def _variogram_base():
     v1 = mod.Semivariogram(model="spherical", nugget=0.1, sill=1.0, range=2.0)
@@ -84,9 +82,7 @@ def _range():
     assert float(r) > 0.0
 
 
-# --------------------------------------------------------------------------- kriging
-
-_V = None  # populated lazily on first use, shared across kriging exercises
+_V = None
 
 
 def _shared_variogram():
@@ -148,8 +144,6 @@ def _disjunctive_kriging():
     assert np.all((p >= 0) & (p <= 1))
 
 
-# ---------------------------------------------------------------------- random fields
-
 @exercise("GaussianRandomField")
 def _gaussian_random_field():
     grf = mod.GaussianRandomField(covariance=_shared_variogram())
@@ -184,8 +178,6 @@ def _fbm_sheet():
     g = fbs.sample_grid((8, 8), random_state=5)
     assert g.shape == (8, 8)
 
-
-# ------------------------------------------------------------------- point processes
 
 @exercise("SpatialPointProcess")
 def _spatial_point_process():
@@ -242,8 +234,6 @@ def _pair_correlation():
     assert isinstance(g, mod.SpatialFunction)
 
 
-# -------------------------------------------------------------------------------- tests
-
 @exercise("MoransI")
 def _morans_i():
     W = mod.SpatialWeights.knn(_COORDS, k=6)
@@ -270,8 +260,6 @@ def _nn_distance_test():
     r = mod.NNDistanceTest(_COORDS, _WINDOW)
     assert r.pvalue is not None
 
-
-# ------------------------------------------------------------------------------- extras
 
 @exercise("SpatialWeights")
 def _spatial_weights():

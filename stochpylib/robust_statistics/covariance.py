@@ -22,8 +22,6 @@ from stochpylib.robust_statistics._common import (
 __all__ = ["RobustCovariance", "MCD", "MVE", "OGK", "RobustCorrelation", "CovShrinkage"]
 
 
-# --------------------------------------------------------------------- MCD
-
 class MCD(RobustCovarianceEstimator):
     """Minimum Covariance Determinant (Rousseeuw & Van Driessen 1999,
     "FAST-MCD"): the h-subset (``h ~ n/2`` by default) with minimal
@@ -137,8 +135,6 @@ def _mcd_c_steps(X, h, loc, cov, max_iter=50):
     return loc, cov, subset, det
 
 
-# --------------------------------------------------------------------- MVE
-
 class MVE(RobustCovarianceEstimator):
     """Minimum Volume Ellipsoid (Rousseeuw & Leroy 1987): the (p+1)-point
     subset minimizing the volume of the ellipsoid covering its own h-th
@@ -214,8 +210,6 @@ class MVE(RobustCovarianceEstimator):
             self.support_mask_ = self.raw_support_mask_
         return self
 
-
-# --------------------------------------------------------------------- OGK
 
 class OGK(RobustCovarianceEstimator):
     """Orthogonalized Gnanadesikan-Kettenring covariance (Maronna & Zamar
@@ -294,9 +288,8 @@ class OGK(RobustCovarianceEstimator):
             if int(np.sum(w)) < p + 1:
                 w = np.ones(n, dtype=bool)
             loc_r, cov_r = _mean_cov(X[w])
-            # truncating to the central `beta` fraction of a chi2_p-distributed
-            # squared distance shrinks the sample covariance; the same
-            # consistency correction MCD/MVE use undoes it.
+            # Truncating to the central `beta` fraction of a chi2_p squared-distance sample shrinks
+            # the covariance; the MCD/MVE consistency correction undoes it.
             c_r = _chi2_consistency(self.beta, p)
             self.location_ = loc_r
             self.covariance_ = c_r * cov_r
@@ -307,8 +300,6 @@ class OGK(RobustCovarianceEstimator):
             self.weights_ = None
         return self
 
-
-# ------------------------------------------------------------ dispatchers
 
 class RobustCovariance(RobustCovarianceEstimator):
     """Dispatcher: ``method`` is ``"mcd"``, ``"mve"``, ``"ogk"``, ``"huber"``
@@ -432,8 +423,6 @@ class RobustCorrelation:
         raise ValueError(f"pairwise is not defined for method {self.method!r}")
 
 
-# --------------------------------------------------------------------- shrinkage
-
 class CovShrinkage:
     """Shrinkage covariance estimator: ``covariance_ = (1-delta)*S + delta*F``.
 
@@ -472,7 +461,7 @@ class CovShrinkage:
             den = (n + 1.0 - 2.0 / p) * (trS2 - trS_sq / p)
             delta = num / den if den > 0 else 1.0
             delta = float(np.clip(delta, 0.0, 1.0))
-        else:  # ledoit_wolf
+        else:
             F = self._target_matrix(S, Xc, n)
             delta = self._lw_delta(S, F, Xc, n, p)
 
@@ -488,7 +477,6 @@ class CovShrinkage:
             return mu_bar * np.eye(p)
         if self.target == "diagonal":
             return np.diag(np.diag(S))
-        # constant_correlation (Ledoit-Wolf 2003)
         d = np.sqrt(np.clip(np.diag(S), 1e-300, None))
         R = S / np.outer(d, d)
         r_bar = (np.sum(R) - p) / (p * (p - 1)) if p > 1 else 0.0
@@ -521,7 +509,6 @@ class CovShrinkage:
             num *= n / (n - 1.0) ** 3
             den = np.sum(((S - F) ** 2)[off])
             return float(np.clip(num / den if den > 0 else 0.0, 0.0, 1.0))
-        # constant_correlation (Ledoit & Wolf 2003, "Honey I shrunk...")
         d = np.sqrt(np.clip(np.diag(S), 1e-300, None))
         R = S / np.outer(d, d)
         r_bar = (np.sum(R) - p) / (p * (p - 1)) if p > 1 else 0.0

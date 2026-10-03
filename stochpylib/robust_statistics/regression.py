@@ -24,8 +24,6 @@ __all__ = [
 ]
 
 
-# ------------------------------------------------------------------ Theil-Sen
-
 class TheilSenRegression(RobustRegressor):
     """Theil-Sen slope estimator: the median of all pairwise slopes.
 
@@ -114,8 +112,6 @@ class TheilSenRegression(RobustRegressor):
         self.n_iter_ = None
 
 
-# --------------------------------------------------------------------- Siegel
-
 class SiegalRegression(RobustRegressor):
     """Siegel (1982) repeated-medians simple regression: 50% breakdown,
     matches ``scipy.stats.siegelslopes`` exactly. Defined for one predictor
@@ -158,8 +154,6 @@ class SiegalRegression(RobustRegressor):
 SiegelRegression = SiegalRegression
 
 
-# --------------------------------------------------------------------- RANSAC
-
 class RANSACRegression(RobustRegressor):
     """RANSAC (Fischler & Bolles 1981): repeatedly fit a minimal random
     subset, keep the largest consensus set of inliers, refit OLS on it."""
@@ -181,9 +175,8 @@ class RANSACRegression(RobustRegressor):
         if min_samples > n:
             raise ValueError("min_samples cannot exceed the number of observations")
         if self.residual_threshold is None:
-            # a Theil-Sen pilot fit gives a scale-appropriate residual threshold
-            # (MAD of the raw y is contaminated by the regression's own slope
-            # spread, not just noise, for data whose predictors have wide range)
+            # A Theil-Sen pilot gives a scale-appropriate residual threshold (the raw-y MAD is
+            # contaminated by the slope spread).
             pilot = TheilSenRegression(fit_intercept=False, random_state=self.random_state)
             pilot._fit(Xd, y)
             threshold = max(_mad(y - Xd @ pilot.coef_, normal=False), 1e-12)
@@ -244,8 +237,6 @@ class RANSACRegression(RobustRegressor):
         self.n_iter_ = trial
         self.extras_ = {}
 
-
-# ------------------------------------------------------------------------ LTS
 
 def _lts_h(n, p, alpha):
     h_default = (n + p + 1) // 2
@@ -384,8 +375,6 @@ class LTS_Regression(RobustRegressor):
         self.extras_ = {}
 
 
-# --------------------------------------------------------------------- MM/S
-
 class MMRegression(RobustRegressor):
     """MM-estimator (Yohai 1987): an S-estimator (50% breakdown by default)
     for the scale, followed by one M-step at fixed scale for high (default
@@ -494,8 +483,6 @@ def _tukey_biweight_s_weight(u, c):
     from stochpylib.robust_statistics._common import _tukey_weight
     return _tukey_weight(u, c)
 
-
-# ------------------------------------------------------------------- Huber
 
 class HuberRegression(RobustRegressor):
     """Huber's M-estimator via IRLS. Matches ``statsmodels.RLM`` with

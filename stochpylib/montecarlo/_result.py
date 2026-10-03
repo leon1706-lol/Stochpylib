@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-_Z_95 = 1.959963984540054  # two-sided normal quantile for the default level
+_Z_95 = 1.959963984540054
 
 
 @dataclass

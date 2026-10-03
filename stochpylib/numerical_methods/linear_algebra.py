@@ -31,8 +31,6 @@ def _not_computed():
     raise RuntimeError("call .compute() first")
 
 
-# ------------------------------------------------------------- MatrixExponential
-
 _PADE13_B = np.array([
     64764752532480000.0, 32382376266240000.0, 7771770303897600.0,
     1187353796428800.0, 129060195264000.0, 10559470521600.0,
@@ -115,8 +113,6 @@ def _expm_taylor(A, terms=60):
     return total
 
 
-# ------------------------------------------------------------- MatrixLogarithm
-
 class MatrixLogarithm:
     """``log(A)`` (principal branch) via inverse scaling-and-squaring (Denman-Beavers
     square roots + a Gauss-Legendre partial-fraction Pade evaluation of ``log(I+X)``),
@@ -182,8 +178,6 @@ def _logm_inverse_scaling(A):
         log_Y += wi * np.linalg.solve(I + xi * Y, Y)
     return log_Y * (2 ** k)
 
-
-# ------------------------------------------------------------- CholeskyDecomp
 
 class CholeskyDecomp:
     """Native Cholesky decomposition ``A = L L^T``, with optional escalating jitter."""
@@ -266,8 +260,6 @@ def _back_sub(U, b):
         X[i] = (B[i] - U[i, i + 1:] @ X[i + 1:]) / U[i, i]
     return X[:, 0] if vec else X
 
-
-# ------------------------------------------------------------- EigenDecomp
 
 class EigenDecomp:
     """Eigendecomposition: cyclic Jacobi (symmetric) or Hessenberg + shifted QR (general)."""
@@ -370,7 +362,6 @@ def _qr_eig(A, max_iter=500, tol=1e-12):
     it = 0
     while m > 1 and it < max_iter * n:
         it += 1
-        # deflation check
         if abs(Hk[m - 1, m - 2]) < tol * (abs(Hk[m - 1, m - 1]) + abs(Hk[m - 2, m - 2]) + 1e-300):
             Hk[m - 1, m - 2] = 0.0
             m -= 1
@@ -442,8 +433,6 @@ def _eigenvectors_inverse_iteration(A, eigvals, n_iter=3, random_state=0):
         V[:, j] = v
     return V
 
-
-# ------------------------------------------------------------- SVD
 
 class SVD:
     """Singular value decomposition via one-sided Jacobi (Hestenes), or ``numpy.linalg.svd``."""
@@ -529,7 +518,6 @@ def _svd_one_sided_jacobi(A, max_sweeps=60, tol=1e-14):
     U = np.zeros((mB, nB))
     U[:, nz] = B[:, order][:, nz] / sing[nz]
     if not np.all(nz):
-        # fill zero-singular-value columns with an orthonormal complement
         Q, _ = np.linalg.qr(np.eye(mB))
         free = list(np.where(~nz)[0])
         for j in free:
@@ -538,8 +526,6 @@ def _svd_one_sided_jacobi(A, max_sweeps=60, tol=1e-14):
         return V, sing, U.T
     return U, sing, V.T
 
-
-# ------------------------------------------------------------- QRDecomp
 
 class QRDecomp:
     """QR decomposition via Householder reflections (default), modified Gram-Schmidt,
@@ -637,8 +623,6 @@ def _qr_givens(A):
     return Q, R
 
 
-# ------------------------------------------------------------- Schur
-
 class Schur:
     """Real or complex Schur decomposition ``A = Z T Z^*`` via Hessenberg reduction
     followed by the (double-shift Francis / single-shift Wilkinson) QR algorithm.
@@ -713,7 +697,6 @@ def _real_schur(A, max_iter=500, tol=1e-13):
             Hk[m - 2, m - 3] = 0.0
             m -= 2
             continue
-        # double-shift values from the trailing 2x2 of the active block
         a, b_, c_, d = Hk[m - 2, m - 2], Hk[m - 2, m - 1], Hk[m - 1, m - 2], Hk[m - 1, m - 1]
         s = a + d
         p = a * d - b_ * c_
@@ -734,9 +717,8 @@ def _real_schur(A, max_iter=500, tol=1e-13):
             if not last:
                 x, y = Hk[k + 1, k], Hk[k + 2, k]
                 z = Hk[k + 3, k] if k + 3 < m else 0.0
-    # remaining m<=2 block is left as-is: a real pair (both deflate to 1x1 via the
-    # abs(subdiag) check above on the next outer call site) or a genuine complex-
-    # conjugate 2x2 block, exactly what the real Schur form is meant to carry.
+    # Remaining m<=2 block is left as-is: a real pair or a genuine complex-conjugate 2x2 block, as
+    # the real Schur form carries.
     for i in range(2, n):
         Hk[i, :i - 1] = 0.0
     return Hk, Z
@@ -769,7 +751,7 @@ def _complex_schur(A, max_iter=1000, tol=1e-12):
         Q, R = _qr_householder_complex(Hk[:m, :m] - mu * np.eye(m))
         Hk[:m, :m] = R @ Q + mu * np.eye(m)
         if m < n:
-            Hk[:m, m:] = Q.conj().T @ Hk[:m, m:]  # full similarity: Qfull = diag(Q, I)
+            Hk[:m, m:] = Q.conj().T @ Hk[:m, m:]
         Z[:, :m] = Z[:, :m] @ Q
     for i in range(1, n):
         Hk[i, :i - 1] = 0.0

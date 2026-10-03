@@ -62,7 +62,7 @@ def MoransI(values, weights, permutations=0, alternative="two-sided", random_sta
     zc = z - z.mean()
     I = _moran_stat(zc, W)
     expected = -1.0 / (n - 1)
-    b2 = (np.sum(zc ** 4) / n) / (np.sum(zc ** 2) / n) ** 2  # kurtosis
+    b2 = (np.sum(zc ** 4) / n) / (np.sum(zc ** 2) / n) ** 2
     S0sq = S0 ** 2
     var_norm = (n ** 2 * S1 - n * S2 + 3.0 * S0sq) / (S0sq * (n ** 2 - 1)) - expected ** 2
     var_rand = ((n * ((n ** 2 - 3 * n + 3) * S1 - n * S2 + 3.0 * S0sq)
@@ -178,7 +178,7 @@ def SpatialAutocorrelation(values, weights, statistic="moran", local=False, perm
     elif statistic == "geary":
         diff2 = (zc[:, None] - zc[None, :]) ** 2
         Ii = np.sum(W * diff2, axis=1) / m2
-        EIi = np.sum(W, axis=1)  # under randomization, E[c_i] ~ sum_j w_ij (up to (n-1) scaling)
+        EIi = np.sum(W, axis=1)
         name = "Local Geary's C"
     elif statistic == "getis_ord":
         row_sum = np.sum(W, axis=1)
@@ -230,12 +230,11 @@ def NNDistanceTest(points, window, method="clark_evans", edge="donnelly", n_simu
         nn = d_full.min(axis=1)
         r_obs = float(nn.mean())
         r_expected = 0.5 / np.sqrt(lam)
-        r_null = r_expected  # the mean the z-test is measured against
+        r_null = r_expected
         if edge == "donnelly" and W.shape[0] == 2:
-            # Donnelly (1978): observed NN distances are edge-truncated (a point's true
-            # nearest neighbour can lie outside the window), which biases both the mean
-            # and variance of r_obs upward under CSR -- correct both for the z-test, but
-            # leave R = r_obs / r_expected on the simple, universally-recognized scale.
+            # Donnelly (1978): observed NN distances are edge-truncated, biasing the mean and
+            # variance of r_obs upward under CSR; correct both for the z-test but keep R = r_obs /
+            # r_expected uncorrected.
             A = float(vol)
             perim = 2.0 * ((W[0, 1] - W[0, 0]) + (W[1, 1] - W[1, 0]))
             r_null = 0.5 * np.sqrt(A / n) + (0.0514 + 0.041 / np.sqrt(n)) * perim / n

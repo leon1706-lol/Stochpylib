@@ -37,8 +37,6 @@ def _kfold(n, k, rng):
     return [perm[i::k] for i in range(k)]
 
 
-# ---------------------------------------------------------------------------- MetaModel
-
 class MetaModel:
     """Base class of every surrogate, and -- instantiated directly -- a selector.
 
@@ -107,7 +105,6 @@ class MetaModel:
     def _reset(self):
         pass
 
-    # ----------------------------------------------------------------- selector mode
     def _default_candidates(self, X):
         bounds = np.column_stack([X.min(0), X.max(0)])
         bounds[:, 1] = np.where(bounds[:, 1] > bounds[:, 0], bounds[:, 1], bounds[:, 0] + 1.0)
@@ -145,8 +142,6 @@ class MetaModel:
         state = "fitted" if hasattr(self, "X_train_") else "unfitted"
         return f"{type(self).__name__}({state})"
 
-
-# ------------------------------------------------------------------ response surface
 
 _ORDER_MODEL = {1: "linear", 2: "quadratic", 3: "cubic"}
 
@@ -303,8 +298,6 @@ class ResponseSurface(MetaModel):
         return {"x": best_x, "value": sign * best_v}
 
 
-# ------------------------------------------------------------------------ RSM ANOVA
-
 class RSM_ANOVA:
     """ANOVA of a response-surface fit.
 
@@ -368,7 +361,6 @@ class RSM_ANOVA:
             r["p"] = float(_f_sf(r["F"], r["df"], df_res)) if r["F"] is not None else None
         rows.append({"source": "residual", "ss": rss, "df": df_res, "ms": ms_res,
                      "F": None, "p": None})
-        # pure error from replicated runs
         keys = np.round(X, 12)
         _, inv = np.unique(keys, axis=0, return_inverse=True)
         inv = inv.ravel()
@@ -395,7 +387,7 @@ class RSM_ANOVA:
         p_reg = float(_f_sf(f_reg, p - 1, df_res)) if f_reg is not None else None
         self.table_ = TestResult(f_reg, p_reg, (p - 1, df_res), "no regression effect",
                                  "response-surface ANOVA", table=rows)
-        # PRESS through the hat diagonal: the leave-one-out residual is e_i / (1 - h_ii)
+        # PRESS via the hat diagonal: the leave-one-out residual is e_i / (1 - h_ii).
         H_diag = np.einsum("ij,ji->i", F, np.linalg.pinv(F))
         beta, *_ = np.linalg.lstsq(F, y, rcond=None)
         e = y - F @ beta
@@ -407,8 +399,6 @@ class RSM_ANOVA:
         self.coef_ = beta
         return self
 
-
-# ------------------------------------------------------------------ polynomial chaos
 
 def _legendre(z, p):
     """Orthonormal Legendre polynomials (uniform density on [-1, 1]) up to degree p."""
@@ -462,7 +452,6 @@ class PolynomialChaos(MetaModel):
         self.truncation = truncation
         self.q = float(q)
 
-    # ---------------------------------------------------------------------- setup
     def _marginals(self, k, X=None):
         from stochpylib.distributions import Normal, Uniform
 
@@ -547,7 +536,6 @@ class PolynomialChaos(MetaModel):
         self.multi_indices_ = self._multi_indices(k)
         self.n_factors_ = k
 
-    # ------------------------------------------------------------------------ fitting
     def _fit(self, X, y):
         self._prepare(X.shape[1], X)
         Psi = self._basis(self._to_z(X))
@@ -644,8 +632,6 @@ class PolynomialChaos(MetaModel):
         self.X_train_, self.y_train_ = X, y
         return self
 
-
-# ---------------------------------------------------------------------------- kriging
 
 _TRENDS = {"none": None, "constant": [0], "linear": "linear", "quadratic": "quadratic"}
 

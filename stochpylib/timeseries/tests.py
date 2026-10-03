@@ -33,10 +33,6 @@ def _f_sf(x, dfn, dfd):
     return special.fdtrc(dfn, dfd, x)
 
 
-# ---------------------------------------------------------------------------
-# shared helpers
-
-
 def _ols(X, y):
     beta, *_ = np.linalg.lstsq(X, y, rcond=None)
     resid = y - X @ beta
@@ -90,7 +86,7 @@ def _df_null(regression, T):
             cols.insert(0, np.ones_like(ylag))
             tt = np.arange(1, T)[None, :].repeat(m, axis=0) / float(T)
             cols.insert(1, tt)
-        X = np.stack(cols, axis=-1)  # (m, T-1, k)
+        X = np.stack(cols, axis=-1)
         XtX = np.einsum("rti,rtj->rij", X, X)
         Xty = np.einsum("rti,rt->ri", X, dy)
         betas = np.linalg.solve(XtX, Xty[..., None])[..., 0]
@@ -119,9 +115,6 @@ def _mc_p_and_cv(sample, stat):
     return pvalue, cvs
 
 
-# --------------------------------------------------------------------------- ADF
-
-
 def adf_test(x, max_lag=None, regression="c"):
     """Augmented Dickey-Fuller unit-root test.
 
@@ -137,7 +130,7 @@ def adf_test(x, max_lag=None, regression="c"):
     n = len(x)
 
     if max_lag is None:
-        candidate_lags = list(range(_schwert_maxlag(n) + 1))  # AIC selection
+        candidate_lags = list(range(_schwert_maxlag(n) + 1))
         select_by_aic = True
     else:
         candidate_lags = [int(max_lag)]
@@ -179,9 +172,6 @@ def adf_test(x, max_lag=None, regression="c"):
     )
 
 
-# --------------------------------------------------------------------------- PP
-
-
 def pp_test(x, regression="c", lags=None):
     """Phillips-Perron Z-tau unit-root test (Phillips 1987 correction).
 
@@ -209,7 +199,7 @@ def pp_test(x, regression="c", lags=None):
     s2 = float(u @ u) / T
     t_stat = float(beta[idx] / np.sqrt(s2 * XtX_inv[idx, idx]))
 
-    v = u * x[:-1]  # product series entering the long-run variance
+    v = u * x[:-1]
     omega2 = _nw_long_run(v - v.mean(), lags)
 
     sum_y2 = float(x[:-1] @ x[:-1])
@@ -226,9 +216,6 @@ def pp_test(x, regression="c", lags=None):
         null="the series contains a unit root",
         critical_values={**cvs, "bandwidth": lags},
     )
-
-
-# --------------------------------------------------------------------------- KPSS
 
 
 _KPSS_CV = {
@@ -274,9 +261,6 @@ def kpss_test(x, regression="c", lags=None):
         null="the series is (trend-)stationary",
         critical_values=dict(cv_table),
     )
-
-
-# --------------------------------------------------------------------------- LB / DW
 
 
 @dataclass
@@ -326,9 +310,6 @@ def durbin_watson(resid):
     return float(np.diff(e) @ np.diff(e) / (e @ e))
 
 
-# --------------------------------------------------------------------------- ARCH
-
-
 def arch_test(resid, lags=12):
     """Engle's Lagrange-multiplier test for ARCH effects.
 
@@ -355,9 +336,6 @@ def arch_test(resid, lags=12):
         pvalue=float(_chi2_sf(lm, lags)),
         null="no ARCH effects (conditional homoskedasticity)",
     )
-
-
-# --------------------------------------------------------------------------- Granger
 
 
 def granger_causality(x, y, max_lag=4):
@@ -400,9 +378,6 @@ def granger_causality(x, y, max_lag=4):
             null=f"x does not Granger-cause y (lag {L})",
         )
     return out
-
-
-# --------------------------------------------------------------------------- Johansen
 
 
 _JOHANSEN_MC = {}

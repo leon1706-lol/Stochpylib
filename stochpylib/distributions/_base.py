@@ -25,8 +25,6 @@ class Distribution:
         """Return ``(low, high)`` bounds of the distribution's support."""
         return (-np.inf, np.inf)
 
-    # --- distribution-specific (subclasses must override) ---
-
     def pdf(self, x):
         raise NotImplementedError
 
@@ -44,8 +42,6 @@ class Distribution:
     def std(self):
         return np.sqrt(self.var())
 
-    # --- generic numerical fallbacks ---
-
     def ppf(self, q):
         q = np.asarray(q, dtype=float)
         scalar_input = q.ndim == 0
@@ -61,11 +57,11 @@ class Distribution:
         low = int(low) if np.isfinite(low) else 0
         finite_high = np.isfinite(high)
         high = int(high) if finite_high else None
-        # exponential search for an upper bracket k with cdf(k) >= q,
-        # clamping to the support's upper bound instead of skipping past it
+        # Exponential search for an upper bracket with cdf(k) >= q, clamped to the support's upper
+        # bound.
         k = low
         step = 1
-        prev = None  # last k known to satisfy cdf(prev) < q
+        prev = None
         while True:
             if finite_high and k > high:
                 k = high
@@ -77,7 +73,6 @@ class Distribution:
             step *= 2
             k = nxt
         lo = max(low, prev) if prev is not None else low
-        # binary search for the smallest x in [lo, hi] with cdf(x) >= q
         while lo < hi:
             mid = (lo + hi) // 2
             if self.cdf(mid) < q:
@@ -94,7 +89,6 @@ class Distribution:
         low, high = self.support()
         a = low if np.isfinite(low) else -1.0
         b = high if np.isfinite(high) else 1.0
-        # expand bracket until cdf(a) <= q <= cdf(b)
         tries = 0
         while self.cdf(a) > q and tries < 200:
             a = a * 2 if a < 0 else -1.0

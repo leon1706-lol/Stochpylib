@@ -135,9 +135,7 @@ def EP_Posterior(prior_mean, prior_cov, A, log_site, *, n_iter=50, damping=0.8, 
         if max_change < tol:
             break
 
-    # EP log-evidence: log Z = log[int N(theta|m0,V0) prod_i g~_i(theta) dtheta]
-    # + sum_i [log Z_i - log int q_{-i}(f) g~_i(f) df], g~_i(f) = exp(-0.5 tau_i f^2 + nu_i f)
-    # (Gaussian-site correction subtracted so the approximate sites aren't double-counted).
+    # EP log-evidence with a Gaussian-site correction so approximate sites aren't double-counted.
     prec = V0inv + (A.T * tau) @ A
     L = _cholesky_psd(prec)
     logdet_prec = 2.0 * np.sum(np.log(np.diag(L)))

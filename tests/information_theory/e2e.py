@@ -59,7 +59,7 @@ def _renyi():
 @exercise("DifferentialEntropy")
 def _differential():
     h = mod.DifferentialEntropy(n_bins=40).fit(_RNG.normal(0, 1, 5000)).result_
-    assert abs(h - 0.5 * np.log2(2 * np.pi * np.e)) < 0.3   # bits
+    assert abs(h - 0.5 * np.log2(2 * np.pi * np.e)) < 0.3
 
 
 @exercise("MaxEntropy")

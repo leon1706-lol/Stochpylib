@@ -42,17 +42,12 @@ from stochpylib.copulas.methods import (
 
 __all__ = [
     "BaseCopula",
-    # elliptical
     "GaussianCopula", "StudentTCopula",
-    # archimedean + specials
     "ClaytonCopula", "FrankCopula", "GumbelCopula", "JoeCopula",
     "AliMikhailHaqCopula", "PlackettCopula", "BB1Copula", "BB7Copula",
-    # empirical
     "EmpiricalCopula", "CheckerboardCopula", "BetaCopula",
-    # vines
     "PairCopulaConstruction", "CVine", "DVine", "RVine",
     "VineStructureSelect", "VineCopula",
-    # methods
     "CopulaFit", "CopulaSample", "kendall_tau", "spearman_rho",
     "tail_dependence", "copula_density", "conditional_copula",
 ]

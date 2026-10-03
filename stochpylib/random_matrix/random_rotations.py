@@ -24,7 +24,7 @@ def _haar_qr(Z):
     Q, R = np.linalg.qr(Z)
     d = np.diagonal(R)
     ph = d / np.abs(d)
-    return Q * ph  # multiply column j by phase_j
+    return Q * ph
 
 
 def _symplectic_form(n):
@@ -55,14 +55,13 @@ def _haar_symplectic(n, rng):
         for i in range(k):
             v -= Q[:, i] * (Q[:, i].conj() @ v)
         v /= np.linalg.norm(v)
-        w = -(J @ v.conj())  # the quaternionic partner, automatically orthogonal to v
+        w = -(J @ v.conj())
         for i in range(k):
             w -= Q[:, i] * (Q[:, i].conj() @ w)
         w -= v * (v.conj() @ w)
         w /= np.linalg.norm(w)
         Q[:, k], Q[:, k + 1] = v, w
         k += 2
-    # reorder columns so that Q has the (v_1..v_n | w_1..w_n) block layout matching J
     order = np.concatenate([np.arange(0, 2 * n, 2), np.arange(1, 2 * n, 2)])
     return Q[:, order]
 

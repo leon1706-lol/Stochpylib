@@ -29,10 +29,6 @@ class DecompositionResult:
         )
 
 
-# ---------------------------------------------------------------------------
-# smoothing primitives
-
-
 def _centered_ma(x, window):
     """Centered moving average of exact length ``len(x)``.
 
@@ -48,7 +44,6 @@ def _centered_ma(x, window):
     padded = np.concatenate([np.full(half_left, x[0]), x, np.full(half_right, x[-1])])
     out = np.convolve(padded, kernel, mode="valid")
     if window % 2 == 0 and len(out) == len(x) + 1:
-        # even window: average consecutive alignments -> symmetric end weights
         out = 0.5 * (out[:-1] + out[1:])
     return np.asarray(out[: len(x)], dtype=float)
 
@@ -77,10 +72,6 @@ def _loess_smooth(y, fraction=0.5):
         slope = cov_xy / var_x if var_x > 1e-14 else 0.0
         out[i] = ym + slope * (i - xm)
     return out
-
-
-# ---------------------------------------------------------------------------
-# classical
 
 
 def _seasonal_profile(detrended, period, center="mean"):
@@ -125,10 +116,6 @@ def SeasonalDecomposition(x, period, model="additive"):
     return DecompositionResult(trend=trend, seasonal=seasonal, resid=resid, model=model)
 
 
-# ---------------------------------------------------------------------------
-# STL (Cleveland-style, simplified)
-
-
 def STLDecomposition(x, period, inner_iterations=3, loess_fraction=0.45):
     """Cleveland-style STL: subseries-LOESS seasonal extraction with a low-pass pass.
 
@@ -147,7 +134,6 @@ def STLDecomposition(x, period, inner_iterations=3, loess_fraction=0.45):
     seasonal = np.zeros(T)
 
     for _ in range(int(inner_iterations)):
-        # 1. subseries smoothing of the detrended series per position
         detrended = x - trend
         raw_seasonal = np.zeros(T)
         for pos in range(period):
@@ -155,24 +141,18 @@ def STLDecomposition(x, period, inner_iterations=3, loess_fraction=0.45):
             smoothed_sub = _loess_smooth(detrended[sub_idx], loess_fraction)
             raw_seasonal[sub_idx] = smoothed_sub
 
-        # 2. low-pass filter the raw seasonal (MA chain then short LOESS)
         lowpass = _centered_ma(raw_seasonal, period)
         lowpass = _centered_ma(lowpass, period)
         lowpass = _loess_smooth(lowpass, min(1.0, 3.0 * period / T))
 
-        # 3. seasonal component and refreshed trend
         seasonal = raw_seasonal - lowpass
-        for pos in range(period):  # re-center each position's seasonal level
+        for pos in range(period):
             idx = np.arange(pos, T, period)
             seasonal[idx] -= seasonal[idx].mean()
         trend = _loess_smooth(x - seasonal, loess_fraction)
 
     resid = x - trend - seasonal
     return DecompositionResult(trend=trend, seasonal=seasonal, resid=resid)
-
-
-# ---------------------------------------------------------------------------
-# X11-style
 
 
 def X11Decomposition(x, period, iterations=2):
@@ -197,9 +177,6 @@ def X11Decomposition(x, period, iterations=2):
     resid = x / (trend * seasonal_final)
     return DecompositionResult(trend=trend, seasonal=seasonal_final, resid=resid,
                                model="multiplicative")
-
-
-# --------------------------------------------------------------------------- filters
 
 
 def TrendFilter(x, lam=10.0, order=2):

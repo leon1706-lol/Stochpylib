@@ -17,9 +17,9 @@ from stochpylib.statistics._common import (  # noqa: F401  (re-exported for sibl
     _norm_pdf, _norm_ppf, _rng, _t_ppf,
 )
 
-_MAD_CONST = 1.0 / special.ndtri(0.75)          # ~= 1.4826022185056018
-_IQR_CONST = 2.0 * special.ndtri(0.75)          # ~= 1.3489795003921635
-_QN_CONST = 1.0 / (np.sqrt(2.0) * special.ndtri(5.0 / 8.0))   # ~= 2.2219
+_MAD_CONST = 1.0 / special.ndtri(0.75)
+_IQR_CONST = 2.0 * special.ndtri(0.75)
+_QN_CONST = 1.0 / (np.sqrt(2.0) * special.ndtri(5.0 / 8.0))
 _SN_CONST = 1.1926                              # Rousseeuw & Croux (1993)
 
 
@@ -72,7 +72,6 @@ def _kth_pairwise(x, k, kind="diff", max_explicit=1000):
         lo, hi = 0.0, float(x[-1] - x[0])
 
         def count_le(t):
-            # #{(i<j): x_j - x_i <= t}, two-pointer over sorted x
             j = 0
             c = 0
             for i in range(n):
@@ -85,7 +84,6 @@ def _kth_pairwise(x, k, kind="diff", max_explicit=1000):
         lo, hi = float(x[0]), float(x[-1])
 
         def count_le(t):
-            # #{(i<=j): (x_i+x_j)/2 <= t} = #{(i<=j): x_i+x_j <= 2t}
             two_t = 2.0 * t
             j = n - 1
             c = 0
@@ -109,8 +107,6 @@ def _kth_pairwise(x, k, kind="diff", max_explicit=1000):
             break
     return hi
 
-
-# --------------------------------------------------------------- M-estimation
 
 def _huber_psi(u, c=1.345):
     return np.clip(u, -c, c)
@@ -294,8 +290,6 @@ def _psi_value(name, u, c=None):
     return spec["psi"](u, c)
 
 
-# --------------------------------------------------------------- S/M-scale
-
 def _tukey_rho_norm(u, c=1.547645):
     """Tukey biweight rho normalized so rho(inf) = 1 -- used for the S-scale."""
     u = np.asarray(u, dtype=float)
@@ -392,8 +386,6 @@ def _tau_consistency(c2):
     return (2.0 * Phi_c - 1.0) - 2.0 * c2 * phi_c + 2.0 * c2 ** 2 * (1.0 - Phi_c)
 
 
-# --------------------------------------------------------------- misc
-
 def _chi2_consistency(alpha, p):
     """MCD/MVE raw-scatter consistency factor: alpha / chi2_cdf(chi2_ppf(alpha,p), p+2)."""
     q = _chi2_ppf(alpha, p)
@@ -471,7 +463,6 @@ def _kth_cross_diff(x, y, k, max_explicit=2_000_000):
     lo, hi = float(x[0] - y[-1]), float(x[-1] - y[0])
 
     def count_le(t):
-        # #{(i,j): x_i - y_j <= t} = sum_i #{j: y_j >= x_i - t}
         thresh = x - t
         return int(np.sum(n - np.searchsorted(y, thresh, side="left")))
 

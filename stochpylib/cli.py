@@ -272,9 +272,7 @@ def _implemented_overview():
         names = _module_public_names(module_name)
         total_names += len(names)
         label = module_name
-        # >= not > : a label of exactly 17 chars leaves zero characters for
-        # " " * (17 - len(label)), concatenating the summary directly onto the label
-        # with no separator at all (first hit: "numerical_methods" is exactly 17 chars)
+        # >= not >: a label of exactly 17 chars would leave no separator before the summary.
         pad = "\n                   " if len(label) >= 17 else " " * (17 - len(label))
         summary = summaries.get(module_name, "see the module README")
         block = f"  {label}{pad}{summary}\n                   [{len(names)} public names]"

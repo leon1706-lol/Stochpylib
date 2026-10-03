@@ -40,7 +40,7 @@ def _cond_mvn_moments(R, k):
     if k == 0:
         return np.zeros(len(R)), R
     A_inv_B = np.linalg.solve(A, B)
-    mu = A_inv_B.T                                          # (d-k, k) @ v added later
+    mu = A_inv_B.T
     cov = C - B.T @ A_inv_B
     return mu, cov
 
@@ -106,7 +106,6 @@ class _EllipticalBase(BaseCopula):
         self.dimension = int(dimension) if dimension is not None else "d"
         self.correlation_ = None
 
-    # -- helpers -------------------------------------------------------------
     def _estimate_correlation(self, u, student=False):
         if student:
             # Kendall-tau based: rho = sin(pi * tau / 2), robust to heavy tails
@@ -130,7 +129,6 @@ class _EllipticalBase(BaseCopula):
         if self.correlation_ is None:
             raise RuntimeError("fit() must be called first")
 
-    # -- shared surface -------------------------------------------------------
     def kendall_tau(self):
         self._require_fit()
         R = self.correlation_
@@ -165,7 +163,7 @@ class GaussianCopula(_EllipticalBase):
         val   = gp.cdf([[0.7, 0.8]])             # exact chain-rule evaluation
     """
 
-    _n_params = 0                                 # correlations are nuisance params
+    _n_params = 0
 
     def __init__(self, dimension=None):
         super().__init__(dimension)
@@ -224,7 +222,6 @@ class StudentTCopula(_EllipticalBase):
         return student_t_ppf(as_u_matrix(u), nu)
 
     def _estimate(self, u):
-        # rho from Kendall's tau inversion; nu by profile maximum likelihood
         R, _ = self._estimate_correlation(u, student=True)
 
         def neg_ll(log_nu):
@@ -235,9 +232,8 @@ class StudentTCopula(_EllipticalBase):
         if self.df_fixed is not None:
             nu = self.df_fixed
         else:
-            # profile likelihood over nu: coarse grid then ONE local refine.
-            # A dense scalar MLE here dominates vine fitting cost otherwise
-            # (each evaluation re-transforms all marginals).
+            # Profile likelihood over nu: coarse grid, then one local refine; a dense scalar MLE
+            # dominates vine fitting cost.
             grid = np.geomspace(2.5, 120.0, 14)
             nll = [ -self._loglik_at(u, R, float(g)) for g in grid ]
             nll = np.where(np.isfinite(nll), nll, 1e12)

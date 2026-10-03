@@ -211,7 +211,6 @@ class Polar_Slice(MCMCSampler):
         log_f1 = self._log_f1(theta, d)
         log_y = log_f1 - rng.exponential()
 
-        # direction update: great-circle shrinkage against a random orthogonal direction
         v = rng.standard_normal(d)
         v = v - (v @ direction) * direction
         vnorm = np.linalg.norm(v)

@@ -75,7 +75,7 @@ class CumulativeIncidenceFunction:
             n_at_risk = float(n_total - ptr)
             blk = slice(ptr, end)
             blk_cause = cs[blk]
-            d_any = float(np.sum(blk_cause > 0))          # all-cause events
+            d_any = float(np.sum(blk_cause > 0))
             d_k = float(np.sum((blk_cause == k) &
                                np.isclose(ts[blk], u)))
             if n_at_risk > 0 and d_any > 0:

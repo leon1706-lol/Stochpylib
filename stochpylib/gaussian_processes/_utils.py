@@ -32,7 +32,7 @@ def _sqdist(X, Y=None, length_scale=1.0):
         Xs = X / ls[None, :]
     X2 = np.sum(Xs**2, axis=1)[:, None]
     if Y is None:
-        Y2 = X2.T                                   # row so broadcasting pairs i vs j
+        Y2 = X2.T
         cross = Xs @ Xs.T
     else:
         Y = _as_2d(Y)

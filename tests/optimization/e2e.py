@@ -53,8 +53,6 @@ def _near_star(opt, tol=1e-2):
     return bool(np.max(np.abs(opt.x_ - _STAR)) < tol)
 
 
-# ------------------------------------------------------------------- base and result
-
 @exercise("Objective")
 def _objective():
     obj = mod.Objective(_quad, _quad_grad)
@@ -93,8 +91,6 @@ def _optimize_result():
     assert float(res) == pytest.approx(res.fun)
     assert res.nfev > 0 and len(res.history) >= 1
 
-
-# ---------------------------------------------------------------------------- gradient
 
 @exercise("GradientDescent")
 def _gradient_descent():
@@ -146,8 +142,6 @@ def _amsgrad():
     assert _near_star(opt)
 
 
-# ----------------------------------------------------------------------- second order
-
 @exercise("NewtonMethod")
 def _newton():
     opt = mod.NewtonMethod().minimize(_quad, _X0, grad=_quad_grad, hess=_quad_hess)
@@ -188,8 +182,6 @@ def _levenberg_marquardt():
                                             [1.0, 1.0])
     assert np.allclose(opt.x_, [2.0, 0.8], atol=1e-5)
 
-
-# ----------------------------------------------------------------------- metaheuristic
 
 @exercise("SimulatedAnnealing")
 def _simulated_annealing():
@@ -247,8 +239,6 @@ def _ant_colony():
     assert opt.fun_ > 0
 
 
-# -------------------------------------------------------------------- stochastic optim
-
 @exercise("StochasticApprox")
 def _stochastic_approx():
     opt = mod.StochasticApprox(a=1.0, alpha=0.7, n_iter=1500, averaging=True).minimize(
@@ -294,8 +284,6 @@ def _saa():
     assert abs(float(opt.x_[0]) - 4.0) < 0.3
     assert np.isfinite(float(opt.gap_))
 
-
-# ------------------------------------------------------------------------- constrained
 
 @exercise("PenaltyMethod")
 def _penalty_method():

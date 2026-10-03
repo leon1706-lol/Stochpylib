@@ -24,9 +24,6 @@ from stochpylib.financial_stochastics import rate_models as fs_rate
 from stochpylib.financial_stochastics import risk as fs_risk
 from stochpylib.financial_stochastics import stochastic_vol as fs_vol
 
-# ============================================================== option_pricing
-
-
 def test_bs_reference_values():
     bs100 = fs_op.BlackScholes(S=100, K=100, T=1, r=0.05, sigma=0.2)
     assert abs(bs100.call_price() - 10.4506) < 1e-3
@@ -222,9 +219,6 @@ def test_fourier_put_parity():
     assert abs((call - put) - (100 * math.exp(-0.01) - 105 * math.exp(-0.05))) < 1e-6
 
 
-# =================================================================== greeks
-
-
 @pytest.mark.parametrize("greek,fn", [
     ("delta", fs_greeks.Delta), ("gamma", fs_greeks.Gamma), ("vega", fs_greeks.Vega),
     ("theta", fs_greeks.Theta), ("rho", fs_greeks.Rho), ("vanna", fs_greeks.Vanna),
@@ -300,9 +294,6 @@ def test_greeks_fd_on_tree_pricer():
     vals = fd.compute(100, 100, 1, 0.05, 0.2)
     analytic = fs_greeks.Delta(100, 100, 1, 0.05, 0.2)
     assert abs(vals["delta"] - analytic) < 0.02
-
-
-# ============================================================== stochastic_vol
 
 
 def test_heston_cf_xi_to_zero_matches_deterministic_variance():
@@ -577,9 +568,6 @@ def test_variance_swap_heston_vs_realized_mc():
     assert abs(realized.estimate - closed) < 4 * realized.std_error + 0.01
 
 
-# ================================================================ rate_models
-
-
 def test_vasicek_zcb_vs_mc_discount():
     v = fs_rate.VasicekModel(r0=0.03, kappa=0.5, theta=0.04, sigma=0.01)
     closed = v.zcb_price(5)
@@ -733,9 +721,8 @@ def test_lmm_caplets_vs_black_and_discount_identity():
 @pytest.mark.parametrize("make", [lambda: fs_rate.HullWhiteModel(kappa=0.5, sigma=0.01),
                                   lambda: fs_rate.HoLeeModel(sigma=0.01)])
 def test_curve_models_support_fluent_fit_from_bare_constructor(make):
-    # regression: the constructor demanded a curve or (r0, theta) up front, so the
-    # documented fit(maturities, discount_factors) path was unreachable
-    # (development/Probleme.md #77)
+    # Regression: the constructor demanded a curve or (r0, theta) up front, making fit(maturities,
+    # discount_factors) unreachable.
     m = make()
     with pytest.raises(RuntimeError):
         m.zcb_price(1.0)
@@ -745,7 +732,7 @@ def test_curve_models_support_fluent_fit_from_bare_constructor(make):
     fitted = m.fit(maturities, dfs)
     assert fitted is m
     for T, df in zip(maturities, dfs):
-        assert abs(m.zcb_price(T) - df) < 1e-9          # input curve reproduced exactly
+        assert abs(m.zcb_price(T) - df) < 1e-9
     assert m.simulate(1.0, N=10, n_paths=3, random_state=0).shape == (3, 11)
 
 
@@ -756,9 +743,6 @@ def test_hjm_reproduces_initial_curve_and_hw_pathwise():
     closed = hjm.zcb_price(2)
     mc = hjm.zcb_price_mc(2, n_paths=20_000, random_state=36)
     assert abs(mc.estimate - closed) < 4 * mc.std_error
-
-
-# ======================================================================= risk
 
 
 def test_historical_var_equals_np_quantile():
@@ -901,9 +885,6 @@ def test_scenario_analysis_mc_linear_var_and_from_historical():
     assert abs(res2.estimate - hv.estimate) < 1e-9
 
 
-# ===================================================================== credit
-
-
 def test_default_intensity_flat_and_piecewise():
     lam = 0.02
     di = fs_credit.DefaultIntensity.flat(lam)
@@ -962,10 +943,9 @@ def test_credit_migration_powers_and_generator():
     P = np.array([[0.9, 0.08, 0.02], [0.05, 0.85, 0.10], [0.0, 0.0, 1.0]])
     cm = fs_credit.CreditMigration(transition_matrix=P)
     assert np.allclose(cm.n_step(2), P @ P)
-    # sub-dominant eigenvalue of the transient block is ~0.943, so mass
-    # outside the absorbing state decays like 0.943^n - not near machine
-    # precision by n=100 (~0.94^100 ~ 0.003), but strictly increasing and
-    # very close to 1 by n=1000.
+    # The transient block's sub-dominant eigenvalue is ~0.943, so mass outside the absorbing state
+    # decays like 0.943^n: strictly increasing and very close to 1 by n=1000, not machine-precision
+    # by n=100.
     assert cm.cumulative_default_prob(0, 100) > 0.99
     assert cm.cumulative_default_prob(0, 1000) == pytest.approx(1.0, abs=1e-6)
     assert cm.cumulative_default_prob(0, 1000) > cm.cumulative_default_prob(0, 100)
@@ -1041,9 +1021,6 @@ def test_copula_credit_rho_zero_matches_independent():
     assert abs(l0.var(ddof=1) - li.var(ddof=1)) / li.var(ddof=1) < 0.05
 
 
-# ================================================================== portfolio
-
-
 def test_covariance_sample_equals_np_cov():
     rng = np.random.default_rng(53)
     R = rng.normal(size=(500, 4))
@@ -1052,13 +1029,9 @@ def test_covariance_sample_equals_np_cov():
 
 
 def test_ledoit_wolf_shrinkage_bounds_psd_and_small_n_improvement():
-    # LW's superiority over the sample covariance is an *expected*-squared-
-    # error guarantee, not a per-draw one (a single small-n draw can collapse
-    # to full shrinkage and still lose to that draw's sample covariance --
-    # verified this happens for seed 54 by cross-checking against sklearn's
-    # independent `ledoit_wolf` estimator, which agrees to the sample-mean
-    # convention). So check the bounds per-draw, and the improvement
-    # claim averaged over many independent small-n draws.
+    # LW beats the sample covariance in expectation, not per draw (a small-n draw can collapse to
+    # full shrinkage and still lose, e.g. seed 54, cross-checked against sklearn's ledoit_wolf);
+    # check bounds per draw and the improvement averaged over many draws.
     rng = np.random.default_rng(54)
     cov_true = np.array([[0.04, 0.015, 0.0], [0.015, 0.03, 0.005], [0.0, 0.005, 0.02]])
     lw_err_total = 0.0
@@ -1162,8 +1135,6 @@ def test_risk_parity_equal_contributions_and_budgets():
     assert np.allclose(rc_b / rc_b.sum(), budgets, atol=1e-4)
 
 
-# ==================================================================== wiring
-
 _SPEC_NAMES = {
     "BlackScholes", "BlackScholes_American", "BinomialTree", "TrinomialTree",
     "MonteCarloOptionPricing", "LongstaffSchwartz", "FourierOptionPricing",
@@ -1231,9 +1202,6 @@ def test_random_state_reproducibility():
     p1 = v.simulate(T=1, N=50, n_paths=20, random_state=11)
     p2 = v.simulate(T=1, N=50, n_paths=20, random_state=11)
     assert np.array_equal(p1, p2)
-
-
-# --------------------------------------------------- V0.20.0 n_jobs=/backend= retrofit
 
 
 class TestParallelAndGPURetrofit:

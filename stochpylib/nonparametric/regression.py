@@ -47,7 +47,6 @@ class LocalPolynomialReg(NonparametricRegressor):
             beta = np.linalg.solve(WZ.T @ Z + 1e-12 * np.eye(2), WZ.T @ y)
         except np.linalg.LinAlgError:
             beta = np.linalg.lstsq(WZ.T @ Z, WZ.T @ y, rcond=None)[0]
-        # equivalent kernel weights (row of the smoother matrix at x0)
         try:
             M = np.linalg.solve(WZ.T @ Z + 1e-12 * np.eye(2), WZ.T)
         except np.linalg.LinAlgError:
@@ -306,9 +305,8 @@ class QuantileRegression(NonparametricRegressor):
     def _local_fit(self, x0, x, y, h):
         K = _kernel_fn(self.kernel)
         w_all = K((x - x0) / h)
-        # drop points whose weight is relatively negligible -- bounds the LP
-        # size per query without biasing the fit (exact for a huge bandwidth,
-        # where every weight stays comparably large and nothing is dropped).
+        # Drop points with relatively negligible weight: bounds the LP size per query without
+        # biasing the fit.
         max_w = np.max(w_all)
         keep = w_all >= 1e-6 * max_w if max_w > 0 else np.ones_like(w_all, dtype=bool)
         if np.sum(keep) < 5:

@@ -59,6 +59,19 @@ Thesis: one coherent package replaces scipy.stats + statsmodels + lifelines + co
   narration ("found live", "see Probleme.md #N") → delete; that history lives
   in git log / CHANGELOG / Probleme.md. Genuinely important invariants may
   stay in full — judgment, not a cap.
+  - **Cap:** one or two short sentences per comment; a longer one means the
+    code needs a clearer name or a docstring, not a bigger comment.
+  - **Never write:** section banners (`# ---- foo ----`, `# ==== foo`), labels
+    over obvious steps (`# build the tree`), shape/type tags on assignments
+    (`# (n, m)`), restated formulas the code already spells out, or
+    regression/incident stories in tests (the test name and git log carry them).
+  - **Keep:** functional pragmas (`# noqa`, `# pragma: no cover`, `# type:`),
+    numerical-stability reasons, algorithm/paper identification, and the
+    cause of any tolerance, seed or oracle quirk a reader would otherwise "fix".
+  - Comments go above the line they explain, in lowercase-or-sentence prose
+    without trailing periods on fragments; trailing comments only for a short
+    unit/convention note.
+  - Docstrings are API docs, not comments; this convention doesn't shrink them.
 
 ## 4. Layout
 
@@ -100,6 +113,13 @@ manual real repro — green unit tests alone have missed real bugs here.
    burns tokens for no new information. Either just continue the turn (the notification
    arrives on its own) or arm one `Monitor` on the run's own log/exit rather than
    repeated manual checks.
+   **Waiting on a running test: arm a timer, don't poll.** Size one wait to the
+   run's expected duration (`ScheduleWakeup`/`sleep` inside a single
+   `Monitor` until-loop, or just the `run_in_background` completion notice) and
+   do other useful work or end the turn meanwhile. Never re-check the log, CPU
+   or process list every minute — each check costs tokens and adds no
+   information. If the wait expires with the run still going, re-arm one
+   longer timer (≥ the previous one), not a tighter one.
 5. **Update docs** (style in §6):
    `stochpylib/<module>/README.md` · `tests/README.md` (test count) ·
    `development/CHANGELOG.md` · `development/Probleme.md` ·

@@ -65,7 +65,6 @@ class EmpiricalCopula(BaseCopula):
         chunk = max(1, 2_000_000 // max(n, 1))
         for start in range(0, len(u), chunk):
             stop = min(start + chunk, len(u))
-            # count observations dominated by the query point
             le = np.all(obs[None, :, :] <= u[start:stop, None, :], axis=2)
             out[start:stop] = le.sum(axis=1) / n
         return out
@@ -82,8 +81,8 @@ class _GridCopulaBase(BaseCopula):
         self.n_bins = int(n_bins)
         if self.n_bins < 1:
             raise ValueError("n_bins must be >= 1")
-        self.cell_mass_ = None            # (m, ..., m)
-        self.node_cdf_ = None             # (m+1, ..., m+1)
+        self.cell_mass_ = None
+        self.node_cdf_ = None
 
     def _require_fit(self):
         if self.cell_mass_ is None:
@@ -167,8 +166,7 @@ class BetaCopula(_GridCopulaBase):
         ks = np.arange(m + 1)
         log_binom = special.gammaln(m + 1) - special.gammaln(ks + 1) \
             - special.gammaln(m - ks + 1)
-        # keep strictly inside the open interval so logs stay finite even at
-        # the cube boundary (weights there are limiting values anyway)
+        # Keep strictly inside the open interval so logs stay finite at the cube boundary.
         xc = np.clip(x, 1e-12, 1.0 - 1e-12)
         logw = log_binom[None, :] \
             + ks[None, :] * np.log(xc[:, None]) \

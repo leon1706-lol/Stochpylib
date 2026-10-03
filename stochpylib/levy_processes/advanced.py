@@ -373,7 +373,6 @@ class GaussianRandomField:
         rng = _rng(random_state)
         noise = rng.standard_normal(self.shape)
         f = np.fft.rfftn(noise)
-        # wave numbers on the rfft grid
         k_r = [2.0 * np.pi * np.fft.fftfreq(n, d=self.length / n)[:f.shape[i]]
                for i, n in enumerate(self.shape)]
         if len(self.shape) == 1:
@@ -419,10 +418,8 @@ class RandomMeasure:
             return float(rng.gamma(self.shape_per_unit * length, self.scale))
         from stochpylib.distributions import StableDistribution
 
-        # See TemperingSubordinator's cousin StableSubordinator for why this
-        # cos(pi*alpha/2)**(1/alpha) rescaling is needed: it cancels the S1
-        # parameterization's extra Laplace-transform constant so the sampled
-        # mass matches the documented exp(-length * lam**alpha) transform.
+        # Rescale by cos(pi*alpha/2)**(1/alpha) (as in StableSubordinator) so the sampled mass
+        # matches exp(-length * lam**alpha).
         norm = np.cos(np.pi * self.alpha / 2.0) ** (1.0 / self.alpha)
         s = StableDistribution(alpha=self.alpha, beta=1.0, loc=0.0,
                                scale=norm * length ** (1.0 / self.alpha))

@@ -14,7 +14,7 @@ def _validate_probs(p, q=None):
         raise ValueError("probabilities must be non-negative")
     total = p.sum()
     if abs(total - 1.0) > 1e-6:
-        p = p / total  # auto-normalise
+        p = p / total
     if q is not None:
         q = np.asarray(q, dtype=float).ravel()
         if q.shape != p.shape:
@@ -44,13 +44,11 @@ def _joint_table(x, y, bins=0):
     if len(x) != len(y):
         raise ValueError("x and y must have equal length")
     if bins > 0:
-        # continuous -> discretise
         xe = np.histogram_bin_edges(x, bins=bins)
         ye = np.histogram_bin_edges(y, bins=bins)
         xi = np.clip(np.searchsorted(xe[1:], x), 0, bins - 1)
         yi = np.clip(np.searchsorted(ye[1:], y), 0, bins - 1)
     else:
-        # discrete/categorical
         ux = np.unique(x)
         uy = np.unique(y)
         xi = np.searchsorted(ux, x)

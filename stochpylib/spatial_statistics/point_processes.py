@@ -33,8 +33,6 @@ def _pw(A, B=None):
     return np.sqrt(np.maximum(((A[:, None, :] - B[None, :, :]) ** 2).sum(-1), 0.0))
 
 
-# --------------------------------------------------------------- edge corrections (shared)
-
 def _ripley_frac_inside(X, D, W, n_theta=180):
     """Fraction of each pairwise-distance circle (centered at i, radius d_ij) inside W.
 
@@ -183,8 +181,6 @@ def PairCorrelation(points, window, r=None, bandwidth=None, correction="translat
                             lower=lower, upper=upper, pvalue=pvalue, extras=extras)
 
 
-# ------------------------------------------------------------------------- process classes
-
 class SpatialPointProcess:
     """Base for point process models: ``sample``, ``intensity``, ``K``/``pcf``, ``fit``."""
 
@@ -233,7 +229,6 @@ class SpatialPointProcess:
         mu_hat = (n / |W|) / kappa_hat separately from the fitted kappa.
         """
         rmax = 0.25 * float(np.min(W[:, 1] - W[:, 0]))
-        # geometric spacing resolves small-r clustering structure much better than linear
         r = np.geomspace(rmax / 50.0, rmax, 10)
         emp = RipleyK(points, self.window, r=r, correction="translation")
 
@@ -243,9 +238,8 @@ class SpatialPointProcess:
             return float(np.sum((np.asarray(pred) ** 0.25 - emp.estimate ** 0.25) ** 2))
 
         log_x0 = np.log(np.maximum(np.asarray(x0, dtype=float), 1e-6))
-        # multi-start (deterministic seed): the K**(1/4) surface has local optima away from
-        # a poor initial guess, and each start stays within a wide-but-finite band of its own
-        # starting point, so a flat/near-unidentifiable direction can't run to a degenerate extreme
+        # Multi-start (deterministic seed): the K**(1/4) surface has local optima, and each start
+        # stays in a wide-but-finite band so a flat direction can't run to a degenerate extreme.
         rng = np.random.default_rng(0)
         starts = [log_x0] + [log_x0 + rng.normal(scale=1.5, size=log_x0.shape) for _ in range(3)]
         best = None

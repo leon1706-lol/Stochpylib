@@ -54,7 +54,7 @@ def _bs():
 def _bs_american():
     am = mod.BlackScholes_American(S, K, T, R, SIG)
     assert am.put_price() >= mod.BlackScholes(S, K, T, R, SIG).put_price() - 1e-9
-    assert abs(am.call_price() - BS_CALL) < 0.05          # no dividends: never exercise early
+    assert abs(am.call_price() - BS_CALL) < 0.05
     assert np.isfinite(am.early_exercise_boundary("put"))
 
 
@@ -131,7 +131,7 @@ def _sabr():
     sabr = mod.SABRModel(alpha=0.25, beta=0.7, rho=-0.3, nu=0.5)
     vols = [sabr.implied_vol(100.0, k, 1.0) for k in (90.0, 100.0, 110.0)]
     assert all(np.isfinite(vols)) and vols[0] > vols[1]
-    F, A = sabr.simulate(100.0, 1.0, N=10, n_paths=3, random_state=10)     # (forward, alpha) paths
+    F, A = sabr.simulate(100.0, 1.0, N=10, n_paths=3, random_state=10)
     assert sabr.price(100.0, 100.0, 1.0) > 0 and F.shape == A.shape == (3, 11)
 
 
@@ -222,7 +222,7 @@ def _g2pp():
     g = mod.G2ppModel(a=0.5, b=0.1, sigma=0.01, eta=0.005, rho=-0.5, r0=0.03)
     assert 0 < g.zcb_price(5.0) < 1 and g.zero_rate(5.0) > 0
     assert np.asarray(g.yield_curve([1.0, 2.0, 5.0])).shape == (3,)
-    r, x, y = g.simulate(1.0, N=20, n_paths=5, random_state=16)    # (short rate, x, y) factors
+    r, x, y = g.simulate(1.0, N=20, n_paths=5, random_state=16)
     assert r.shape == x.shape == y.shape == (5, 21)
     assert g.zcb_option_price(1.0, 2.0, 0.95) >= 0
 
@@ -231,7 +231,7 @@ def _g2pp():
 def _bk():
     bk = mod.BlackKarasinski(r0=0.03, kappa=0.5, theta=0.04, sigma=0.1)
     assert bk.simulate(1.0, N=10, n_paths=3, random_state=17).shape == (3, 11)
-    zcb = bk.zcb_price(1.0, N=20, n_paths=2000, random_state=18)      # Monte Carlo -> MCResult
+    zcb = bk.zcb_price(1.0, N=20, n_paths=2000, random_state=18)
     assert 0 < zcb.estimate < 1 and zcb.std_error > 0
 
 

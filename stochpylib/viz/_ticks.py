@@ -7,7 +7,7 @@ import math
 
 import numpy as np
 
-__all__ = []  # private module
+__all__ = []
 
 
 def _nice_num(span, round_):

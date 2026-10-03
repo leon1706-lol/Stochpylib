@@ -35,7 +35,6 @@ class ChannelCapacity:
             e = self.e
             self.capacity_ = 1.0 - e
         elif self.channel_type == "Z":
-            # Z-channel: P(1->0) = p
             p = self.p
             from scipy import optimize
             def neg_cap(log_alpha):
@@ -119,16 +118,14 @@ class TransferEntropy:
         if n <= 0:
             raise ValueError("series too short")
 
-        # discretise into bins
         xe = np.histogram_bin_edges(x_s, bins=self.n_bins)
         ye = np.histogram_bin_edges(y_s, bins=self.n_bins)
         xd = np.clip(np.searchsorted(xe[1:], x_s[:n]), 0, self.n_bins - 1)
         yd_now = np.clip(np.searchsorted(ye[1:], y_s[L:]), 0, self.n_bins - 1)
         yd_past = np.clip(np.searchsorted(ye[1:], y_s[:n]), 0, self.n_bins - 1)
 
-        # TE = I(Y_{t+1}; X_t | Y_t) via chain rule:
-        # TE = H(Y_{t+1}|Y_t) - H(Y_{t+1}|Y_t,X_t)
-        # Use conditional mutual information directly:
+        # TE = I(Y_{t+1}; X_t | Y_t) = H(Y_{t+1}|Y_t) - H(Y_{t+1}|Y_t,X_t), via conditional mutual
+        # information.
         cmi = ConditionalMutualInfoLite()
         te_val = cmi.fit(xd, yd_now, yd_past)
         self.result_ = max(te_val, 0.0)

@@ -30,8 +30,6 @@ _Y_OUT = _Y.copy()
 _Y_OUT[:15] += 30
 
 
-# --------------------------------------------------------------------- base
-
 @exercise("RobustEstimator")
 def _robust_estimator():
     class _Mean(mod.RobustEstimator):
@@ -65,8 +63,6 @@ def _resampler():
     idx = bb.indices(np.random.default_rng(1))
     assert idx.shape == (len(_X_CLEAN),)
 
-
-# ----------------------------------------------------------------- location
 
 @exercise("TrimmedMean")
 def _trimmed_mean():
@@ -111,8 +107,6 @@ def _r_estimator():
     assert abs(re_.estimate_ - 10.0) < 1.0
 
 
-# -------------------------------------------------------------------- scale
-
 @exercise("MedianAbsoluteDeviation")
 def _mad_est():
     m = mod.MedianAbsoluteDeviation().fit(_X_CLEAN)
@@ -142,8 +136,6 @@ def _robust_std():
     r = mod.RobustStd("tau").fit(_X_CLEAN)
     assert r.estimate_ > 0
 
-
-# -------------------------------------------------------------- regression
 
 @exercise("TheilSenRegression")
 def _theilsen():
@@ -190,8 +182,6 @@ def _huber_reg():
     assert hasattr(res, "coef_")
 
 
-# -------------------------------------------------------------- covariance
-
 @exercise("RobustCovariance")
 def _robust_covariance():
     X = _RNG.standard_normal((150, 3))
@@ -233,8 +223,6 @@ def _cov_shrinkage():
     cs = mod.CovShrinkage().fit(R)
     assert 0 <= cs.shrinkage_ <= 1
 
-
-# --------------------------------------------------------------- bootstrap
 
 @exercise("RobustBootstrap")
 def _robust_bootstrap():

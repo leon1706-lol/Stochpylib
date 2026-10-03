@@ -153,7 +153,7 @@ def reliability_mc(performance_fn, input_distributions, threshold=0.0, n=100_000
     if 0 < failed < n:
         se = float(np.sqrt(p_hat * (1 - p_hat) / n))
     else:
-        se = float("nan")  # degenerate estimate (zero or all failures)
+        se = float("nan")
     return MCResult(estimate=p_hat, std_error=se, n_samples=n, method="reliability_mc",
                     extras={"failures": failed})
 

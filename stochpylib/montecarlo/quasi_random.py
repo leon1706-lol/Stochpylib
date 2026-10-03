@@ -53,10 +53,6 @@ __all__ = [
 _BITS = 53  # stay inside float64 exact-integer range
 
 
-# ---------------------------------------------------------------------------
-# helpers
-
-
 def first_primes(count):
     """First ``count`` prime numbers."""
     primes = []
@@ -97,14 +93,11 @@ def _to_digits_lsb(index, base):
     return digits
 
 
-# GF(2) polynomial machinery ------------------------------------------------
-
-
 def _is_irreducible_gf2(degree, inner_bits):
     """Is ``x^degree + inner_bits-poly + 1`` irreducible? (trial division)."""
     poly = (1 << degree) | inner_bits | 1
 
-    def divides(q):  # does q divide poly?
+    def divides(q):
         rem = poly
         while rem.bit_length() >= q.bit_length():
             rem ^= q << (rem.bit_length() - q.bit_length())
@@ -154,7 +147,7 @@ def _primitive_poly_per_degree(max_degree):
             return res
 
         target = (1 << degree) - 1
-        power = 2  # element "x"
+        power = 2
         order = 1
         while power != 1 and order < target:
             power = mul(power, 2)
@@ -170,10 +163,6 @@ def _primitive_poly_per_degree(max_degree):
                 break
         degree += 1
     return out
-
-
-# ---------------------------------------------------------------------------
-# sequence classes
 
 
 class _LowDiscrepancyBase:
@@ -234,7 +223,6 @@ class FaureSequence(_LowDiscrepancyBase):
         for i in range(size):
             for j in range(i, size):
                 pascal[i, j] = comb(j, i) % b
-        # per-coordinate transform matrices: identity, P, P^2, ... (mod b)
         self._mats = [np.eye(size, dtype=np.int64)]
         for _ in range(1, dim):
             nxt = (self._mats[-1] @ pascal) % b
@@ -280,14 +268,13 @@ class DigitalNetBase2(_LowDiscrepancyBase):
     (i = 1, 2, 3, ...; the origin point i = 0 is skipped in streaming mode).
     """
 
-    BITS = _BITS  # default; instances override per operating mode
+    BITS = _BITS
 
     def __init__(self, dim=1, polys=None, random_state=None, init="canonical",
                  direction_matrix=None):
         super().__init__(dim)
         self.init = init
         if direction_matrix is not None:
-            # precomputed standard table (exact net, scipy-compatible)
             self.BITS = int(direction_matrix.shape[1])
             self._V = np.asarray(direction_matrix, dtype=np.int64)
             self.polys = None
@@ -317,13 +304,11 @@ class DigitalNetBase2(_LowDiscrepancyBase):
     def _build_direction_numbers(self):
         V = np.zeros((self.dim, self.BITS), dtype=np.int64)
         for row, (degree, inner_bits) in enumerate(self.polys):
-            # Dimension 1 is exactly van der Corput: m_j = 1 for EVERY level, no
-            # recurrence (the degree-1 polynomial x+1 would otherwise double even
-            # integers through the generic rule and corrupt the net structure).
+            # Dimension 1 is exactly van der Corput: m_j = 1 at every level; the generic recurrence
+            # on x+1 would double even integers and corrupt the net.
             if row == 0:
                 V[row, :] = np.left_shift(1, self.BITS - 1 - np.arange(self.BITS))
                 continue
-            # initial direction numbers m_{i,j}, j = 1..degree (odd, < 2^j required)
             for j in range(1, degree + 1):
                 if self.init == "ones":
                     m = 1
